@@ -1,4 +1,5 @@
 import { ACTIVE_TRIP, FLEX_MESSAGES } from "./trip-data.js";
+import { accountingPage } from "./accounting-page.js";
 
 const COMMANDS = {
   today: new Set(["今日行程", "今天行程", "today"]),
@@ -39,6 +40,16 @@ const WEATHER_CODES = {
 
 export default {
   async fetch(request, env) {
+    const url = new URL(request.url);
+    if (url.pathname === "/accounting") {
+      return new Response(accountingPage(), {
+        headers: { "Content-Type": "text/html; charset=utf-8" },
+      });
+    }
+    if (url.pathname.startsWith("/api/")) {
+      return handleApi(request, env, url);
+    }
+
     if (request.method !== "POST") {
       return new Response("OK");
     }
@@ -90,18 +101,15 @@ function extractCommand(event) {
 
 async function buildReply(command) {
   if (command === "accounting") {
+    const urlText = "請先完成 LIFF 設定後，將 Rich Menu 改成直接開啟記帳本。";
     return {
       type: "text",
       text: [
-        "旅行記帳本下一階段會開放。",
+        "旅行記帳本 MVP 已準備中。",
         "",
-        "預計輸入格式：",
-        "記帳 120 TRY 午餐 烤肉",
-        "記帳 300 TWD 交通 計程車",
+        "之後點這個按鈕會直接開啟表單，可新增、查今日、看統計、修改最近一筆、刪除最近一筆。",
         "",
-        "預計查詢：",
-        "記帳統計",
-        "記帳說明",
+        urlText,
       ].join("\n"),
     };
   }
@@ -223,6 +231,226 @@ async function verifyLineSignature(body, signature, channelSecret) {
   const digest = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(body));
   const expected = arrayBufferToBase64(digest);
   return timingSafeEqual(expected, signature);
+}
+
+async function handleApi(request, env, url) {
+  try {
+    if (url.pathname === "/api/accounting/config" && request.method === "GET") {
+      return jsonResponse({
+        liffId: env.LINE_LIFF_ID || "",
+        tripId: tripId(env),
+        tripName: ACTIVE_TRIP.trip?.tour_name || "旅行",
+      });
+    }
+
+    if (!env.ACCOUNTING_DB) {
+      return jsonResponse({ error: "Cloudflare D1 尚未綁定 ACCOUNTING_DB。" }, 503);
+    }
+
+    if (url.pathname === "/api/expenses" && request.method === "GET") {
+      const scope = url.searchParams.get("scope") || "today";
+      return jsonResponse({ expenses: await listExpenses(env, scope) });
+    }
+
+    if (url.pathname === "/api/expenses" && request.method === "POST") {
+      const payload = await request.json();
+      const expense = await createExpense(env, payload);
+      return jsonResponse({ expense }, 201);
+    }
+
+    if (url.pathname === "/api/expenses/recent" && request.method === "PATCH") {
+      const payload = await request.json();
+      const expense = await updateRecentExpense(env, payload);
+      return jsonResponse({ expense });
+    }
+
+    if (url.pathname === "/api/expenses/recent" && request.method === "DELETE") {
+      const expense = await deleteRecentExpense(env);
+      return jsonResponse({ expense });
+    }
+
+    if (url.pathname === "/api/expenses/stats" && request.method === "GET") {
+      return jsonResponse(await expenseStats(env));
+    }
+
+    return jsonResponse({ error: "Not found" }, 404);
+  } catch (error) {
+    return jsonResponse({ error: error.message || "API error" }, 400);
+  }
+}
+
+async function createExpense(env, payload) {
+  const item = normalizeExpense(env, payload);
+  const result = await env.ACCOUNTING_DB.prepare(
+    `INSERT INTO expenses (
+      trip_id, date, amount, currency_code, currency_label, currency_symbol,
+      category, note, payer_id, payer_name, chat_type, chat_id, created_at
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+  )
+    .bind(
+      item.trip_id,
+      item.date,
+      item.amount,
+      item.currency_code,
+      item.currency_label,
+      item.currency_symbol,
+      item.category,
+      item.note,
+      item.payer_id,
+      item.payer_name,
+      item.chat_type,
+      item.chat_id,
+      item.created_at
+    )
+    .run();
+  return getExpense(env, result.meta.last_row_id);
+}
+
+async function updateRecentExpense(env, payload) {
+  const recent = await getRecentExpense(env);
+  const item = normalizeExpense(env, payload);
+  await env.ACCOUNTING_DB.prepare(
+    `UPDATE expenses
+      SET amount = ?, currency_code = ?, currency_label = ?, currency_symbol = ?,
+          category = ?, note = ?, payer_id = ?, payer_name = ?, updated_at = ?
+      WHERE id = ? AND deleted_at IS NULL`
+  )
+    .bind(
+      item.amount,
+      item.currency_code,
+      item.currency_label,
+      item.currency_symbol,
+      item.category,
+      item.note,
+      item.payer_id,
+      item.payer_name,
+      item.created_at,
+      recent.id
+    )
+    .run();
+  return getExpense(env, recent.id);
+}
+
+async function deleteRecentExpense(env) {
+  const recent = await getRecentExpense(env);
+  await env.ACCOUNTING_DB.prepare("UPDATE expenses SET deleted_at = ? WHERE id = ?")
+    .bind(new Date().toISOString(), recent.id)
+    .run();
+  return recent;
+}
+
+async function getRecentExpense(env) {
+  const expense = await env.ACCOUNTING_DB.prepare(
+    `SELECT * FROM expenses
+      WHERE trip_id = ? AND deleted_at IS NULL
+      ORDER BY created_at DESC, id DESC
+      LIMIT 1`
+  )
+    .bind(tripId(env))
+    .first();
+  if (!expense) {
+    throw new Error("目前沒有可修改或刪除的記帳。");
+  }
+  return expense;
+}
+
+async function getExpense(env, id) {
+  return env.ACCOUNTING_DB.prepare("SELECT * FROM expenses WHERE id = ?").bind(id).first();
+}
+
+async function listExpenses(env, scope) {
+  const dateFilter = scope === "today" ? "AND date = ?" : "";
+  const statement = env.ACCOUNTING_DB.prepare(
+    `SELECT * FROM expenses
+      WHERE trip_id = ? AND deleted_at IS NULL ${dateFilter}
+      ORDER BY created_at DESC, id DESC
+      LIMIT 50`
+  );
+  const binding = scope === "today" ? statement.bind(tripId(env), accountingDate()) : statement.bind(tripId(env));
+  const result = await binding.all();
+  return result.results || [];
+}
+
+async function expenseStats(env) {
+  const currencyTotals = await env.ACCOUNTING_DB.prepare(
+    `SELECT currency_code, currency_label, currency_symbol, SUM(amount) AS total
+      FROM expenses
+      WHERE trip_id = ? AND deleted_at IS NULL
+      GROUP BY currency_code, currency_label, currency_symbol
+      ORDER BY currency_code`
+  )
+    .bind(tripId(env))
+    .all();
+  const categoryTotals = await env.ACCOUNTING_DB.prepare(
+    `SELECT category, currency_code, currency_label, SUM(amount) AS total
+      FROM expenses
+      WHERE trip_id = ? AND deleted_at IS NULL
+      GROUP BY category, currency_code, currency_label
+      ORDER BY category, currency_code`
+  )
+    .bind(tripId(env))
+    .all();
+  return {
+    currencyTotals: currencyTotals.results || [],
+    categoryTotals: categoryTotals.results || [],
+  };
+}
+
+function normalizeExpense(env, payload) {
+  const amount = Number(payload.amount);
+  if (!Number.isFinite(amount) || amount <= 0) {
+    throw new Error("請輸入正確金額。");
+  }
+  const currency = currencyInfo(payload.currencyCode);
+  const category = String(payload.category || "其他").trim().slice(0, 20) || "其他";
+  return {
+    trip_id: tripId(env),
+    date: accountingDate(),
+    amount,
+    currency_code: currency.code,
+    currency_label: currency.label,
+    currency_symbol: payload.currencySymbol || currency.symbol,
+    category,
+    note: String(payload.note || "").trim().slice(0, 80),
+    payer_id: String(payload.payerId || "").slice(0, 80),
+    payer_name: String(payload.payerName || "").slice(0, 80),
+    chat_type: "user",
+    chat_id: String(payload.payerId || "").slice(0, 80),
+    created_at: new Date().toISOString(),
+  };
+}
+
+function currencyInfo(code) {
+  const currencies = {
+    TRY: { code: "TRY", label: "里拉", symbol: "₺" },
+    TWD: { code: "TWD", label: "台幣", symbol: "NT$" },
+    EUR: { code: "EUR", label: "歐元", symbol: "€" },
+    USD: { code: "USD", label: "美金", symbol: "US$" },
+  };
+  return currencies[code] || currencies.TRY;
+}
+
+function accountingDate() {
+  for (const day of ACTIVE_TRIP.daily_itinerary) {
+    const now = new Date(new Date().toLocaleString("en-US", { timeZone: day.timezone }));
+    if (formatLocalDate(now) === day.date) {
+      return day.date;
+    }
+  }
+  const timezone = ACTIVE_TRIP.trip?.notification?.default_timezone || "Asia/Taipei";
+  const now = new Date(new Date().toLocaleString("en-US", { timeZone: timezone }));
+  return formatLocalDate(now);
+}
+
+function tripId(env) {
+  return env.TRIP_ID || "2026-05-turkey";
+}
+
+function jsonResponse(data, status = 200) {
+  return new Response(JSON.stringify(data), {
+    status,
+    headers: { "Content-Type": "application/json; charset=utf-8" },
+  });
 }
 
 function arrayBufferToBase64(buffer) {

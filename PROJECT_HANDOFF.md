@@ -187,23 +187,23 @@ Implementation approach:
 
 The travel accounting book is now moving into the next development phase.
 
-MVP design:
+LIFF MVP design:
 
-- Input style: LINE text commands.
-- Example:
-  - `記帳 120 TRY 午餐 烤肉`
-  - `記帳 300 TWD 交通 計程車`
-- Fields: trip id, date, amount, currency, category, note, created time.
+- Input style: LIFF web form opened from Rich Menu.
+- Supported actions: add expense, list today's expenses, show stats, update recent expense, delete recent expense.
+- Currencies shown to the user: 里拉, 台幣, 歐元, 美金.
+- Internal currency codes: TRY, TWD, EUR, USD.
+- Fields: trip id, date, amount, currency code, currency label, currency symbol, category, note, payer id, payer name, chat type, chat id, created/updated/deleted time.
 - Recommended storage: Cloudflare D1, because the user's Mac may be off and the webhook is already on Cloudflare.
-- First output: currency totals and category totals.
+- First output: today's list, currency totals, and category totals.
 - Full design notes: `docs/accounting-book.md`.
+- Setup notes: `docs/liff-accounting-setup.md`.
 
 Not in the first version:
 
 - Auto exchange-rate conversion.
 - Split bills.
 - Receipt photo OCR.
-- Editing or deleting entries.
 - CSV export.
 
 ### Multi-Trip Management

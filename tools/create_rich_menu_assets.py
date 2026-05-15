@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import json
+import os
 from pathlib import Path
 
 from PIL import Image, ImageDraw, ImageFont
@@ -216,6 +217,12 @@ def create_image():
 
 
 def create_config():
+    accounting_liff_url = os.environ.get("ACCOUNTING_LIFF_URL")
+    accounting_action = (
+        {"type": "uri", "label": "旅行記帳本", "uri": accounting_liff_url}
+        if accounting_liff_url
+        else {"type": "message", "text": "旅行記帳本"}
+    )
     config = {
         "size": {"width": 2500, "height": 843},
         "selected": True,
@@ -232,7 +239,7 @@ def create_config():
             },
             {
                 "bounds": {"x": 1667, "y": 0, "width": 833, "height": 843},
-                "action": {"type": "message", "text": "旅行記帳本"},
+                "action": accounting_action,
             },
         ],
     }

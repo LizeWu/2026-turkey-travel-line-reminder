@@ -32,10 +32,13 @@
 | `docs/rich-menu-webhook.md` | Rich Menu 與 webhook 的設計、部署步驟與三個按鈕規格。 |
 | `docs/weather-forecast.md` | 天氣預報功能說明：資料來源、行程欄位、顯示格式與限制。 |
 | `docs/accounting-book.md` | 旅行記帳本 MVP 規格：輸入格式、欄位、儲存方式與第一版範圍。 |
+| `docs/liff-accounting-setup.md` | LIFF 記帳本的 Cloudflare D1、LINE LIFF 與 Rich Menu 設定步驟。 |
 | `webhook/cloudflare-worker/src/index.js` | Cloudflare Worker webhook 主程式，處理今日行程、明日行程、旅行記帳本指令。 |
+| `webhook/cloudflare-worker/src/accounting-page.js` | LIFF 記帳本頁面，提供新增、今日列表、統計、修改最近一筆與刪除最近一筆。 |
 | `webhook/cloudflare-worker/src/trip-data.js` | 由目前啟用旅程與 Flex Message 產生的 Worker 內嵌資料。 |
 | `webhook/cloudflare-worker/wrangler.toml` | Cloudflare Worker 部署設定。 |
 | `webhook/cloudflare-worker/package.json` | Cloudflare Worker 專案指令與依賴設定。 |
+| `webhook/cloudflare-worker/migrations/0001_create_expenses.sql` | Cloudflare D1 記帳資料表 migration。 |
 | `tools/build_webhook_data.py` | 從 `config.json`、啟用旅程與生成檔案產生 Worker 內嵌資料。 |
 | `docs/rich-menu-setup.md` | Rich Menu 圖片、設定檔與建立方式說明。 |
 | `rich-menu/azuma-rich-menu.png` | LINE Rich Menu 圖片，含三個按鈕與語意圖示。 |

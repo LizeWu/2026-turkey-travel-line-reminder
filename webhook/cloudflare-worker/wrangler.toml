@@ -4,3 +4,16 @@ compatibility_date = "2026-05-15"
 
 [observability]
 enabled = true
+
+# After creating Cloudflare D1, add the binding:
+#
+# [[d1_databases]]
+# binding = "ACCOUNTING_DB"
+# database_name = "lize-tour-accounting"
+# database_id = "<cloudflare-d1-database-id>"
+#
+# Optional Worker variables:
+#
+# [vars]
+# TRIP_ID = "2026-05-turkey"
+# LINE_LIFF_ID = "<line-liff-id>"
