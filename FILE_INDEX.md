@@ -31,6 +31,7 @@
 | --- | --- |
 | `docs/rich-menu-webhook.md` | Rich Menu 與 webhook 的設計、部署步驟與三個按鈕規格。 |
 | `docs/weather-forecast.md` | 天氣預報功能說明：資料來源、行程欄位、顯示格式與限制。 |
+| `docs/accounting-book.md` | 旅行記帳本 MVP 規格：輸入格式、欄位、儲存方式與第一版範圍。 |
 | `webhook/cloudflare-worker/src/index.js` | Cloudflare Worker webhook 主程式，處理今日行程、明日行程、旅行記帳本指令。 |
 | `webhook/cloudflare-worker/src/trip-data.js` | 由目前啟用旅程與 Flex Message 產生的 Worker 內嵌資料。 |
 | `webhook/cloudflare-worker/wrangler.toml` | Cloudflare Worker 部署設定。 |

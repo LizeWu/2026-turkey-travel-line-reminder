@@ -185,15 +185,26 @@ Implementation approach:
 
 ### Travel Accounting Book
 
-The travel accounting book should be developed as a separate feature.
+The travel accounting book is now moving into the next development phase.
 
-It needs its own design discussion:
+MVP design:
 
-- Input style: LINE text, buttons, or form.
-- Fields: date, item, amount, currency, payer, category, note.
-- Currency conversion: manual rate or live exchange-rate API.
-- Storage: JSON, SQLite, Google Sheets, GitHub file, or cloud database.
-- Output: daily total, category total, trip total, export CSV.
+- Input style: LINE text commands.
+- Example:
+  - `記帳 120 TRY 午餐 烤肉`
+  - `記帳 300 TWD 交通 計程車`
+- Fields: trip id, date, amount, currency, category, note, created time.
+- Recommended storage: Cloudflare D1, because the user's Mac may be off and the webhook is already on Cloudflare.
+- First output: currency totals and category totals.
+- Full design notes: `docs/accounting-book.md`.
+
+Not in the first version:
+
+- Auto exchange-rate conversion.
+- Split bills.
+- Receipt photo OCR.
+- Editing or deleting entries.
+- CSV export.
 
 ### Multi-Trip Management
 

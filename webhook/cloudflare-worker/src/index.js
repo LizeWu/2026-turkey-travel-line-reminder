@@ -92,7 +92,17 @@ async function buildReply(command) {
   if (command === "accounting") {
     return {
       type: "text",
-      text: "旅行記帳本尚未啟用。下一階段會再設計記帳欄位、幣別、匯率與統計方式。",
+      text: [
+        "旅行記帳本下一階段會開放。",
+        "",
+        "預計輸入格式：",
+        "記帳 120 TRY 午餐 烤肉",
+        "記帳 300 TWD 交通 計程車",
+        "",
+        "預計查詢：",
+        "記帳統計",
+        "記帳說明",
+      ].join("\n"),
     };
   }
 
