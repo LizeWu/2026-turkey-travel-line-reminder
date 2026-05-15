@@ -39,8 +39,9 @@
         "height": 843
       },
       "action": {
-        "type": "message",
-        "text": "旅行記帳本"
+        "type": "uri",
+        "label": "旅行記帳本",
+        "uri": "https://liff.line.me/2010099376-ZFLjEHk4"
       }
     }
   ]

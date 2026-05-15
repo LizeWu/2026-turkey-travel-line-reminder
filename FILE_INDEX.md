@@ -7,6 +7,7 @@
 | `README.md` | 專案總覽、基本指令，以及必要的 GitHub Secrets。 |
 | `PROJECT_HANDOFF.md` | 目前決策、已完成設定、下一步，以及接續開發備忘。 |
 | `LizeNext.md` | 如果開新 Codex 對話或上下文遺失，可貼上的簡短接續提示。 |
+| `WORKLOG_2026-05-15.md` | 2026-05-15 當日工作紀錄，包含已完成、已測試、重要設定與回家後接續提示。 |
 
 ## Core Reminder Files
 

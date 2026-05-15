@@ -3,13 +3,24 @@
 ## Current Status
 
 - GitHub repo: `https://github.com/LizeWu/2026-turkey-travel-line-reminder`
+- Date of latest handoff update: 2026-05-15.
 - The initial project has already been pushed to GitHub.
 - The trip PDF has been converted into structured reminder data.
 - The 12-day LINE message preview has been generated and confirmed by the user.
-- The next major task is LINE setup and GitHub Secrets setup.
-- LINE setup is now complete.
+- LINE setup is complete.
 - Manual GitHub Actions push tests succeeded for Day 2, Day 3, and Day 8.
 - Weather forecast integration has been added for scheduled itinerary pushes and Rich Menu itinerary replies.
+- Cloudflare Worker webhook is deployed.
+- Cloudflare D1 database `lize-tour-accounting` is created and bound to the Worker as `ACCOUNTING_DB`.
+- D1 table `expenses` has been created and confirmed visible with `/tables`.
+- LINE Login channel `阿珠媽旅行記帳本` has been created under provider `LizeTourBot`.
+- LIFF app for the accounting book has been created.
+- Worker variables are set:
+  - `LINE_LIFF_ID`
+  - `TRIP_ID=2026-05-turkey`
+- Rich Menu `旅行記帳本` has been changed from a text-message action to a LIFF URL action.
+- The LIFF accounting page opens successfully on the user's phone.
+- A first test expense was added successfully and appears in the today's list.
 
 ## Confirmed Product Decisions
 
@@ -42,6 +53,8 @@
   - 今日行程
   - 明日行程
   - 旅行記帳本
+- Current Rich Menu title:
+  - `手機、護照、皮包、鑰匙、信用卡✧( •˓◞•̀ )`
 
 ## Confirmed Daily LINE Format
 
@@ -87,9 +100,15 @@ Use a button only when the target is clear enough. Examples already treated as u
 - `docs/rich-menu-webhook.md`
   - Rich Menu and webhook design notes.
 - `webhook/cloudflare-worker/`
-  - Cloudflare Worker scaffold for interactive Rich Menu replies.
+  - Cloudflare Worker for interactive Rich Menu replies, LIFF accounting page, and accounting APIs.
 - `tools/build_webhook_data.py`
   - Generates `webhook/cloudflare-worker/src/trip-data.js` from the active trip and generated Flex messages.
+- `webhook/cloudflare-worker/src/accounting-page.js`
+  - LIFF accounting page.
+- `webhook/cloudflare-worker/migrations/0001_create_expenses.sql`
+  - Cloudflare D1 `expenses` table schema.
+- `docs/liff-accounting-setup.md`
+  - Setup notes for D1, LIFF, and Rich Menu URL action.
 - `.github/workflows/send-travel-reminder.yml`
   - GitHub Actions schedule for previous-night itinerary reminders.
 - `.github/workflows/send-morning-greeting.yml`
@@ -110,6 +129,8 @@ python send_line_reminder.py --build
 python send_line_reminder.py --day 3 --dry-run
 python send_line_reminder.py --day 8 --dry-run
 python send_line_reminder.py --mode greeting --day 3 --dry-run
+node --check webhook/cloudflare-worker/src/index.js
+node --check webhook/cloudflare-worker/src/accounting-page.js
 ```
 
 The Python script was also syntax-checked successfully with:
@@ -118,17 +139,37 @@ The Python script was also syntax-checked successfully with:
 PYTHONPYCACHEPREFIX=.pycache python3 -m py_compile send_line_reminder.py
 ```
 
+Manual production checks completed:
+
+- GitHub Actions manual Day 3 itinerary send showed weather and itinerary.
+- LINE Rich Menu `今日行程` / `明日行程` webhook replies work.
+- Cloudflare Worker `/accounting` opens the accounting page.
+- LIFF accounting page can create an expense.
+- The created expense appears in the `今日` list.
+
 ## Next Steps
 
-1. Keep GitHub Actions enabled.
-2. Before the trip, optionally run one final manual `workflow_dispatch` test for:
+1. Continue testing the LIFF accounting MVP:
+   - `統計`
+   - `修改最近一筆`
+   - `刪除最近一筆`
+   - Mobile usability.
+2. If the LIFF page works smoothly, update documentation with final user-facing instructions.
+3. Keep GitHub Actions enabled.
+4. Before the trip, optionally run one final manual `workflow_dispatch` test for:
    - `Send travel reminder`
    - `Send morning greeting`
-3. Do not delete these GitHub repository secrets:
+5. Do not delete these GitHub repository secrets:
    - `LINE_CHANNEL_ACCESS_TOKEN`
    - `LINE_USER_ID`
-4. Do not rotate the LINE Channel access token unless the GitHub secret is updated afterward.
-5. If a reminder does not arrive, check the latest `Send travel reminder` workflow run.
+6. Do not delete these Cloudflare Worker bindings/variables:
+   - `ACCOUNTING_DB`
+   - `LINE_CHANNEL_ACCESS_TOKEN`
+   - `LINE_CHANNEL_SECRET`
+   - `LINE_LIFF_ID`
+   - `TRIP_ID`
+7. Do not rotate the LINE Channel access token unless GitHub Secrets and Cloudflare Worker secrets are updated afterward.
+8. If a reminder does not arrive, check the latest `Send travel reminder` workflow run.
 
 ## Future Features
 
@@ -162,6 +203,7 @@ Likely next architecture:
   - `明日行程`
   - `旅行記帳本`
 - `旅行記帳本` currently returns a placeholder until the accounting feature is designed.
+- `旅行記帳本` now opens the LIFF accounting page through a Rich Menu URI action.
 
 ### Weather Forecast
 
@@ -233,7 +275,9 @@ If continuing in a new Codex conversation, paste this:
 ```text
 請接續 2026-turkey-travel-line-reminder 專案。
 GitHub repo: https://github.com/LizeWu/2026-turkey-travel-line-reminder
-已完成：旅行資料 JSON、LINE Flex Message、12 天預覽、GitHub Actions、初次 push。
-已確認：LINE 通知、只通知本人、GitHub Actions 雲端排程、每天當地時間 07:00、景點地圖按鈕只在明確對應時顯示。
-下一步：設定 LINE Official Account、取得 LINE_CHANNEL_ACCESS_TOKEN / LINE_USER_ID，並加入 GitHub Secrets 後測試推播。
+請先讀取 PROJECT_HANDOFF.md、FILE_INDEX.md、docs/liff-accounting-setup.md。
+已完成：旅行資料 JSON、LINE Flex Message、12 天預覽、GitHub Actions、LINE Official Account、Cloudflare Worker webhook、Rich Menu、Open-Meteo 天氣、Cloudflare D1、LINE Login channel、LIFF 記帳本 MVP。
+目前已測試成功：GitHub Actions Day 3 推播含天氣、Rich Menu 今日/明日行程、LIFF 記帳本頁面開啟、新增一筆記帳並出現在今日列表。
+下一步：測試 LIFF 記帳本的統計、修改最近一筆、刪除最近一筆；必要時微調手機 UI。
+請用簡明步驟帶我操作。
 ```
