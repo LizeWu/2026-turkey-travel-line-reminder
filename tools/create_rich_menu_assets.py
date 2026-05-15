@@ -75,7 +75,7 @@ def draw_sparkle(draw, center, size, color):
 
 def centered_title(draw, box, font, symbol_font, fill):
     left, top, right, bottom = box
-    prefix = "阿珠媽關心您斯咪達"
+    prefix = "手機、皮包、鑰匙、信用卡"
     suffix_base = "( •˓◞•"
     suffix_end = " )"
     gap = 18
