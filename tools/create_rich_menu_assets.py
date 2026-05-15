@@ -44,6 +44,62 @@ def centered_text(draw, box, text, font, fill):
     draw.text((x, y), text, font=font, fill=fill)
 
 
+def text_size(draw, text, font):
+    bbox = draw.textbbox((0, 0), text, font=font)
+    return bbox[2] - bbox[0], bbox[3] - bbox[1], bbox[1]
+
+
+def load_symbol_font(size):
+    path = Path("/System/Library/Fonts/Apple Symbols.ttf")
+    if path.exists():
+        return ImageFont.truetype(str(path), size)
+    return load_font(size)
+
+
+def draw_sparkle(draw, center, size, color):
+    x, y = center
+    draw.polygon(
+        [
+            (x, y - size),
+            (x + size * 0.22, y - size * 0.22),
+            (x + size, y),
+            (x + size * 0.22, y + size * 0.22),
+            (x, y + size),
+            (x - size * 0.22, y + size * 0.22),
+            (x - size, y),
+            (x - size * 0.22, y - size * 0.22),
+        ],
+        fill=color,
+    )
+
+
+def centered_title(draw, box, font, symbol_font, fill):
+    left, top, right, bottom = box
+    prefix = "阿珠媽關心您斯咪達"
+    suffix_base = "( •˓◞•"
+    suffix_end = " )"
+    gap = 18
+    sparkle_size = 26
+    prefix_width, prefix_height, prefix_top = text_size(draw, prefix, font)
+    suffix_base_width, suffix_height, suffix_top = text_size(draw, suffix_base, symbol_font)
+    suffix_end_width, _, _ = text_size(draw, suffix_end, symbol_font)
+    suffix_width = suffix_base_width + 22 + suffix_end_width
+    total_width = prefix_width + gap + sparkle_size * 2 + gap + suffix_width
+    x = left + ((right - left) - total_width) / 2
+    center_y = top + (bottom - top) / 2
+    draw.text((x, center_y - prefix_height / 2 - prefix_top), prefix, font=font, fill=fill)
+    x += prefix_width + gap + sparkle_size
+    draw_sparkle(draw, (x, center_y), sparkle_size, fill)
+    x += sparkle_size + gap
+    suffix_y = center_y - suffix_height / 2 - suffix_top
+    draw.text((x, suffix_y), suffix_base, font=symbol_font, fill=fill)
+    accent_x = x + suffix_base_width - 8
+    accent_y = center_y - suffix_height / 2 + 2
+    draw.line((accent_x, accent_y, accent_x + 14, accent_y + 18), fill=fill, width=5)
+    x += suffix_base_width + 22
+    draw.text((x, suffix_y), suffix_end, font=symbol_font, fill=fill)
+
+
 def draw_icon_background(draw, center, size, color):
     x, y = center
     radius = size / 2
@@ -127,11 +183,12 @@ def create_image():
     image = Image.new("RGB", (width, height), "#f8faf8")
     draw = ImageDraw.Draw(image)
 
-    title_font = load_font(64, weight="semibold")
+    title_font = load_font(96, weight="semibold")
+    title_symbol_font = load_symbol_font(76)
     label_font = load_font(133, weight="semibold")
 
     draw.rectangle((0, 0, width, 150), fill="#235347")
-    centered_text(draw, (0, 0, width, 150), "阿珠媽旅行提醒", title_font, "#ffffff")
+    centered_title(draw, (0, 0, width, 150), title_font, title_symbol_font, "#ffffff")
 
     items = [
         ("今日行程", draw_calendar_check),
