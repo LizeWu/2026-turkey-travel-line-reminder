@@ -6,6 +6,37 @@ const COMMANDS = {
   accounting: new Set(["旅行記帳本", "記帳本", "accounting"]),
 };
 
+const WEATHER_CODES = {
+  0: "晴朗",
+  1: "大致晴朗",
+  2: "局部多雲",
+  3: "陰天",
+  45: "霧",
+  48: "霧凇",
+  51: "毛毛雨",
+  53: "毛毛雨",
+  55: "毛毛雨",
+  56: "凍毛毛雨",
+  57: "凍毛毛雨",
+  61: "小雨",
+  63: "中雨",
+  65: "大雨",
+  66: "凍雨",
+  67: "凍雨",
+  71: "小雪",
+  73: "中雪",
+  75: "大雪",
+  77: "雪粒",
+  80: "陣雨",
+  81: "陣雨",
+  82: "強陣雨",
+  85: "陣雪",
+  86: "強陣雪",
+  95: "雷雨",
+  96: "雷雨",
+  99: "強雷雨",
+};
+
 export default {
   async fetch(request, env) {
     if (request.method !== "POST") {
@@ -36,7 +67,7 @@ async function handleEvent(event, env) {
   const command = extractCommand(event);
   if (!command) return;
 
-  const message = buildReply(command);
+  const message = await buildReply(command);
   await replyToLine(event.replyToken, message, env.LINE_CHANNEL_ACCESS_TOKEN);
 }
 
@@ -57,7 +88,7 @@ function extractCommand(event) {
   return null;
 }
 
-function buildReply(command) {
+async function buildReply(command) {
   if (command === "accounting") {
     return {
       type: "text",
@@ -73,7 +104,61 @@ function buildReply(command) {
     };
   }
 
-  return FLEX_MESSAGES[String(day.day)];
+  const weather = await weatherSummary(day);
+  return withWeather(FLEX_MESSAGES[String(day.day)], weather);
+}
+
+async function weatherSummary(day) {
+  const location = day.weather_location;
+  if (!location) return null;
+
+  const params = new URLSearchParams({
+    latitude: String(location.latitude),
+    longitude: String(location.longitude),
+    daily: "weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max",
+    timezone: day.timezone,
+    start_date: day.date,
+    end_date: day.date,
+  });
+
+  try {
+    const response = await fetch(`https://api.open-meteo.com/v1/forecast?${params.toString()}`);
+    if (!response.ok) return null;
+    const payload = await response.json();
+    const daily = payload.daily || {};
+    const index = (daily.time || []).indexOf(day.date);
+    if (index < 0) return null;
+
+    const code = daily.weather_code?.[index];
+    const tempMin = daily.temperature_2m_min?.[index];
+    const tempMax = daily.temperature_2m_max?.[index];
+    const rain = daily.precipitation_probability_max?.[index];
+    const desc = WEATHER_CODES[code] || `天氣代碼 ${code}`;
+    const tempText = tempMin == null || tempMax == null ? "溫度資料暫無" : `${Math.round(tempMin)}-${Math.round(tempMax)}°C`;
+    const rainText = rain == null ? "降雨機率暫無" : `降雨機率 ${Math.round(rain)}%`;
+    return `${location.name}：${desc}，${tempText}，${rainText}`;
+  } catch {
+    return null;
+  }
+}
+
+function withWeather(message, weather) {
+  if (!weather) return message;
+
+  const copy = JSON.parse(JSON.stringify(message));
+  const contents = copy.contents?.body?.contents;
+  if (!Array.isArray(contents)) return copy;
+
+  contents.splice(3, 0, {
+    type: "box",
+    layout: "vertical",
+    spacing: "xs",
+    contents: [
+      { type: "text", text: "天氣", size: "sm", weight: "bold", wrap: true },
+      { type: "text", text: weather, size: "sm", wrap: true },
+    ],
+  });
+  return copy;
 }
 
 function selectRelativeDay(offsetDays) {
@@ -108,7 +193,7 @@ async function replyToLine(replyToken, message, accessToken) {
     },
     body: JSON.stringify({
       replyToken,
-      messages: [message],
+      messages: Array.isArray(message) ? message : [message],
     }),
   });
 

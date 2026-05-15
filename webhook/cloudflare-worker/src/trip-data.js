@@ -35,6 +35,11 @@ export const ACTIVE_TRIP = {
       "date": "2026-05-18",
       "weekday": "一",
       "timezone": "Asia/Taipei",
+      "weather_location": {
+        "name": "桃園",
+        "latitude": 25.0777,
+        "longitude": 121.2328
+      },
       "route": "台北／伊斯坦堡",
       "sights": [],
       "activities": [
@@ -60,6 +65,11 @@ export const ACTIVE_TRIP = {
       "date": "2026-05-19",
       "weekday": "二",
       "timezone": "Europe/Istanbul",
+      "weather_location": {
+        "name": "卡帕多奇亞",
+        "latitude": 38.6431,
+        "longitude": 34.8283
+      },
       "route": "伊斯坦堡／安卡拉－卡帕多奇亞",
       "sights": [
         {
@@ -101,6 +111,11 @@ export const ACTIVE_TRIP = {
       "date": "2026-05-20",
       "weekday": "三",
       "timezone": "Europe/Istanbul",
+      "weather_location": {
+        "name": "卡帕多奇亞",
+        "latitude": 38.6431,
+        "longitude": 34.8283
+      },
       "route": "卡帕多奇亞",
       "sights": [
         {
@@ -152,6 +167,11 @@ export const ACTIVE_TRIP = {
       "date": "2026-05-21",
       "weekday": "四",
       "timezone": "Europe/Istanbul",
+      "weather_location": {
+        "name": "孔亞",
+        "latitude": 37.8746,
+        "longitude": 32.4932
+      },
       "route": "卡帕多奇亞－孔亞",
       "sights": [
         {
@@ -196,6 +216,11 @@ export const ACTIVE_TRIP = {
       "date": "2026-05-22",
       "weekday": "五",
       "timezone": "Europe/Istanbul",
+      "weather_location": {
+        "name": "安塔利亞",
+        "latitude": 36.8969,
+        "longitude": 30.7133
+      },
       "route": "孔亞－安塔利亞",
       "sights": [
         {
@@ -242,6 +267,11 @@ export const ACTIVE_TRIP = {
       "date": "2026-05-23",
       "weekday": "六",
       "timezone": "Europe/Istanbul",
+      "weather_location": {
+        "name": "巴穆卡雷",
+        "latitude": 37.9137,
+        "longitude": 29.1187
+      },
       "route": "安塔利亞－巴穆卡雷(棉堡)",
       "sights": [
         {
@@ -278,6 +308,11 @@ export const ACTIVE_TRIP = {
       "date": "2026-05-24",
       "weekday": "日",
       "timezone": "Europe/Istanbul",
+      "weather_location": {
+        "name": "庫沙達西",
+        "latitude": 37.8579,
+        "longitude": 27.261
+      },
       "route": "巴穆卡雷－艾菲索斯－庫沙達西",
       "sights": [
         {
@@ -324,6 +359,11 @@ export const ACTIVE_TRIP = {
       "date": "2026-05-25",
       "weekday": "一",
       "timezone": "Europe/Istanbul",
+      "weather_location": {
+        "name": "伊茲密爾",
+        "latitude": 38.4237,
+        "longitude": 27.1428
+      },
       "route": "庫沙達西－伊茲米爾／伊斯坦堡",
       "sights": [
         {
@@ -361,6 +401,11 @@ export const ACTIVE_TRIP = {
       "date": "2026-05-26",
       "weekday": "二",
       "timezone": "Europe/Istanbul",
+      "weather_location": {
+        "name": "伊斯坦堡",
+        "latitude": 41.0082,
+        "longitude": 28.9784
+      },
       "route": "伊斯坦堡",
       "sights": [
         {
@@ -414,6 +459,11 @@ export const ACTIVE_TRIP = {
       "date": "2026-05-27",
       "weekday": "三",
       "timezone": "Europe/Istanbul",
+      "weather_location": {
+        "name": "伊斯坦堡",
+        "latitude": 41.0082,
+        "longitude": 28.9784
+      },
       "route": "伊斯坦堡",
       "sights": [
         {
@@ -453,6 +503,11 @@ export const ACTIVE_TRIP = {
       "date": "2026-05-28",
       "weekday": "四",
       "timezone": "Europe/Istanbul",
+      "weather_location": {
+        "name": "伊斯坦堡",
+        "latitude": 41.0082,
+        "longitude": 28.9784
+      },
       "route": "伊斯坦堡／台北",
       "sights": [
         {
@@ -483,6 +538,11 @@ export const ACTIVE_TRIP = {
       "date": "2026-05-29",
       "weekday": "五",
       "timezone": "Asia/Taipei",
+      "weather_location": {
+        "name": "台北",
+        "latitude": 25.033,
+        "longitude": 121.5654
+      },
       "route": "台北",
       "sights": [],
       "activities": [

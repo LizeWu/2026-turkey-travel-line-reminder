@@ -9,6 +9,7 @@
 - The next major task is LINE setup and GitHub Secrets setup.
 - LINE setup is now complete.
 - Manual GitHub Actions push tests succeeded for Day 2, Day 3, and Day 8.
+- Weather forecast integration has been added for scheduled itinerary pushes and Rich Menu itinerary replies.
 
 ## Confirmed Product Decisions
 
@@ -164,7 +165,7 @@ Likely next architecture:
 
 ### Weather Forecast
 
-Weather can be added to daily itinerary messages, but it should be treated as a live external data feature.
+Weather has been added to daily itinerary messages as a live external data feature.
 
 Recommended source for this private/non-commercial project:
 
@@ -175,10 +176,12 @@ Recommended source for this private/non-commercial project:
 
 Implementation approach:
 
-- Add coordinates for each day or major city.
-- At send time, fetch forecast data for that date and location.
+- Each itinerary day now has `weather_location` with `name`, `latitude`, and `longitude`.
+- At send time, `send_line_reminder.py` fetches forecast data for that date and location.
+- The Cloudflare Worker also fetches weather when replying to `今日行程` or `明日行程`.
 - Include a compact line in the itinerary, such as:
   - `天氣：晴時多雲，15-24°C，降雨機率 20%`
+- If the weather API fails, the itinerary still sends without the weather block.
 
 ### Travel Accounting Book
 

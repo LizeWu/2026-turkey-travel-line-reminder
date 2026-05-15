@@ -14,7 +14,7 @@
 | --- | --- |
 | `config.json` | 指定目前啟用中的旅程資料檔，以及生成檔案輸出資料夾。 |
 | `trips/2026-05-turkey.json` | 目前啟用中的土耳其旅程資料庫：日期、路線、景點、活動、拉車時間、餐食、飯店、地圖連結與通知設定。 |
-| `send_line_reminder.py` | 主要腳本：產生 LINE Flex Message、發送前一晚行程提醒，以及發送早安訊息。 |
+| `send_line_reminder.py` | 主要腳本：產生 LINE Flex Message、發送前一晚行程提醒、查詢天氣，以及發送早安訊息。 |
 | `generated/line_flex_messages.json` | 已產生的 LINE Flex Message JSON，用於行程提醒。 |
 | `generated/line_message_previews.md` | 12 天行程提醒的純文字預覽，方便人工檢查。 |
 
@@ -30,6 +30,7 @@
 | File | 用途 |
 | --- | --- |
 | `docs/rich-menu-webhook.md` | Rich Menu 與 webhook 的設計、部署步驟與三個按鈕規格。 |
+| `docs/weather-forecast.md` | 天氣預報功能說明：資料來源、行程欄位、顯示格式與限制。 |
 | `webhook/cloudflare-worker/src/index.js` | Cloudflare Worker webhook 主程式，處理今日行程、明日行程、旅行記帳本指令。 |
 | `webhook/cloudflare-worker/src/trip-data.js` | 由目前啟用旅程與 Flex Message 產生的 Worker 內嵌資料。 |
 | `webhook/cloudflare-worker/wrangler.toml` | Cloudflare Worker 部署設定。 |

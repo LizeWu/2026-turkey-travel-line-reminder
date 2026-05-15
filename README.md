@@ -12,7 +12,7 @@ For a quick list of files and their purposes, see `FILE_INDEX.md`.
 - `trips/2026-05-turkey.json`: itinerary data and Google Maps links.
 - `generated/line_flex_messages.json`: generated LINE Flex Message payloads.
 - `generated/line_message_previews.md`: readable 12-day preview.
-- `send_line_reminder.py`: script to build previews or send LINE reminders.
+- `send_line_reminder.py`: script to build previews, fetch weather, or send LINE reminders.
 - `.github/workflows/send-travel-reminder.yml`: GitHub Actions schedule.
 - `.github/workflows/send-morning-greeting.yml`: GitHub Actions morning greeting schedule.
 - `PROJECT_HANDOFF.md`: current decisions, status, and next steps.
@@ -25,6 +25,8 @@ python send_line_reminder.py --build
 python send_line_reminder.py --day 3 --dry-run
 python send_line_reminder.py --mode greeting --day 3 --dry-run
 ```
+
+Weather forecast notes are in `docs/weather-forecast.md`.
 
 ## GitHub Secrets
 

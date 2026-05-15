@@ -4,6 +4,7 @@ import json
 import os
 import sys
 import urllib.error
+import urllib.parse
 import urllib.request
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -12,6 +13,37 @@ from zoneinfo import ZoneInfo
 
 ROOT = Path(__file__).resolve().parent
 CONFIG_PATH = ROOT / "config.json"
+
+WEATHER_CODES = {
+    0: "晴朗",
+    1: "大致晴朗",
+    2: "局部多雲",
+    3: "陰天",
+    45: "霧",
+    48: "霧凇",
+    51: "毛毛雨",
+    53: "毛毛雨",
+    55: "毛毛雨",
+    56: "凍毛毛雨",
+    57: "凍毛毛雨",
+    61: "小雨",
+    63: "中雨",
+    65: "大雨",
+    66: "凍雨",
+    67: "凍雨",
+    71: "小雪",
+    73: "中雪",
+    75: "大雪",
+    77: "雪粒",
+    80: "陣雨",
+    81: "陣雨",
+    82: "強陣雨",
+    85: "陣雪",
+    86: "強陣雪",
+    95: "雷雨",
+    96: "雷雨",
+    99: "強雷雨",
+}
 
 
 def load_config():
@@ -63,12 +95,53 @@ def section(title, items):
     return {"type": "box", "layout": "vertical", "spacing": "xs", "contents": contents}
 
 
-def build_flex(day):
+def weather_summary(day):
+    location = day.get("weather_location")
+    if not location:
+        return None
+
+    params = {
+        "latitude": location["latitude"],
+        "longitude": location["longitude"],
+        "daily": "weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max",
+        "timezone": day["timezone"],
+        "start_date": day["date"],
+        "end_date": day["date"],
+    }
+    url = "https://api.open-meteo.com/v1/forecast?" + urllib.parse.urlencode(params)
+    request = urllib.request.Request(url, headers={"User-Agent": "lize-tour-bot/1.0"})
+    try:
+        with urllib.request.urlopen(request, timeout=20) as response:
+            payload = json.loads(response.read().decode("utf-8"))
+    except (urllib.error.URLError, TimeoutError, json.JSONDecodeError, KeyError, IndexError):
+        return None
+
+    daily = payload.get("daily", {})
+    times = daily.get("time", [])
+    if day["date"] not in times:
+        return None
+
+    index = times.index(day["date"])
+    code = daily.get("weather_code", [None])[index]
+    temp_min = daily.get("temperature_2m_min", [None])[index]
+    temp_max = daily.get("temperature_2m_max", [None])[index]
+    rain = daily.get("precipitation_probability_max", [None])[index]
+
+    desc = WEATHER_CODES.get(code, f"天氣代碼 {code}")
+    temp_text = "溫度資料暫無" if temp_min is None or temp_max is None else f"{round(temp_min)}-{round(temp_max)}°C"
+    rain_text = "降雨機率暫無" if rain is None else f"降雨機率 {round(rain)}%"
+    return f"{location['name']}：{desc}，{temp_text}，{rain_text}"
+
+
+def build_flex(day, weather=None):
     body = [
         text_block(f"Day {day['day']} / {day['date']} ({day['weekday']})", "md", "bold"),
         text_block(day["route"], "lg", "bold"),
         {"type": "separator", "margin": "md"},
     ]
+
+    if weather:
+        body.append(section("天氣", [text_block(weather)]))
 
     sight_items = []
     for index, sight in enumerate(day.get("sights", []), start=1):
@@ -122,15 +195,18 @@ def build_flex(day):
     }
 
 
-def build_preview(day):
+def build_preview(day, weather=None):
     lines = [
         f"[土耳其旅行提醒] Day {day['day']} / {day['date']} ({day['weekday']})",
         "",
         "今日路線：",
         day["route"],
         "",
-        "今日景點：",
     ]
+    if weather:
+        lines.extend(["天氣：", weather, ""])
+
+    lines.append("今日景點：")
     if day.get("sights"):
         for i, sight in enumerate(day["sights"], start=1):
             lines.append(f"{i}. {sight['name']}")
@@ -297,9 +373,10 @@ def main():
         return 0
 
     now = datetime.now(ZoneInfo(selected["timezone"]))
-    message = build_greeting(selected, now) if args.mode == "greeting" else messages[str(selected["day"])]
+    weather = None if args.mode == "greeting" else weather_summary(selected)
+    message = build_greeting(selected, now) if args.mode == "greeting" else build_flex(selected, weather)
     if args.dry_run:
-        print(message["text"] if args.mode == "greeting" else build_preview(selected))
+        print(message["text"] if args.mode == "greeting" else build_preview(selected, weather))
         return 0
 
     try:
