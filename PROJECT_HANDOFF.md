@@ -83,6 +83,12 @@ Use a button only when the target is clear enough. Examples already treated as u
 - `send_line_reminder.py`
   - Builds previews and sends LINE push messages.
   - Supports `--mode itinerary` and `--mode greeting`.
+- `docs/rich-menu-webhook.md`
+  - Rich Menu and webhook design notes.
+- `webhook/cloudflare-worker/`
+  - Cloudflare Worker scaffold for interactive Rich Menu replies.
+- `tools/build_webhook_data.py`
+  - Generates `webhook/cloudflare-worker/src/trip-data.js` from the active trip and generated Flex messages.
 - `.github/workflows/send-travel-reminder.yml`
   - GitHub Actions schedule for previous-night itinerary reminders.
 - `.github/workflows/send-morning-greeting.yml`
@@ -133,6 +139,12 @@ Requested Rich Menu buttons:
 - 明日行程
 - 旅行記帳本
 
+No extra Rich Menu buttons:
+
+- 全部行程
+- 飯店地圖
+- 說明
+
 Important implementation note:
 
 - A Rich Menu can be created in LINE Official Account Manager or through the Messaging API.
@@ -143,7 +155,12 @@ Likely next architecture:
 
 - Keep GitHub Actions for scheduled push messages.
 - Add a small webhook service for interactive Rich Menu replies.
-- Candidate hosting options: Cloudflare Workers, Render, Railway, Fly.io, or another small HTTPS endpoint.
+- Cloudflare Worker scaffold has been added under `webhook/cloudflare-worker/`.
+- The webhook replies to:
+  - `今日行程`
+  - `明日行程`
+  - `旅行記帳本`
+- `旅行記帳本` currently returns a placeholder until the accounting feature is designed.
 
 ### Weather Forecast
 

@@ -25,6 +25,17 @@
 | `.github/workflows/send-travel-reminder.yml` | 在前一日當地時間 20:00 發送隔天完整行程。 |
 | `.github/workflows/send-morning-greeting.yml` | 在旅行期間每日當地時間 06:30 發送早安訊息。 |
 
+## Rich Menu / Webhook
+
+| File | 用途 |
+| --- | --- |
+| `docs/rich-menu-webhook.md` | Rich Menu 與 webhook 的設計、部署步驟與三個按鈕規格。 |
+| `webhook/cloudflare-worker/src/index.js` | Cloudflare Worker webhook 主程式，處理今日行程、明日行程、旅行記帳本指令。 |
+| `webhook/cloudflare-worker/src/trip-data.js` | 由目前啟用旅程與 Flex Message 產生的 Worker 內嵌資料。 |
+| `webhook/cloudflare-worker/wrangler.toml` | Cloudflare Worker 部署設定。 |
+| `webhook/cloudflare-worker/package.json` | Cloudflare Worker 專案指令與依賴設定。 |
+| `tools/build_webhook_data.py` | 從 `config.json`、啟用旅程與生成檔案產生 Worker 內嵌資料。 |
+
 ## Local Analysis Drafts
 
 這些檔案只供本機分析使用，已被 Git 忽略，不是正式運作必要檔案。

@@ -1,0 +1,13 @@
+{
+  "name": "lize-tour-bot-webhook",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build:data": "python3 ../../tools/build_webhook_data.py",
+    "deploy": "npm run build:data && wrangler deploy"
+  },
+  "devDependencies": {
+    "wrangler": "^4.0.0"
+  }
+}
