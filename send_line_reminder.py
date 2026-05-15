@@ -230,7 +230,12 @@ def main():
 
     try:
         status, body = send_line(message)
-    except (RuntimeError, urllib.error.URLError, urllib.error.HTTPError) as exc:
+    except urllib.error.HTTPError as exc:
+        detail = exc.read().decode("utf-8", errors="replace")
+        print(f"LINE send failed: HTTP {exc.code} {exc.reason}", file=sys.stderr)
+        print(detail, file=sys.stderr)
+        return 1
+    except (RuntimeError, urllib.error.URLError) as exc:
         print(f"LINE send failed: {exc}", file=sys.stderr)
         return 1
     print(f"LINE send status: {status} {body}")
