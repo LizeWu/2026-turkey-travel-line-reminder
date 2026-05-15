@@ -35,6 +35,11 @@
 | `webhook/cloudflare-worker/wrangler.toml` | Cloudflare Worker 部署設定。 |
 | `webhook/cloudflare-worker/package.json` | Cloudflare Worker 專案指令與依賴設定。 |
 | `tools/build_webhook_data.py` | 從 `config.json`、啟用旅程與生成檔案產生 Worker 內嵌資料。 |
+| `docs/rich-menu-setup.md` | Rich Menu 圖片、設定檔與建立方式說明。 |
+| `rich-menu/azuma-rich-menu.png` | LINE Rich Menu 圖片，含三個按鈕與語意圖示。 |
+| `rich-menu/rich-menu.json` | LINE Rich Menu 點擊區域與訊息動作設定。 |
+| `tools/create_rich_menu_assets.py` | 產生 Rich Menu 圖片與 JSON 設定。 |
+| `tools/create_rich_menu.py` | 透過 LINE API 建立 Rich Menu、上傳圖片並設為預設。 |
 
 ## Local Analysis Drafts
 
