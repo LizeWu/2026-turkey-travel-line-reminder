@@ -8,8 +8,10 @@ For a quick list of files and their purposes, see `FILE_INDEX.md`.
 ## Files
 
 - `travel_reminder_data.json`: itinerary data and Google Maps links.
-- `line_flex_messages.json`: generated LINE Flex Message payloads.
-- `line_message_previews.md`: readable 12-day preview.
+- `config.json`: active trip and generated-output settings.
+- `trips/2026-05-turkey.json`: itinerary data and Google Maps links.
+- `generated/line_flex_messages.json`: generated LINE Flex Message payloads.
+- `generated/line_message_previews.md`: readable 12-day preview.
 - `send_line_reminder.py`: script to build previews or send LINE reminders.
 - `.github/workflows/send-travel-reminder.yml`: GitHub Actions schedule.
 - `.github/workflows/send-morning-greeting.yml`: GitHub Actions morning greeting schedule.

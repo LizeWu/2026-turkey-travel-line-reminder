@@ -12,10 +12,11 @@
 
 | File | 用途 |
 | --- | --- |
-| `travel_reminder_data.json` | 主要行程資料庫：日期、路線、景點、活動、拉車時間、餐食、飯店、地圖連結與通知設定。 |
+| `config.json` | 指定目前啟用中的旅程資料檔，以及生成檔案輸出資料夾。 |
+| `trips/2026-05-turkey.json` | 目前啟用中的土耳其旅程資料庫：日期、路線、景點、活動、拉車時間、餐食、飯店、地圖連結與通知設定。 |
 | `send_line_reminder.py` | 主要腳本：產生 LINE Flex Message、發送前一晚行程提醒，以及發送早安訊息。 |
-| `line_flex_messages.json` | 已產生的 LINE Flex Message JSON，用於行程提醒。 |
-| `line_message_previews.md` | 12 天行程提醒的純文字預覽，方便人工檢查。 |
+| `generated/line_flex_messages.json` | 已產生的 LINE Flex Message JSON，用於行程提醒。 |
+| `generated/line_message_previews.md` | 12 天行程提醒的純文字預覽，方便人工檢查。 |
 
 ## GitHub Actions
 

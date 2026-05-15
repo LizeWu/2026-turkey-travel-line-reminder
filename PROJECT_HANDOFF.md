@@ -72,11 +72,13 @@ Use a button only when the target is clear enough. Examples already treated as u
 
 ## Current Files
 
-- `travel_reminder_data.json`
-  - Source itinerary data used by the sender script.
-- `line_flex_messages.json`
+- `config.json`
+  - Points to the active trip data file and generated-output directory.
+- `trips/2026-05-turkey.json`
+  - Active trip source itinerary data used by the sender script.
+- `generated/line_flex_messages.json`
   - Generated LINE Flex Message payloads.
-- `line_message_previews.md`
+- `generated/line_message_previews.md`
   - Human-readable preview for all 12 days.
 - `send_line_reminder.py`
   - Builds previews and sends LINE push messages.
@@ -172,6 +174,26 @@ It needs its own design discussion:
 - Currency conversion: manual rate or live exchange-rate API.
 - Storage: JSON, SQLite, Google Sheets, GitHub file, or cloud database.
 - Output: daily total, category total, trip total, export CSV.
+
+### Multi-Trip Management
+
+The project now uses a multi-trip structure:
+
+- `config.json` selects the active trip.
+- `trips/2026-05-turkey.json` stores the current Turkey trip.
+- Future trips should be added as separate JSON files, for example:
+  - `trips/2026-06-wakayama.json`
+  - `trips/2027-xx-example.json`
+- Generated previews and LINE payloads go under `generated/`.
+
+To switch trips later, update `config.json`:
+
+```json
+{
+  "active_trip": "trips/2026-06-wakayama.json",
+  "generated_dir": "generated"
+}
+```
 
 ## Resume Prompt For A New Codex Chat
 

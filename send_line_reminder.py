@@ -11,14 +11,31 @@ from zoneinfo import ZoneInfo
 
 
 ROOT = Path(__file__).resolve().parent
-DATA_PATH = ROOT / "travel_reminder_data.json"
-FLEX_PATH = ROOT / "line_flex_messages.json"
-PREVIEW_PATH = ROOT / "line_message_previews.md"
+CONFIG_PATH = ROOT / "config.json"
 
 
-def load_data():
-    with DATA_PATH.open(encoding="utf-8") as f:
+def load_config():
+    with CONFIG_PATH.open(encoding="utf-8") as f:
         return json.load(f)
+
+
+def resolve_project_path(path):
+    return (ROOT / path).resolve()
+
+
+def load_data(config):
+    data_path = resolve_project_path(config["active_trip"])
+    with data_path.open(encoding="utf-8") as f:
+        return json.load(f)
+
+
+def generated_paths(config):
+    generated_dir = resolve_project_path(config.get("generated_dir", "generated"))
+    generated_dir.mkdir(parents=True, exist_ok=True)
+    return (
+        generated_dir / "line_flex_messages.json",
+        generated_dir / "line_message_previews.md",
+    )
 
 
 def text_block(text, size="sm", weight=None, wrap=True):
@@ -156,14 +173,15 @@ def build_preview(day):
     return "\n".join(lines)
 
 
-def generate_outputs(data):
+def generate_outputs(data, config):
+    flex_path, preview_path = generated_paths(config)
     messages = {str(day["day"]): build_flex(day) for day in data["daily_itinerary"]}
-    FLEX_PATH.write_text(json.dumps(messages, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    flex_path.write_text(json.dumps(messages, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
 
     previews = ["# LINE 每日提醒預覽", ""]
     for day in data["daily_itinerary"]:
         previews.extend([f"## Day {day['day']}", "", "```text", build_preview(day), "```", ""])
-    PREVIEW_PATH.write_text("\n".join(previews), encoding="utf-8")
+    preview_path.write_text("\n".join(previews), encoding="utf-8")
     return messages
 
 
@@ -262,10 +280,12 @@ def main():
     parser.add_argument("--date", help="Send or preview a specific date in YYYY-MM-DD.")
     args = parser.parse_args()
 
-    data = load_data()
-    messages = generate_outputs(data)
+    config = load_config()
+    data = load_data(config)
+    messages = generate_outputs(data, config)
     if args.build:
-        print(f"Generated {FLEX_PATH.name} and {PREVIEW_PATH.name}")
+        flex_path, preview_path = generated_paths(config)
+        print(f"Generated {flex_path} and {preview_path}")
         return 0
 
     if args.mode == "greeting":
