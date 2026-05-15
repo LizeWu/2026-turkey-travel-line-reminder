@@ -170,7 +170,9 @@ def generate_outputs(data):
 def is_due(day, send_time_local):
     hour, minute = [int(part) for part in send_time_local.split(":", 1)]
     now = datetime.now(ZoneInfo(day["timezone"]))
-    return now.date().isoformat() == day["date"] and now.time().hour == hour and now.time().minute < 30
+    target_minutes = hour * 60 + minute
+    now_minutes = now.time().hour * 60 + now.time().minute
+    return now.date().isoformat() == day["date"] and target_minutes <= now_minutes < target_minutes + 120
 
 
 def select_day(data, day=None, date=None):
