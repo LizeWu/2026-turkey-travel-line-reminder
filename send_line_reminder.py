@@ -5,7 +5,7 @@ import os
 import sys
 import urllib.error
 import urllib.request
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
@@ -167,12 +167,21 @@ def generate_outputs(data):
     return messages
 
 
-def is_due(day, send_time_local):
+def is_due(day, reminder_timezone, send_time_local, send_days_before):
     hour, minute = [int(part) for part in send_time_local.split(":", 1)]
-    now = datetime.now(ZoneInfo(day["timezone"]))
+    now = datetime.now(ZoneInfo(reminder_timezone))
+    reminder_date = (
+        datetime.fromisoformat(day["date"]).date() - timedelta(days=send_days_before)
+    ).isoformat()
     target_minutes = hour * 60 + minute
     now_minutes = now.time().hour * 60 + now.time().minute
-    return now.date().isoformat() == day["date"] and target_minutes <= now_minutes < target_minutes + 120
+    return now.date().isoformat() == reminder_date and target_minutes <= now_minutes < target_minutes + 120
+
+
+def reminder_timezone_for_day(itinerary, index):
+    if index > 0:
+        return itinerary[index - 1]["timezone"]
+    return itinerary[index]["timezone"]
 
 
 def select_day(data, day=None, date=None):
@@ -181,10 +190,14 @@ def select_day(data, day=None, date=None):
     if date is not None:
         return next((item for item in data["daily_itinerary"] if item["date"] == date), None)
 
-    send_time_local = data["trip"]["notification"]["send_time_local"]
+    notification = data["trip"]["notification"]
+    send_time_local = notification["send_time_local"]
+    send_days_before = int(notification.get("send_days_before", 0))
     today_candidates = []
-    for item in data["daily_itinerary"]:
-        if is_due(item, send_time_local):
+    itinerary = data["daily_itinerary"]
+    for index, item in enumerate(itinerary):
+        reminder_timezone = reminder_timezone_for_day(itinerary, index)
+        if is_due(item, reminder_timezone, send_time_local, send_days_before):
             today_candidates.append(item)
     return today_candidates[0] if today_candidates else None
 

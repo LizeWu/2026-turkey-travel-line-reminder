@@ -18,11 +18,16 @@
 - Timezone behavior: automatic per itinerary day.
   - Taiwan days use `Asia/Taipei`.
   - Turkey travel days use `Europe/Istanbul`.
-- Default send time: 07:00 local time for that itinerary day.
-- GitHub Actions runs two UTC schedules so it can cover Taiwan and Turkey local 07:00:
-  - `23:00 UTC` covers `07:00 Asia/Taipei`.
-  - `04:00 UTC` covers `07:00 Europe/Istanbul`.
-- The sender script accepts a 2-hour local delivery window from 07:00 to 08:59 to tolerate GitHub Actions schedule delays.
+- Default send time: 20:00 local time on the previous day.
+- The reminder sends the next day's itinerary.
+- Timezone behavior for previous-night reminders:
+  - Day 1 uses `Asia/Taipei` on 2026-05-17 at 20:00.
+  - Day 2 uses Day 1's timezone, `Asia/Taipei`, on 2026-05-18 at 20:00.
+  - Day 3 onward uses the previous itinerary day's timezone.
+- GitHub Actions runs two UTC schedules so it can cover Taiwan and Turkey local 20:00:
+  - `12:00 UTC` covers `20:00 Asia/Taipei`.
+  - `17:00 UTC` covers `20:00 Europe/Istanbul`.
+- The sender script accepts a 2-hour local delivery window from 20:00 to 21:59 to tolerate GitHub Actions schedule delays.
 - Reminder type: daily itinerary reminder.
 - Daily reminder does not include departure time.
   - The user may later input departure time through LINE, but this is not implemented yet.
