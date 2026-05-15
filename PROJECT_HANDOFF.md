@@ -29,10 +29,18 @@
   - `17:00 UTC` covers `20:00 Europe/Istanbul`.
 - The sender script accepts a 2-hour local delivery window from 20:00 to 21:59 to tolerate GitHub Actions schedule delays.
 - Reminder type: daily itinerary reminder.
+- Morning greeting is enabled during travel dates.
+  - Default send time: 06:30 local time on the itinerary day.
+  - `22:30 UTC` covers `06:30 Asia/Taipei`.
+  - `03:30 UTC` covers `06:30 Europe/Istanbul`.
 - Daily reminder does not include departure time.
   - The user may later input departure time through LINE, but this is not implemented yet.
 - Dietary preferences and Morning Call are not included.
 - The user confirmed participation in the hot air balloon activity.
+- The user wants a Rich Menu in the future with:
+  - 今日行程
+  - 明日行程
+  - 旅行記帳本
 
 ## Confirmed Daily LINE Format
 
@@ -72,8 +80,11 @@ Use a button only when the target is clear enough. Examples already treated as u
   - Human-readable preview for all 12 days.
 - `send_line_reminder.py`
   - Builds previews and sends LINE push messages.
+  - Supports `--mode itinerary` and `--mode greeting`.
 - `.github/workflows/send-travel-reminder.yml`
-  - GitHub Actions schedule.
+  - GitHub Actions schedule for previous-night itinerary reminders.
+- `.github/workflows/send-morning-greeting.yml`
+  - GitHub Actions schedule for travel-period morning greetings.
 
 Ignored local analysis files:
 
@@ -89,6 +100,7 @@ These commands were run successfully:
 python send_line_reminder.py --build
 python send_line_reminder.py --day 3 --dry-run
 python send_line_reminder.py --day 8 --dry-run
+python send_line_reminder.py --mode greeting --day 3 --dry-run
 ```
 
 The Python script was also syntax-checked successfully with:
@@ -100,12 +112,66 @@ PYTHONPYCACHEPREFIX=.pycache python3 -m py_compile send_line_reminder.py
 ## Next Steps
 
 1. Keep GitHub Actions enabled.
-2. Before the trip, optionally run one final manual `workflow_dispatch` test.
+2. Before the trip, optionally run one final manual `workflow_dispatch` test for:
+   - `Send travel reminder`
+   - `Send morning greeting`
 3. Do not delete these GitHub repository secrets:
    - `LINE_CHANNEL_ACCESS_TOKEN`
    - `LINE_USER_ID`
 4. Do not rotate the LINE Channel access token unless the GitHub secret is updated afterward.
 5. If a reminder does not arrive, check the latest `Send travel reminder` workflow run.
+
+## Future Features
+
+### Rich Menu
+
+Requested Rich Menu buttons:
+
+- 今日行程
+- 明日行程
+- 旅行記帳本
+
+Important implementation note:
+
+- A Rich Menu can be created in LINE Official Account Manager or through the Messaging API.
+- If buttons should trigger dynamic replies such as today's itinerary, tomorrow's itinerary, or accounting flows, the project needs a webhook endpoint.
+- The current GitHub Actions setup can push scheduled messages, but it cannot receive instant LINE webhook events.
+
+Likely next architecture:
+
+- Keep GitHub Actions for scheduled push messages.
+- Add a small webhook service for interactive Rich Menu replies.
+- Candidate hosting options: Cloudflare Workers, Render, Railway, Fly.io, or another small HTTPS endpoint.
+
+### Weather Forecast
+
+Weather can be added to daily itinerary messages, but it should be treated as a live external data feature.
+
+Recommended source for this private/non-commercial project:
+
+- Open-Meteo Weather Forecast API
+  - No API key required.
+  - Supports global forecast data.
+  - Suitable for private/non-commercial use.
+
+Implementation approach:
+
+- Add coordinates for each day or major city.
+- At send time, fetch forecast data for that date and location.
+- Include a compact line in the itinerary, such as:
+  - `天氣：晴時多雲，15-24°C，降雨機率 20%`
+
+### Travel Accounting Book
+
+The travel accounting book should be developed as a separate feature.
+
+It needs its own design discussion:
+
+- Input style: LINE text, buttons, or form.
+- Fields: date, item, amount, currency, payer, category, note.
+- Currency conversion: manual rate or live exchange-rate API.
+- Storage: JSON, SQLite, Google Sheets, GitHub file, or cloud database.
+- Output: daily total, category total, trip total, export CSV.
 
 ## Resume Prompt For A New Codex Chat
 

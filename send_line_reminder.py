@@ -167,15 +167,30 @@ def generate_outputs(data):
     return messages
 
 
-def is_due(day, reminder_timezone, send_time_local, send_days_before):
+def build_greeting(day, now):
+    return {
+        "type": "text",
+        "text": (
+            f"早安，今天是 {day['date'].replace('-', '/')}（{day['weekday']}） "
+            f"{now.strftime('%H:%M')}\n"
+            f"阿珠媽提醒你：今天是土耳其之旅 Day {day['day']}。"
+        ),
+    }
+
+
+def is_time_window(now, send_time_local, window_minutes=120):
     hour, minute = [int(part) for part in send_time_local.split(":", 1)]
+    target_minutes = hour * 60 + minute
+    now_minutes = now.time().hour * 60 + now.time().minute
+    return target_minutes <= now_minutes < target_minutes + window_minutes
+
+
+def is_due(day, reminder_timezone, send_time_local, send_days_before):
     now = datetime.now(ZoneInfo(reminder_timezone))
     reminder_date = (
         datetime.fromisoformat(day["date"]).date() - timedelta(days=send_days_before)
     ).isoformat()
-    target_minutes = hour * 60 + minute
-    now_minutes = now.time().hour * 60 + now.time().minute
-    return now.date().isoformat() == reminder_date and target_minutes <= now_minutes < target_minutes + 120
+    return now.date().isoformat() == reminder_date and is_time_window(now, send_time_local)
 
 
 def reminder_timezone_for_day(itinerary, index):
@@ -202,6 +217,20 @@ def select_day(data, day=None, date=None):
     return today_candidates[0] if today_candidates else None
 
 
+def select_greeting_day(data, day=None, date=None):
+    if day is not None:
+        return next((item for item in data["daily_itinerary"] if item["day"] == day), None)
+    if date is not None:
+        return next((item for item in data["daily_itinerary"] if item["date"] == date), None)
+
+    send_time_local = data["trip"]["notification"]["morning_greeting_time_local"]
+    for item in data["daily_itinerary"]:
+        now = datetime.now(ZoneInfo(item["timezone"]))
+        if now.date().isoformat() == item["date"] and is_time_window(now, send_time_local):
+            return item
+    return None
+
+
 def send_line(message):
     token = os.environ.get("LINE_CHANNEL_ACCESS_TOKEN")
     user_id = os.environ.get("LINE_USER_ID")
@@ -223,6 +252,12 @@ def main():
     parser = argparse.ArgumentParser(description="Build or send Turkey trip LINE reminders.")
     parser.add_argument("--build", action="store_true", help="Generate line_flex_messages.json and previews.")
     parser.add_argument("--dry-run", action="store_true", help="Print selected message preview without sending.")
+    parser.add_argument(
+        "--mode",
+        choices=["itinerary", "greeting"],
+        default="itinerary",
+        help="Message mode to send or preview.",
+    )
     parser.add_argument("--day", type=int, help="Send or preview a specific day number.")
     parser.add_argument("--date", help="Send or preview a specific date in YYYY-MM-DD.")
     args = parser.parse_args()
@@ -233,14 +268,18 @@ def main():
         print(f"Generated {FLEX_PATH.name} and {PREVIEW_PATH.name}")
         return 0
 
-    selected = select_day(data, args.day, args.date)
+    if args.mode == "greeting":
+        selected = select_greeting_day(data, args.day, args.date)
+    else:
+        selected = select_day(data, args.day, args.date)
     if not selected:
         print("No itinerary matched today/day/date; nothing to send.")
         return 0
 
-    message = messages[str(selected["day"])]
+    now = datetime.now(ZoneInfo(selected["timezone"]))
+    message = build_greeting(selected, now) if args.mode == "greeting" else messages[str(selected["day"])]
     if args.dry_run:
-        print(build_preview(selected))
+        print(message["text"] if args.mode == "greeting" else build_preview(selected))
         return 0
 
     try:

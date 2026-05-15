@@ -11,6 +11,7 @@
       "message_type": "daily_itinerary",
       "send_time_local": "20:00",
       "send_days_before": 1,
+      "morning_greeting_time_local": "06:30",
       "timezone_mode": "auto",
       "default_timezone": "Asia/Taipei",
       "destination_timezone": "Europe/Istanbul"
