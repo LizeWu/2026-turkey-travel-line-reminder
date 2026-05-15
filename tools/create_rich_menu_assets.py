@@ -11,12 +11,22 @@ IMAGE_PATH = OUT_DIR / "azuma-rich-menu.png"
 CONFIG_PATH = OUT_DIR / "rich-menu.json"
 
 
-def load_font(size):
-    candidates = [
-        "/System/Library/Fonts/PingFang.ttc",
-        "/System/Library/Fonts/STHeiti Light.ttc",
-        "/Library/Fonts/Arial Unicode.ttf",
-    ]
+def load_font(size, weight="regular"):
+    candidates = []
+    if weight == "semibold":
+        candidates.extend(
+            [
+                "/System/Library/Fonts/STHeiti Medium.ttc",
+                "/System/Library/Fonts/ヒラギノ角ゴシック W6.ttc",
+            ]
+        )
+    candidates.extend(
+        [
+            "/System/Library/Fonts/PingFang.ttc",
+            "/System/Library/Fonts/STHeiti Light.ttc",
+            "/Library/Fonts/Arial Unicode.ttf",
+        ]
+    )
     for candidate in candidates:
         path = Path(candidate)
         if path.exists():
@@ -32,6 +42,12 @@ def centered_text(draw, box, text, font, fill):
     x = left + ((right - left) - width) / 2
     y = top + ((bottom - top) - height) / 2 - 6
     draw.text((x, y), text, font=font, fill=fill)
+
+
+def draw_icon_background(draw, center, size, color):
+    x, y = center
+    radius = size / 2
+    draw.ellipse((x - radius, y - radius, x + radius, y + radius), fill=color)
 
 
 def draw_calendar_check(draw, center, size, color):
@@ -111,8 +127,8 @@ def create_image():
     image = Image.new("RGB", (width, height), "#f8faf8")
     draw = ImageDraw.Draw(image)
 
-    title_font = load_font(64)
-    label_font = load_font(150)
+    title_font = load_font(64, weight="semibold")
+    label_font = load_font(133, weight="semibold")
 
     draw.rectangle((0, 0, width, 150), fill="#235347")
     centered_text(draw, (0, 0, width, 150), "阿珠媽旅行提醒", title_font, "#ffffff")
@@ -134,7 +150,9 @@ def create_image():
         draw.rectangle((left, section_top, right, section_top + 10), fill=accent[index])
         if index > 0:
             draw.line((left, section_top, left, height), fill="#d0d7de", width=4)
-        icon_drawer(draw, ((left + right) / 2, section_top + 230), 170, accent[index])
+        icon_center = ((left + right) / 2, section_top + 230)
+        draw_icon_background(draw, icon_center, 250, accent[index])
+        icon_drawer(draw, icon_center, 130, "#ffffff")
         centered_text(draw, (left, section_top + 350, right, section_top + 640), label, label_font, "#1f2933")
 
     image.save(IMAGE_PATH, format="PNG")
