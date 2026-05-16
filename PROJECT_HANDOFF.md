@@ -3,7 +3,7 @@
 ## Current Status
 
 - GitHub repo: `https://github.com/LizeWu/2026-turkey-travel-line-reminder`
-- Date of latest handoff update: 2026-05-15.
+- Date of latest handoff update: 2026-05-16.
 - The initial project has already been pushed to GitHub.
 - The trip PDF has been converted into structured reminder data.
 - The 12-day LINE message preview has been generated and confirmed by the user.
@@ -20,7 +20,12 @@
   - `TRIP_ID=2026-05-turkey`
 - Rich Menu `旅行記帳本` has been changed from a text-message action to a LIFF URL action.
 - The LIFF accounting page opens successfully on the user's phone.
-- A first test expense was added successfully and appears in the today's list.
+- The accounting book has been refined into three LIFF tabs: `我要記帳`, `消費項目`, and `統計`.
+- The accounting book now supports manual expense entry with a custom date picker, item grouping, edit/delete icon actions, and currency statistics.
+- AI photo recognition was removed from the accounting book; the Worker code no longer uses `OPENAI_API_KEY`.
+- The LINE Official Account add-friend URL and QR sharing card are ready:
+  - Add-friend URL: `https://lin.ee/tqlXqAmN`
+  - Sharing card: `generated/share-card/azuma-line-share-card.png`
 
 ## Confirmed Product Decisions
 
@@ -94,6 +99,10 @@ Use a button only when the target is clear enough. Examples already treated as u
   - Generated LINE Flex Message payloads.
 - `generated/line_message_previews.md`
   - Human-readable preview for all 12 days.
+- `generated/share-card/azuma-line-share-card.png`
+  - Shareable card for adding `阿珠媽旅行提醒` as a LINE friend.
+- `WORKLOG.md`
+  - Consolidated worklog, sorted by date descending.
 - `send_line_reminder.py`
   - Builds previews and sends LINE push messages.
   - Supports `--mode itinerary` and `--mode greeting`.
@@ -104,7 +113,7 @@ Use a button only when the target is clear enough. Examples already treated as u
 - `tools/build_webhook_data.py`
   - Generates `webhook/cloudflare-worker/src/trip-data.js` from the active trip and generated Flex messages.
 - `webhook/cloudflare-worker/src/accounting-page.js`
-  - LIFF accounting page.
+  - LIFF accounting page with `我要記帳`, `消費項目`, and `統計`.
 - `webhook/cloudflare-worker/migrations/0001_create_expenses.sql`
   - Cloudflare D1 `expenses` table schema.
 - `docs/liff-accounting-setup.md`
@@ -144,17 +153,15 @@ Manual production checks completed:
 - GitHub Actions manual Day 3 itinerary send showed weather and itinerary.
 - LINE Rich Menu `今日行程` / `明日行程` webhook replies work.
 - Cloudflare Worker `/accounting` opens the accounting page.
-- LIFF accounting page can create an expense.
-- The created expense appears in the `今日` list.
+- LIFF accounting page can create, list, edit, and delete expenses.
+- The accounting page groups expenses by date or currency.
+- Currency statistics render as expandable cards.
+- LINE add-friend QR code in `generated/share-card/azuma-line-share-card.png` scans correctly.
 
 ## Next Steps
 
-1. Continue testing the LIFF accounting MVP:
-   - `統計`
-   - `修改最近一筆`
-   - `刪除最近一筆`
-   - Mobile usability.
-2. If the LIFF page works smoothly, update documentation with final user-facing instructions.
+1. Continue polishing the LIFF accounting UI based on phone screenshots.
+2. Confirm whether `OPENAI_API_KEY` should be deleted from Cloudflare Worker secrets.
 3. Keep GitHub Actions enabled.
 4. Before the trip, optionally run one final manual `workflow_dispatch` test for:
    - `Send travel reminder`
@@ -227,17 +234,19 @@ Implementation approach:
 
 ### Travel Accounting Book
 
-The travel accounting book is now moving into the next development phase.
+The travel accounting book is implemented as a LIFF web page opened from Rich Menu.
 
-LIFF MVP design:
+Current LIFF design:
 
 - Input style: LIFF web form opened from Rich Menu.
-- Supported actions: add expense, list today's expenses, show stats, update recent expense, delete recent expense.
+- Tabs: `我要記帳`, `消費項目`, `統計`.
+- Supported actions: add expense, edit/delete any listed expense, group expense items by date or currency, show expandable currency statistics.
+- The add form has a custom date picker with today's date as the default.
 - Currencies shown to the user: 里拉, 台幣, 歐元, 美金.
 - Internal currency codes: TRY, TWD, EUR, USD.
 - Fields: trip id, date, amount, currency code, currency label, currency symbol, category, note, payer id, payer name, chat type, chat id, created/updated/deleted time.
 - Recommended storage: Cloudflare D1, because the user's Mac may be off and the webhook is already on Cloudflare.
-- First output: today's list, currency totals, and category totals.
+- Output: expense item list, date/currency grouping, and currency total cards with expandable item details.
 - Full design notes: `docs/accounting-book.md`.
 - Setup notes: `docs/liff-accounting-setup.md`.
 
@@ -245,8 +254,14 @@ Not in the first version:
 
 - Auto exchange-rate conversion.
 - Split bills.
-- Receipt photo OCR.
+- Receipt/photo AI recognition.
 - CSV export.
+
+Decision made on 2026-05-16:
+
+- AI photo recognition was removed.
+- Users enter expense text manually.
+- `OPENAI_API_KEY` is no longer used by the Worker code.
 
 ### Multi-Trip Management
 
@@ -275,9 +290,9 @@ If continuing in a new Codex conversation, paste this:
 ```text
 請接續 2026-turkey-travel-line-reminder 專案。
 GitHub repo: https://github.com/LizeWu/2026-turkey-travel-line-reminder
-請先讀取 PROJECT_HANDOFF.md、FILE_INDEX.md、docs/liff-accounting-setup.md。
-已完成：旅行資料 JSON、LINE Flex Message、12 天預覽、GitHub Actions、LINE Official Account、Cloudflare Worker webhook、Rich Menu、Open-Meteo 天氣、Cloudflare D1、LINE Login channel、LIFF 記帳本 MVP。
-目前已測試成功：GitHub Actions Day 3 推播含天氣、Rich Menu 今日/明日行程、LIFF 記帳本頁面開啟、新增一筆記帳並出現在今日列表。
-下一步：測試 LIFF 記帳本的統計、修改最近一筆、刪除最近一筆；必要時微調手機 UI。
+請先讀取 PROJECT_HANDOFF.md、FILE_INDEX.md、WORKLOG.md、docs/accounting-book.md、docs/liff-accounting-setup.md。
+已完成：旅行資料 JSON、LINE Flex Message、12 天預覽、GitHub Actions、LINE Official Account、Cloudflare Worker webhook、Rich Menu、Open-Meteo 天氣、Cloudflare D1、LINE Login channel、LIFF 記帳本。
+目前已測試成功：GitHub Actions Day 3 推播含天氣、Rich Menu 今日/明日行程、LIFF 記帳本頁面開啟、手動記帳、消費項目分組、修改/刪除 icon、幣別統計卡片、LINE 加好友 QR 小卡。
+下一步：依手機實際畫面微調 LIFF UI，確認是否刪除 Cloudflare Worker secret `OPENAI_API_KEY`，並準備 commit/push。
 請用簡明步驟帶我操作。
 ```

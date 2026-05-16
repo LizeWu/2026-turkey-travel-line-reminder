@@ -5,8 +5,17 @@
 - `/accounting`：LIFF 記帳本頁面。
 - `/api/accounting/config`：提供 LIFF ID 與旅程資訊。
 - `/api/expenses`：新增與查詢記帳。
-- `/api/expenses/recent`：修改或刪除最近一筆。
+- `/api/expenses/:id`：修改或刪除指定記帳項目。
+- `/api/expenses/recent`：修改或刪除最近一筆，保留作為相容 API；目前 LIFF UI 主要使用指定項目修改/刪除。
 - `/api/expenses/stats`：查詢統計。
+
+目前 LIFF 頁面包含：
+
+- `我要記帳`：手動新增消費，含自訂月曆日期選擇。
+- `消費項目`：依日期或幣別分組，並提供修改/刪除 icon。
+- `統計`：幣別消費統計卡片，可展開查看明細。
+
+已移除 AI 照片辨識，Worker 程式不再使用 `OPENAI_API_KEY`。
 
 ## Cloudflare D1
 
@@ -17,6 +26,13 @@
 binding = "ACCOUNTING_DB"
 database_name = "lize-tour-accounting"
 database_id = "<cloudflare-d1-database-id>"
+```
+
+目前 production D1：
+
+```text
+database_name = "lize-tour-accounting"
+database_id = "10a439ff-7a2c-4056-b2f0-eed34047ebfc"
 ```
 
 套用 migration：
@@ -51,3 +67,24 @@ LINE_CHANNEL_ACCESS_TOKEN="你的 Channel access token" python3 tools/create_ric
 ```
 
 完成後，點 Rich Menu 的 `旅行記帳本` 會直接開啟 LIFF 記帳表單。
+
+## 分享給同行朋友
+
+LINE Official Account：
+
+```text
+阿珠媽旅行提醒
+@435uwhmo
+```
+
+加好友連結：
+
+```text
+https://lin.ee/tqlXqAmN
+```
+
+分享小卡：
+
+```text
+generated/share-card/azuma-line-share-card.png
+```

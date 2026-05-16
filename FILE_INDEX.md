@@ -7,7 +7,7 @@
 | `README.md` | 專案總覽、基本指令，以及必要的 GitHub Secrets。 |
 | `PROJECT_HANDOFF.md` | 目前決策、已完成設定、下一步，以及接續開發備忘。 |
 | `LizeNext.md` | 如果開新 Codex 對話或上下文遺失，可貼上的簡短接續提示。 |
-| `WORKLOG_2026-05-15.md` | 2026-05-15 當日工作紀錄，包含已完成、已測試、重要設定與回家後接續提示。 |
+| `WORKLOG.md` | 依日期遞減整理的工作紀錄，包含已完成、已測試、重要設定與下一步。 |
 
 ## Core Reminder Files
 
@@ -18,6 +18,8 @@
 | `send_line_reminder.py` | 主要腳本：產生 LINE Flex Message、發送前一晚行程提醒、查詢天氣，以及發送早安訊息。 |
 | `generated/line_flex_messages.json` | 已產生的 LINE Flex Message JSON，用於行程提醒。 |
 | `generated/line_message_previews.md` | 12 天行程提醒的純文字預覽，方便人工檢查。 |
+| `generated/share-card/azuma-line-share-card.png` | 阿珠媽 LINE 加好友分享小卡，可直接傳給同行朋友。 |
+| `generated/share-card/azuma-line-share-card.svg` | 分享小卡原始 SVG。 |
 
 ## GitHub Actions
 
@@ -32,10 +34,10 @@
 | --- | --- |
 | `docs/rich-menu-webhook.md` | Rich Menu 與 webhook 的設計、部署步驟與三個按鈕規格。 |
 | `docs/weather-forecast.md` | 天氣預報功能說明：資料來源、行程欄位、顯示格式與限制。 |
-| `docs/accounting-book.md` | 旅行記帳本 MVP 規格：輸入格式、欄位、儲存方式與第一版範圍。 |
+| `docs/accounting-book.md` | 旅行記帳本規格：我要記帳、消費項目、統計、欄位、儲存方式與暫不處理範圍。 |
 | `docs/liff-accounting-setup.md` | LIFF 記帳本的 Cloudflare D1、LINE LIFF 與 Rich Menu 設定步驟。 |
 | `webhook/cloudflare-worker/src/index.js` | Cloudflare Worker webhook 主程式，處理今日行程、明日行程、旅行記帳本指令。 |
-| `webhook/cloudflare-worker/src/accounting-page.js` | LIFF 記帳本頁面，提供新增、今日列表、統計、修改最近一筆與刪除最近一筆。 |
+| `webhook/cloudflare-worker/src/accounting-page.js` | LIFF 記帳本頁面，提供手動記帳、日期選擇、消費項目分組、指定項目修改/刪除與幣別統計。 |
 | `webhook/cloudflare-worker/src/trip-data.js` | 由目前啟用旅程與 Flex Message 產生的 Worker 內嵌資料。 |
 | `webhook/cloudflare-worker/wrangler.toml` | Cloudflare Worker 部署設定。 |
 | `webhook/cloudflare-worker/package.json` | Cloudflare Worker 專案指令與依賴設定。 |

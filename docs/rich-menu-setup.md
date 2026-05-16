@@ -30,6 +30,7 @@ It intentionally does not include:
 | `rich-menu/rich-menu.json` | LINE Rich Menu area/action configuration. |
 | `tools/create_rich_menu_assets.py` | Generates the image and JSON config. |
 | `tools/create_rich_menu.py` | Creates the Rich Menu through LINE API, uploads the image, and sets it as default. |
+| `generated/share-card/azuma-line-share-card.png` | Share card for adding `阿珠媽旅行提醒` as a LINE friend. |
 
 ## Generate Assets
 
@@ -52,3 +53,21 @@ LINE_CHANNEL_ACCESS_TOKEN="..." python3 tools/create_rich_menu.py
 ```
 
 Do not commit the token.
+
+## Friend Sharing Entry
+
+For sharing the bot with travel companions, do not ask people to remember the LINE ID.
+
+Use:
+
+```text
+https://lin.ee/tqlXqAmN
+```
+
+Or send:
+
+```text
+generated/share-card/azuma-line-share-card.png
+```
+
+The QR code in the sharing card was generated from the official LINE add-friend barcode and was verified by phone scan.

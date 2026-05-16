@@ -18,7 +18,7 @@ No extra buttons for:
 | --- | --- |
 | 今日行程 | Sends `今日行程`; webhook replies with today's itinerary. |
 | 明日行程 | Sends `明日行程`; webhook replies with tomorrow's itinerary. |
-| 旅行記帳本 | Sends `旅行記帳本`; webhook replies with a placeholder until accounting is implemented. |
+| 旅行記帳本 | Opens the LIFF accounting book directly through the Rich Menu URI action. |
 
 ## Architecture
 
@@ -27,11 +27,16 @@ Current scheduled push messages stay on GitHub Actions.
 Interactive Rich Menu replies need an HTTPS webhook endpoint. The current scaffold uses Cloudflare Workers:
 
 ```text
-LINE Rich Menu
+LINE Rich Menu 今日/明日行程
   -> sends text/postback command
   -> LINE Webhook URL
   -> Cloudflare Worker
   -> LINE reply API
+
+LINE Rich Menu 旅行記帳本
+  -> opens LIFF URL
+  -> Cloudflare Worker /accounting
+  -> accounting APIs backed by Cloudflare D1
 ```
 
 ## Files
@@ -39,6 +44,7 @@ LINE Rich Menu
 | File | Purpose |
 | --- | --- |
 | `webhook/cloudflare-worker/src/index.js` | Webhook handler for Rich Menu commands. |
+| `webhook/cloudflare-worker/src/accounting-page.js` | LIFF accounting page opened by the Rich Menu accounting button. |
 | `webhook/cloudflare-worker/src/trip-data.js` | Generated active-trip data bundled into the Worker. |
 | `webhook/cloudflare-worker/wrangler.toml` | Cloudflare Worker config. |
 | `tools/build_webhook_data.py` | Generates Worker trip data from `config.json`, active trip JSON, and generated Flex messages. |
@@ -67,3 +73,22 @@ https://<worker-url>/
 6. Enable webhook.
 7. Test by sending `今日行程` to 阿珠媽旅行提醒.
 
+## Friend Sharing Entry
+
+LINE ID:
+
+```text
+@435uwhmo
+```
+
+Add-friend URL:
+
+```text
+https://lin.ee/tqlXqAmN
+```
+
+Share card:
+
+```text
+generated/share-card/azuma-line-share-card.png
+```

@@ -4,6 +4,7 @@ This repository contains a LINE reminder workflow for the 2026 Turkey trip.
 
 For project context and continuation notes, see `PROJECT_HANDOFF.md`.
 For a quick list of files and their purposes, see `FILE_INDEX.md`.
+For daily implementation notes, see `WORKLOG.md`.
 
 ## Files
 
@@ -17,6 +18,14 @@ For a quick list of files and their purposes, see `FILE_INDEX.md`.
 - `.github/workflows/send-morning-greeting.yml`: GitHub Actions morning greeting schedule.
 - `PROJECT_HANDOFF.md`: current decisions, status, and next steps.
 - `FILE_INDEX.md`: quick file/function index.
+- `WORKLOG.md`: date-descending worklog.
+- `generated/share-card/azuma-line-share-card.png`: LINE add-friend sharing card for 阿珠媽旅行提醒.
+
+## LINE Friend Entry
+
+- LINE Official Account: `阿珠媽旅行提醒`
+- LINE ID: `@435uwhmo`
+- Add-friend URL: `https://lin.ee/tqlXqAmN`
 
 ## Local Checks
 

@@ -258,6 +258,18 @@ async function handleApi(request, env, url) {
       return jsonResponse({ expense }, 201);
     }
 
+    const expenseIdMatch = url.pathname.match(/^\/api\/expenses\/(\d+)$/);
+    if (expenseIdMatch && request.method === "PATCH") {
+      const payload = await request.json();
+      const expense = await updateExpense(env, Number(expenseIdMatch[1]), payload);
+      return jsonResponse({ expense });
+    }
+
+    if (expenseIdMatch && request.method === "DELETE") {
+      const expense = await deleteExpense(env, Number(expenseIdMatch[1]));
+      return jsonResponse({ expense });
+    }
+
     if (url.pathname === "/api/expenses/recent" && request.method === "PATCH") {
       const payload = await request.json();
       const expense = await updateRecentExpense(env, payload);
@@ -308,6 +320,11 @@ async function createExpense(env, payload) {
 
 async function updateRecentExpense(env, payload) {
   const recent = await getRecentExpense(env);
+  return updateExpense(env, recent.id, payload);
+}
+
+async function updateExpense(env, id, payload) {
+  const existing = await getEditableExpense(env, id);
   const item = normalizeExpense(env, payload);
   await env.ACCOUNTING_DB.prepare(
     `UPDATE expenses
@@ -325,18 +342,23 @@ async function updateRecentExpense(env, payload) {
       item.payer_id,
       item.payer_name,
       item.created_at,
-      recent.id
+      existing.id
     )
     .run();
-  return getExpense(env, recent.id);
+  return getExpense(env, existing.id);
 }
 
 async function deleteRecentExpense(env) {
   const recent = await getRecentExpense(env);
+  return deleteExpense(env, recent.id);
+}
+
+async function deleteExpense(env, id) {
+  const existing = await getEditableExpense(env, id);
   await env.ACCOUNTING_DB.prepare("UPDATE expenses SET deleted_at = ? WHERE id = ?")
-    .bind(new Date().toISOString(), recent.id)
+    .bind(new Date().toISOString(), existing.id)
     .run();
-  return recent;
+  return existing;
 }
 
 async function getRecentExpense(env) {
@@ -350,6 +372,19 @@ async function getRecentExpense(env) {
     .first();
   if (!expense) {
     throw new Error("目前沒有可修改或刪除的記帳。");
+  }
+  return expense;
+}
+
+async function getEditableExpense(env, id) {
+  const expense = await env.ACCOUNTING_DB.prepare(
+    `SELECT * FROM expenses
+      WHERE id = ? AND trip_id = ? AND deleted_at IS NULL`
+  )
+    .bind(id, tripId(env))
+    .first();
+  if (!expense) {
+    throw new Error("找不到這筆記帳，可能已經刪除。");
   }
   return expense;
 }
@@ -405,7 +440,7 @@ function normalizeExpense(env, payload) {
   const category = String(payload.category || "其他").trim().slice(0, 20) || "其他";
   return {
     trip_id: tripId(env),
-    date: accountingDate(),
+    date: normalizeDate(payload.date),
     amount,
     currency_code: currency.code,
     currency_label: currency.label,
@@ -418,6 +453,14 @@ function normalizeExpense(env, payload) {
     chat_id: String(payload.payerId || "").slice(0, 80),
     created_at: new Date().toISOString(),
   };
+}
+
+function normalizeDate(value) {
+  const date = String(value || "").trim();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+    return date;
+  }
+  return accountingDate();
 }
 
 function currencyInfo(code) {
