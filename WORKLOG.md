@@ -1,5 +1,80 @@
 # Worklog
 
+## 2026-05-17
+
+### 今日完成
+
+- 建立多人記帳第一階段：
+  - `我要記帳`、`消費項目`、`統計` 皆支援 `我的消費` / `團體消費`。
+  - 個人一對一開啟 LIFF 時隱藏 `我的消費` / `團體消費` toggle，固定為個人記帳。
+  - 從 LINE 群組或多人聊天室開啟時顯示 toggle，並預設切到 `團體消費`。
+- 建立群組帳本隔離：
+  - 團體帳本改用 LINE `groupId` / `roomId` 產生 ledger。
+  - 不同 LINE 群組會對應不同團體帳本。
+  - 不是從群組或多人聊天室開啟時，不允許使用團體消費。
+- 新增 D1 migration：
+  - `0002_add_expense_scope.sql`：新增個人/團體消費 scope 與 ledger 欄位。
+  - `0003_add_ledger_members.sql`：新增群組帳本成員表。
+  - `0004_add_split_fields.sql`：新增分帳方式與分帳成員欄位。
+- 調整 LINE 群組呼叫方式：
+  - 新增記帳本呼叫關鍵字：`阿珠`、`阿珠媽`、`珠珠`、`豬豬`、`記帳本`、`記帳`。
+  - 群組中輸入關鍵字後，阿珠媽回覆 LIFF 連結。
+  - `wrangler.toml` 補上 `LINE_LIFF_ID=2010099376-ZFLjEHk4`，避免回覆一般 Worker URL。
+- 調整 LIFF UI：
+  - `消費項目` 控制區拆成兩個區塊：範圍 toggle 與排序/清單卡片。
+  - `我要記帳` 的團體/個人 toggle 移到表單卡片外。
+  - `統計` 套用與 `消費項目` 一致的 toggle。
+  - 移除 `統計` 上方 `幣別消費統計` 標題。
+- 嘗試開發多人分帳第一版：
+  - 團體記帳加入 `分帳成員` 區塊。
+  - 使用複選項目選擇分帳成員。
+  - 團體記帳至少需選一位分帳成員。
+  - 統計頁加入分帳統計雛形：付款、應付、差額。
+- 同步修正文件狀態：
+  - `LizeNext.md` 已改為目前接手用摘要。
+  - `docs/accounting-book.md` 與 `docs/liff-accounting-setup.md` 已標明分帳仍是雛形，尚未穩定完成。
+
+### 今日已測試
+
+- Cloudflare Worker deploy 成功，並確認 variables：
+  - `TRIP_ID`
+  - `LINE_LIFF_ID`
+  - `WORKER_BASE_URL`
+- 遠端 D1 migration 已成功套用至 `0003_add_ledger_members.sql`。
+- `0004_add_split_fields.sql` 已建立，但 remote D1 是否已套用仍需下次確認。
+- LINE Login channel 從 Developing 調整後，朋友可開啟 LIFF。
+- 阿珠媽可被加入 LINE 群組。
+- 群組中輸入 `阿珠` / `珠珠` 可呼叫阿珠媽回覆 LIFF 連結。
+- 從群組 LIFF 開啟後可看到團體消費 UI。
+- 個人一對一使用時，團體消費 toggle 會隱藏。
+
+### 尚未完成 / 已知問題
+
+- 分帳功能尚未調整成功。
+- 目前 `分帳成員` 仍只穩定顯示開啟 LIFF 的使用者本人。
+- 嘗試用 LINE Messaging API 同步群組成員時，畫面診斷顯示：
+  - `群組 context：group`
+  - `成員 1 人`
+  - `LINE 同步 0 人`
+  - `LINE member IDs failed: 400`
+- 因此目前不能依賴 bot 自動抓完整群組成員。
+- 暫定可行規則：
+  - 誰從該 LINE 群組點過 LIFF 記帳本，誰才會進入分帳成員名單。
+  - 但這個流程仍需再確認與優化。
+- 重新開啟 LIFF 後，`統計 > 團體消費` 曾出現資料消失的畫面；已移除前端 `loadingExpenses` 擋板，但仍需後續實測確認。
+
+### 下一步
+
+1. 先穩定群組成員加入分帳名單的流程。
+2. 評估是否改採「手動新增分帳成員暱稱」作為第一版，避免受 LINE 群組成員 API 限制。
+3. 移除或隱藏目前暫時加入的成員同步診斷文字。
+4. 再繼續處理分帳統計：
+   - 付款
+   - 應付
+   - 差額
+   - 誰應該付給誰
+5. 測試穩定後再 commit / push。
+
 ## 2026-05-16
 
 ### 今日完成

@@ -11,9 +11,19 @@
 
 目前 LIFF 頁面包含：
 
-- `我要記帳`：手動新增消費，含自訂月曆日期選擇。
-- `消費項目`：依日期或幣別分組，並提供修改/刪除 icon。
-- `統計`：幣別消費統計卡片，可展開查看明細。
+- `我要記帳`：用 toggle 新增我的消費或團體消費，含自訂月曆日期選擇。
+- `消費項目`：可切換我的消費或團體消費，依日期或幣別分組，並提供修改/刪除 icon。
+- `統計`：可切換我的消費或團體消費，幣別卡片可展開查看明細。
+
+多人記帳第一階段採用群組帳本：
+
+- `個人`：只列出目前 LIFF 使用者自己的消費。
+- `團體`：依 LINE `groupId` 或 `roomId` 建立獨立共享團體消費，並顯示付款人。
+- 若不是從 LINE 群組或多人聊天室開啟，團體帳本會提示需從群組開啟。
+- 團體分帳已完成 UI 與資料欄位雛形，可選擇分帳成員；目前成員需先從該群組開啟過記帳本，才會穩定出現在名單。
+- 曾嘗試透過 LINE Messaging API 自動同步完整群組成員，但目前測試會回傳 `LINE member IDs failed: 400`，暫時不能依賴自動抓完整群組名單。
+- 團體統計已有付款、應付與差額雛形；不同幣別分開計算，但重新開啟 LIFF 後仍需確認資料一致性。
+- 尚未實作指定金額分攤、結算狀態或自動產生誰該轉帳給誰。
 
 已移除 AI 照片辨識，Worker 程式不再使用 `OPENAI_API_KEY`。
 
@@ -40,6 +50,14 @@ database_id = "10a439ff-7a2c-4056-b2f0-eed34047ebfc"
 ```bash
 cd webhook/cloudflare-worker
 npx wrangler d1 migrations apply lize-tour-accounting --remote
+```
+
+若新增多人記帳欄位，部署前請先套用 migration：
+
+```bash
+cd webhook/cloudflare-worker
+npx wrangler d1 migrations apply lize-tour-accounting --remote
+npm run deploy
 ```
 
 ## LINE LIFF

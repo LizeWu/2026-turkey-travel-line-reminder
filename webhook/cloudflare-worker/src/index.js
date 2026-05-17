@@ -4,7 +4,7 @@ import { accountingPage } from "./accounting-page.js";
 const COMMANDS = {
   today: new Set(["今日行程", "今天行程", "today"]),
   tomorrow: new Set(["明日行程", "明天行程", "tomorrow"]),
-  accounting: new Set(["旅行記帳本", "記帳本", "accounting"]),
+  accounting: new Set(["阿珠", "阿珠媽", "珠珠", "豬豬", "記帳本", "記帳", "旅行記帳本", "accounting"]),
 };
 
 const WEATHER_CODES = {
@@ -78,7 +78,7 @@ async function handleEvent(event, env) {
   const command = extractCommand(event);
   if (!command) return;
 
-  const message = await buildReply(command);
+  const message = await buildReply(command, env);
   await replyToLine(event.replyToken, message, env.LINE_CHANNEL_ACCESS_TOKEN);
 }
 
@@ -99,17 +99,20 @@ function extractCommand(event) {
   return null;
 }
 
-async function buildReply(command) {
+async function buildReply(command, env) {
   if (command === "accounting") {
-    const urlText = "請先完成 LIFF 設定後，將 Rich Menu 改成直接開啟記帳本。";
+    const accountingUrl = env.LINE_LIFF_ID
+      ? `https://liff.line.me/${env.LINE_LIFF_ID}`
+      : `${env.WORKER_BASE_URL || "https://lize-tour-bot-webhook.retniw72.workers.dev"}/accounting`;
     return {
       type: "text",
       text: [
-        "旅行記帳本 MVP 已準備中。",
+        "旅行記帳本已開放。",
         "",
-        "之後點這個按鈕會直接開啟表單，可新增、查今日、看統計、修改最近一筆、刪除最近一筆。",
+        "請點下面連結開啟記帳本：",
+        accountingUrl,
         "",
-        urlText,
+        "在群組中開啟時，可使用團體消費與分帳。",
       ].join("\n"),
     };
   }
@@ -249,7 +252,31 @@ async function handleApi(request, env, url) {
 
     if (url.pathname === "/api/expenses" && request.method === "GET") {
       const scope = url.searchParams.get("scope") || "today";
-      return jsonResponse({ expenses: await listExpenses(env, scope) });
+      return jsonResponse({
+        expenses: await listExpenses(env, {
+          scope,
+          expenseScope: url.searchParams.get("expenseScope") || "personal",
+          userId: url.searchParams.get("userId") || "",
+          displayName: url.searchParams.get("displayName") || "",
+          chatType: url.searchParams.get("chatType") || "",
+          groupId: url.searchParams.get("groupId") || "",
+          roomId: url.searchParams.get("roomId") || "",
+        }),
+      });
+    }
+
+    if (url.pathname === "/api/ledger-members" && request.method === "GET") {
+      const result = await listLedgerMembers(env, {
+        userId: url.searchParams.get("userId") || "",
+        displayName: url.searchParams.get("displayName") || "",
+        chatType: url.searchParams.get("chatType") || "",
+        groupId: url.searchParams.get("groupId") || "",
+        roomId: url.searchParams.get("roomId") || "",
+      });
+      return jsonResponse({
+        members: result.members,
+        debug: result.debug,
+      });
     }
 
     if (url.pathname === "/api/expenses" && request.method === "POST") {
@@ -293,11 +320,16 @@ async function handleApi(request, env, url) {
 
 async function createExpense(env, payload) {
   const item = normalizeExpense(env, payload);
+  if (item.expense_scope === "group") {
+    await upsertLedgerMember(env, item);
+  }
   const result = await env.ACCOUNTING_DB.prepare(
     `INSERT INTO expenses (
       trip_id, date, amount, currency_code, currency_label, currency_symbol,
-      category, note, payer_id, payer_name, chat_type, chat_id, created_at
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+      category, note, payer_id, payer_name, chat_type, chat_id,
+      expense_scope, ledger_id, created_by_id, created_by_name,
+      split_method, split_members, created_at
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
   )
     .bind(
       item.trip_id,
@@ -312,6 +344,12 @@ async function createExpense(env, payload) {
       item.payer_name,
       item.chat_type,
       item.chat_id,
+      item.expense_scope,
+      item.ledger_id,
+      item.created_by_id,
+      item.created_by_name,
+      item.split_method,
+      item.split_members,
       item.created_at
     )
     .run();
@@ -326,10 +364,16 @@ async function updateRecentExpense(env, payload) {
 async function updateExpense(env, id, payload) {
   const existing = await getEditableExpense(env, id);
   const item = normalizeExpense(env, payload);
+  if (item.expense_scope === "group") {
+    await upsertLedgerMember(env, item);
+  }
   await env.ACCOUNTING_DB.prepare(
     `UPDATE expenses
       SET amount = ?, currency_code = ?, currency_label = ?, currency_symbol = ?,
-          category = ?, note = ?, payer_id = ?, payer_name = ?, updated_at = ?
+          category = ?, note = ?, payer_id = ?, payer_name = ?,
+          expense_scope = ?, ledger_id = ?, created_by_id = ?, created_by_name = ?,
+          split_method = ?, split_members = ?,
+          updated_at = ?
       WHERE id = ? AND deleted_at IS NULL`
   )
     .bind(
@@ -341,6 +385,12 @@ async function updateExpense(env, id, payload) {
       item.note,
       item.payer_id,
       item.payer_name,
+      item.expense_scope,
+      item.ledger_id,
+      item.created_by_id,
+      item.created_by_name,
+      item.split_method,
+      item.split_members,
       item.created_at,
       existing.id
     )
@@ -393,16 +443,48 @@ async function getExpense(env, id) {
   return env.ACCOUNTING_DB.prepare("SELECT * FROM expenses WHERE id = ?").bind(id).first();
 }
 
-async function listExpenses(env, scope) {
-  const dateFilter = scope === "today" ? "AND date = ?" : "";
+async function listExpenses(env, options = {}) {
+  const scope = options.scope || "today";
+  const expenseScope = normalizeExpenseScope(options.expenseScope);
+  const userId = String(options.userId || "").trim().slice(0, 80);
+  const displayName = String(options.displayName || "").trim().slice(0, 80);
+  const ledger = resolveLedger(env, {
+    expenseScope,
+    payerId: userId,
+    chatType: options.chatType,
+    groupId: options.groupId,
+    roomId: options.roomId,
+  });
+  const filters = ["trip_id = ?", "deleted_at IS NULL", "COALESCE(expense_scope, 'personal') = ?"];
+  const bindings = [tripId(env), expenseScope];
+  if (scope === "today") {
+    filters.push("date = ?");
+    bindings.push(accountingDate());
+  }
+  if (expenseScope === "personal" && userId) {
+    filters.push("payer_id = ?");
+    bindings.push(userId);
+  } else if (expenseScope === "group") {
+    filters.push("ledger_id = ?");
+    bindings.push(ledger.ledger_id);
+    if (userId) {
+      await upsertLedgerMember(env, {
+        trip_id: tripId(env),
+        ledger_id: ledger.ledger_id,
+        chat_type: ledger.chat_type,
+        chat_id: ledger.chat_id,
+        created_by_id: userId,
+        created_by_name: displayName,
+      });
+    }
+  }
   const statement = env.ACCOUNTING_DB.prepare(
     `SELECT * FROM expenses
-      WHERE trip_id = ? AND deleted_at IS NULL ${dateFilter}
+      WHERE ${filters.join(" AND ")}
       ORDER BY created_at DESC, id DESC
       LIMIT 50`
   );
-  const binding = scope === "today" ? statement.bind(tripId(env), accountingDate()) : statement.bind(tripId(env));
-  const result = await binding.all();
+  const result = await statement.bind(...bindings).all();
   return result.results || [];
 }
 
@@ -431,6 +513,46 @@ async function expenseStats(env) {
   };
 }
 
+async function listLedgerMembers(env, options = {}) {
+  const userId = String(options.userId || "").trim().slice(0, 80);
+  const displayName = String(options.displayName || "").trim().slice(0, 80);
+  const ledger = resolveLedger(env, {
+    expenseScope: "group",
+    payerId: userId,
+    chatType: options.chatType,
+    groupId: options.groupId,
+    roomId: options.roomId,
+  });
+  if (userId) {
+    await upsertLedgerMember(env, {
+      trip_id: tripId(env),
+      ledger_id: ledger.ledger_id,
+      chat_type: ledger.chat_type,
+      chat_id: ledger.chat_id,
+      created_by_id: userId,
+      created_by_name: displayName,
+    });
+  }
+  const sync = await syncLineChatMembers(env, ledger);
+  const result = await env.ACCOUNTING_DB.prepare(
+    `SELECT user_id, display_name, role, status, last_seen_at
+      FROM ledger_members
+      WHERE trip_id = ? AND ledger_id = ? AND status = 'active'
+      ORDER BY last_seen_at ASC, id ASC`
+  )
+    .bind(tripId(env), ledger.ledger_id)
+    .all();
+  return {
+    members: result.results || [],
+    debug: {
+      chatType: ledger.chat_type,
+      hasChatId: Boolean(ledger.chat_id),
+      syncedMemberCount: sync.count,
+      syncError: sync.error,
+    },
+  };
+}
+
 function normalizeExpense(env, payload) {
   const amount = Number(payload.amount);
   if (!Number.isFinite(amount) || amount <= 0) {
@@ -438,6 +560,21 @@ function normalizeExpense(env, payload) {
   }
   const currency = currencyInfo(payload.currencyCode);
   const category = String(payload.category || "其他").trim().slice(0, 20) || "其他";
+  const expenseScope = normalizeExpenseScope(payload.expenseScope);
+  const payerId = String(payload.payerId || "").slice(0, 80);
+  const payerName = String(payload.payerName || "").slice(0, 80);
+  const ledger = resolveLedger(env, {
+    expenseScope,
+    payerId,
+    chatType: payload.chatType,
+    groupId: payload.groupId,
+    roomId: payload.roomId,
+  });
+  const split = normalizeSplit(payload, {
+    expenseScope,
+    payerId,
+    payerName,
+  });
   return {
     trip_id: tripId(env),
     date: normalizeDate(payload.date),
@@ -447,12 +584,155 @@ function normalizeExpense(env, payload) {
     currency_symbol: payload.currencySymbol || currency.symbol,
     category,
     note: String(payload.note || "").trim().slice(0, 80),
-    payer_id: String(payload.payerId || "").slice(0, 80),
-    payer_name: String(payload.payerName || "").slice(0, 80),
-    chat_type: "user",
-    chat_id: String(payload.payerId || "").slice(0, 80),
+    payer_id: payerId,
+    payer_name: payerName,
+    chat_type: ledger.chat_type,
+    chat_id: ledger.chat_id,
+    expense_scope: expenseScope,
+    ledger_id: ledger.ledger_id,
+    created_by_id: payerId,
+    created_by_name: payerName,
+    split_method: split.method,
+    split_members: split.members,
     created_at: new Date().toISOString(),
   };
+}
+
+function normalizeSplit(payload, context) {
+  if (context.expenseScope !== "group") {
+    return { method: "none", members: "" };
+  }
+  const rawMembers = Array.isArray(payload.splitMembers) ? payload.splitMembers : [];
+  const members = rawMembers
+    .map((member) => ({
+      userId: String(member.userId || "").trim().slice(0, 80),
+      displayName: String(member.displayName || "").trim().slice(0, 80),
+    }))
+    .filter((member) => member.userId);
+  if (!members.some((member) => member.userId === context.payerId) && context.payerId) {
+    members.push({ userId: context.payerId, displayName: context.payerName });
+  }
+  const unique = new Map();
+  for (const member of members) unique.set(member.userId, member);
+  return {
+    method: "equal",
+    members: JSON.stringify([...unique.values()]),
+  };
+}
+
+function normalizeExpenseScope(value) {
+  return value === "group" ? "group" : "personal";
+}
+
+function resolveLedger(env, options = {}) {
+  const expenseScope = normalizeExpenseScope(options.expenseScope);
+  const payerId = String(options.payerId || "").trim().slice(0, 80);
+  if (expenseScope !== "group") {
+    return {
+      chat_type: "user",
+      chat_id: payerId,
+      ledger_id: `personal:${payerId || "unknown"}`,
+    };
+  }
+
+  const groupId = String(options.groupId || "").trim().slice(0, 120);
+  if (groupId) {
+    return {
+      chat_type: "group",
+      chat_id: groupId,
+      ledger_id: `group:${groupId}`,
+    };
+  }
+
+  const roomId = String(options.roomId || "").trim().slice(0, 120);
+  if (roomId) {
+    return {
+      chat_type: "room",
+      chat_id: roomId,
+      ledger_id: `room:${roomId}`,
+    };
+  }
+
+  throw new Error("團體帳本需要從 LINE 群組或多人聊天室開啟。");
+}
+
+async function upsertLedgerMember(env, item) {
+  if (!item.created_by_id) return;
+  const now = new Date().toISOString();
+  await env.ACCOUNTING_DB.prepare(
+    `INSERT INTO ledger_members (
+      trip_id, ledger_id, chat_type, chat_id, user_id, display_name,
+      role, status, joined_at, last_seen_at
+    ) VALUES (?, ?, ?, ?, ?, ?, 'member', 'active', ?, ?)
+    ON CONFLICT(trip_id, ledger_id, user_id) DO UPDATE SET
+      display_name = excluded.display_name,
+      status = 'active',
+      last_seen_at = excluded.last_seen_at`
+  )
+    .bind(
+      item.trip_id,
+      item.ledger_id,
+      item.chat_type,
+      item.chat_id,
+      item.created_by_id,
+      item.created_by_name,
+      now,
+      now
+    )
+    .run();
+}
+
+async function syncLineChatMembers(env, ledger) {
+  if (!env.LINE_CHANNEL_ACCESS_TOKEN || !["group", "room"].includes(ledger.chat_type)) {
+    return { count: 0, error: "missing-token-or-chat-context" };
+  }
+  try {
+    const memberIds = await fetchLineMemberIds(env, ledger);
+    await Promise.all(memberIds.slice(0, 100).map(async (userId) => {
+      const profile = await fetchLineMemberProfile(env, ledger, userId);
+      await upsertLedgerMember(env, {
+        trip_id: tripId(env),
+        ledger_id: ledger.ledger_id,
+        chat_type: ledger.chat_type,
+        chat_id: ledger.chat_id,
+        created_by_id: userId,
+        created_by_name: profile?.displayName || userId,
+      });
+    }));
+    return { count: memberIds.length, error: "" };
+  } catch (error) {
+    // If LINE member sync is unavailable, keep the members who opened LIFF.
+    return { count: 0, error: error.message || "member-sync-failed" };
+  }
+}
+
+async function fetchLineMemberIds(env, ledger) {
+  const ids = [];
+  let start = "";
+  do {
+    const params = start ? `?start=${encodeURIComponent(start)}` : "";
+    const response = await fetch(`${lineChatBaseUrl(ledger)}/members/ids${params}`, {
+      headers: { Authorization: `Bearer ${env.LINE_CHANNEL_ACCESS_TOKEN}` },
+    });
+    if (!response.ok) throw new Error(`LINE member IDs failed: ${response.status}`);
+    const data = await response.json();
+    ids.push(...(data.memberIds || []));
+    start = data.next || "";
+  } while (start);
+  return ids;
+}
+
+async function fetchLineMemberProfile(env, ledger, userId) {
+  const response = await fetch(`${lineChatBaseUrl(ledger)}/member/${encodeURIComponent(userId)}`, {
+    headers: { Authorization: `Bearer ${env.LINE_CHANNEL_ACCESS_TOKEN}` },
+  });
+  if (!response.ok) return null;
+  return response.json();
+}
+
+function lineChatBaseUrl(ledger) {
+  const type = ledger.chat_type === "room" ? "room" : "group";
+  return `https://api.line.me/v2/bot/${type}/${encodeURIComponent(ledger.chat_id)}`;
 }
 
 function normalizeDate(value) {

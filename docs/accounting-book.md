@@ -16,16 +16,22 @@ LINE Rich Menu → 旅行記帳本 → 開啟 LIFF 頁面
 
 頁面分頁：
 
-- `我要記帳`：手動新增消費，含消費日期、金額、幣別、分類、備註。
-- `消費項目`：列出所有消費，可依日期或幣別切換排序。
-- `統計`：顯示幣別消費統計，每個幣別獨立成卡片。
+- `我要記帳`：手動新增我的消費或團體消費，含消費日期、金額、幣別、分類、備註。
+- `消費項目`：列出我的消費或團體消費，可依日期或幣別切換排序。
+- `統計`：區分我的消費與團體消費，顯示幣別消費統計，每個幣別獨立成卡片。
 
 目前功能：
 
 - 新增記帳。
+- 消費形式支援 `個人` 與 `團體`。
 - 消費日期預設為當日。
 - 使用自訂月曆選擇日期，避免 iOS 原生日期欄位寬度問題。
 - 每筆消費可用 icon 按鈕修改或刪除。
+- 消費項目可切換 `我的消費` / `團體消費`。
+- 我的消費只顯示目前 LIFF 使用者建立的個人消費。
+- 團體消費依 LINE 群組或多人聊天室建立獨立共享流水帳，並標示付款人。
+- 團體分帳已完成 UI 與資料欄位雛形，但尚未穩定上線；目前分帳成員只穩定包含從該群組開啟過 LIFF 的使用者。
+- 團體統計已有付款、應付與差額雛形；不同幣別分開計算，不做匯率換算，但重新開啟 LIFF 後仍需驗證資料一致性。
 - 消費項目可依日期分組，也可切換為依幣別分組。
 - 統計頁以幣別卡片呈現總額。
 - 統計卡片可展開或收合，展開後以有序清單顯示該幣別的消費項目、金額與日期。
@@ -43,10 +49,16 @@ LINE Rich Menu → 旅行記帳本 → 開啟 LIFF 頁面
 | `currency_symbol` | 幣值符號，例如 `₺`、`NT$`、`€`、`US$`。 |
 | `category` | 分類，例如餐食、交通、購物、門票、其他。 |
 | `note` | 備註，例如烤肉、計程車、紀念品。 |
-| `payer_id` | LIFF 取得的 LINE 使用者 ID，未來群組分帳會使用。 |
+| `expense_scope` | 消費形式：`personal` 或 `group`。 |
+| `ledger_id` | 帳本範圍。個人消費為 `personal:<userId>`；團體消費為 `group:<groupId>` 或 `room:<roomId>`。 |
+| `payer_id` | LIFF 取得的 LINE 使用者 ID，用於我的消費與未來分帳。 |
 | `payer_name` | LIFF 取得的 LINE 顯示名稱。 |
-| `chat_type` | 預留欄位：`user` 或 `group`。 |
-| `chat_id` | 預留欄位：個人或群組 ID。 |
+| `created_by_id` | 建立者 LINE 使用者 ID，目前與付款人相同。 |
+| `created_by_name` | 建立者 LINE 顯示名稱，目前與付款人相同。 |
+| `split_method` | 分帳方式雛形，目前團體消費規劃使用 `equal`，個人消費為 `none`。 |
+| `split_members` | 分攤成員 JSON，包含 LINE userId 與 displayName；目前成員來源仍需穩定化。 |
+| `chat_type` | `user`、`group` 或 `room`。 |
+| `chat_id` | 個人 LINE user ID、LINE group ID 或 room ID。 |
 | `created_at` | 記帳時間。 |
 | `updated_at` | 修改時間。 |
 | `deleted_at` | 軟刪除時間。 |
@@ -79,9 +91,34 @@ CREATE TABLE expenses (
   payer_name TEXT,
   chat_type TEXT NOT NULL DEFAULT 'user',
   chat_id TEXT,
+  expense_scope TEXT NOT NULL DEFAULT 'personal',
+  ledger_id TEXT,
+  created_by_id TEXT,
+  created_by_name TEXT,
+  split_method TEXT NOT NULL DEFAULT 'none',
+  split_members TEXT,
   created_at TEXT NOT NULL,
   updated_at TEXT,
   deleted_at TEXT
+);
+```
+
+多人帳本成員表：
+
+```sql
+CREATE TABLE ledger_members (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  trip_id TEXT NOT NULL,
+  ledger_id TEXT NOT NULL,
+  chat_type TEXT NOT NULL,
+  chat_id TEXT NOT NULL,
+  user_id TEXT NOT NULL,
+  display_name TEXT,
+  role TEXT NOT NULL DEFAULT 'member',
+  status TEXT NOT NULL DEFAULT 'active',
+  joined_at TEXT NOT NULL,
+  last_seen_at TEXT NOT NULL,
+  UNIQUE (trip_id, ledger_id, user_id)
 );
 ```
 
@@ -102,6 +139,15 @@ CREATE TABLE expenses (
 #9 購物
 ```
 
+團體消費項目：
+
+```text
+2026/05/16
+
+1. 晚餐       ₺ 800 (里拉)
+#12 餐食｜付款人：Bill
+```
+
 統計：
 
 ```text
@@ -112,10 +158,20 @@ CREATE TABLE expenses (
   2. 2026/05/21｜交通｜₺ 180 (里拉)
 ```
 
+團體統計展開後會顯示付款人：
+
+```text
+1. 2026/05/20｜餐食｜₺ 520 (里拉)｜付款人：Bill
+```
+
+分帳統計目前為雛形，下一步需先穩定分帳成員來源，再確認重開 LIFF 後資料仍一致。
+
 ## 不在第一版處理
 
 - 自動匯率換算。
-- 多人分帳。
+- 自動抓取完整 LINE 群組成員名單。
+- 指定金額分攤、結算狀態、誰該轉帳給誰。
+- LINE id token 強驗證與離開群組後的自動撤權。
 - 發票照片辨識或 AI 圖片辨識。
 - 匯出 CSV。
 
@@ -128,3 +184,6 @@ CREATE TABLE expenses (
 | `webhook/cloudflare-worker/src/accounting-page.js` | LIFF 記帳本頁面。 |
 | `webhook/cloudflare-worker/src/index.js` | 記帳 API、D1 讀寫、統計、指定項目修改與刪除。 |
 | `webhook/cloudflare-worker/migrations/0001_create_expenses.sql` | D1 資料表 migration。 |
+| `webhook/cloudflare-worker/migrations/0002_add_expense_scope.sql` | 新增個人/團體消費 scope 與共享 ledger 欄位。 |
+| `webhook/cloudflare-worker/migrations/0003_add_ledger_members.sql` | 新增群組帳本成員表。 |
+| `webhook/cloudflare-worker/migrations/0004_add_split_fields.sql` | 新增分帳方式與分攤成員欄位。 |

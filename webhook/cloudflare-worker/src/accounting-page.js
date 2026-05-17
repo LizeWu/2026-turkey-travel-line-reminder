@@ -210,6 +210,114 @@ export function accountingPage() {
       gap: 8px;
       margin-bottom: 12px;
     }
+    .control-card {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 12px;
+      margin-bottom: 12px;
+    }
+    .scope-card {
+      background: transparent;
+      border: 0;
+      border-radius: 0;
+      padding: 0;
+    }
+    .scope-card .segmented {
+      display: flex;
+      gap: 0;
+      overflow: hidden;
+      border: 1px solid var(--green);
+      border-radius: 8px;
+      background: white;
+      margin-bottom: 0;
+    }
+    .scope-card .segmented button {
+      flex: 1 1 0;
+      border: 0;
+      border-radius: 0;
+      background: white;
+      color: var(--ink);
+    }
+    .scope-card .segmented button + button {
+      border-left: 1px solid var(--green);
+    }
+    .scope-card .segmented button.active {
+      background: var(--green);
+      color: white;
+    }
+    .list-card {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 12px;
+      margin-bottom: 12px;
+    }
+    .list-card .sort-segmented {
+      margin-bottom: 14px;
+    }
+    .sort-segmented {
+      display: flex;
+      gap: 8px;
+    }
+    .sort-segmented button {
+      display: inline-flex;
+      flex: 1 1 0;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      min-height: 38px;
+      border-radius: 999px;
+      color: var(--green);
+      background: #f8faf8;
+      font-size: .9rem;
+    }
+    .sort-segmented button.active {
+      border-color: var(--green);
+      background: var(--green);
+      color: white;
+    }
+    .button-icon {
+      width: 16px;
+      height: 16px;
+      flex: 0 0 auto;
+      stroke: currentColor;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      fill: none;
+      pointer-events: none;
+    }
+    .split-panel {
+      grid-column: 1 / -1;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 10px;
+      background: #f8faf8;
+    }
+    .split-title {
+      margin: 0 0 8px;
+      color: var(--green);
+      font-weight: 800;
+    }
+    .member-list {
+      display: grid;
+      gap: 8px;
+    }
+    .member-option {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin: 0;
+      color: var(--ink);
+      font-size: .92rem;
+      font-weight: 700;
+    }
+    .member-option input {
+      width: auto;
+      min-height: auto;
+      margin: 0;
+    }
     .date-group {
       background: var(--panel);
       border: 1px solid var(--line);
@@ -217,8 +325,19 @@ export function accountingPage() {
       padding: 14px;
       margin-bottom: 12px;
     }
-    .date-group + .date-group {
+    .list-card .date-group {
+      background: transparent;
+      border: 0;
+      border-radius: 0;
+      padding: 0;
+      margin-bottom: 16px;
+    }
+    .list-card .date-group + .date-group {
       border-top: 1px solid var(--line);
+      padding-top: 16px;
+    }
+    .list-card .date-group:last-child {
+      margin-bottom: 0;
     }
     .date-heading {
       margin: 0 0 4px;
@@ -382,60 +501,91 @@ export function accountingPage() {
       <button id="tab-stats" type="button">統計</button>
     </nav>
 
-    <section id="view-add" class="panel">
-      <div class="grid">
-        <div class="full-row">
-          <label for="date">消費日期</label>
-          <input id="date" type="hidden">
-          <button id="date-picker" class="date-button" type="button">
-            <span id="date-display"></span>
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 2v4"></path><path d="M16 2v4"></path><path d="M3 10h18"></path><rect x="3" y="4" width="18" height="18" rx="2"></rect></svg>
-          </button>
-        </div>
-        <div>
-          <label for="amount">金額</label>
-          <input id="amount" inputmode="decimal" placeholder="120">
-        </div>
-        <div>
-          <label for="currency">幣別</label>
-          <select id="currency">
-            <option value="TRY">里拉 ₺</option>
-            <option value="TWD">台幣 NT$</option>
-            <option value="EUR">歐元 €</option>
-            <option value="USD">美金 US$</option>
-          </select>
-        </div>
-        <div>
-          <label for="category">分類</label>
-          <select id="category">
-            <option>餐食</option>
-            <option>交通</option>
-            <option>購物</option>
-            <option>門票</option>
-            <option>住宿</option>
-            <option>其他</option>
-          </select>
-        </div>
-        <div>
-          <label for="note">備註</label>
-          <input id="note" placeholder="烤肉">
+    <section id="view-add">
+      <div id="add-scope-card" class="control-card scope-card" aria-label="記帳消費範圍">
+        <div class="segmented" aria-label="記帳消費範圍">
+          <button id="add-personal" class="active" type="button">我的消費</button>
+          <button id="add-group" type="button">團體消費</button>
         </div>
       </div>
-      <button id="save" class="primary" type="button">新增記帳</button>
-      <p id="status" class="status"></p>
+      <div class="panel">
+        <div class="grid">
+          <div class="full-row">
+            <label for="date">消費日期</label>
+            <input id="date" type="hidden">
+            <button id="date-picker" class="date-button" type="button">
+              <span id="date-display"></span>
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 2v4"></path><path d="M16 2v4"></path><path d="M3 10h18"></path><rect x="3" y="4" width="18" height="18" rx="2"></rect></svg>
+            </button>
+          </div>
+          <div>
+            <label for="amount">金額</label>
+            <input id="amount" inputmode="decimal" placeholder="120">
+          </div>
+          <div>
+            <label for="currency">幣別</label>
+            <select id="currency">
+              <option value="TRY">里拉 ₺</option>
+              <option value="TWD">台幣 NT$</option>
+              <option value="EUR">歐元 €</option>
+              <option value="USD">美金 US$</option>
+            </select>
+          </div>
+          <div>
+            <label for="category">分類</label>
+            <select id="category">
+              <option>餐食</option>
+              <option>交通</option>
+              <option>購物</option>
+              <option>門票</option>
+              <option>住宿</option>
+              <option>其他</option>
+            </select>
+          </div>
+          <div>
+            <label for="note">備註</label>
+            <input id="note" placeholder="烤肉">
+          </div>
+          <div id="split-panel" class="split-panel hidden">
+            <p class="split-title">分帳成員</p>
+            <div id="split-members" class="member-list"></div>
+          </div>
+        </div>
+        <button id="save" class="primary" type="button">新增記帳</button>
+        <p id="status" class="status"></p>
+      </div>
     </section>
 
     <section id="view-items" class="hidden">
-      <div class="segmented" aria-label="消費項目排序">
-        <button id="sort-date" class="active" type="button">依日期</button>
-        <button id="sort-currency" type="button">依幣別</button>
+      <div id="items-scope-card" class="control-card scope-card" aria-label="消費項目範圍">
+        <div class="segmented" aria-label="消費項目範圍">
+          <button id="items-personal" class="active" type="button">我的消費</button>
+          <button id="items-group" type="button">團體消費</button>
+        </div>
       </div>
-      <div id="items"></div>
+      <div class="list-card" aria-label="消費項目清單">
+        <div class="sort-segmented" aria-label="消費項目排序">
+          <button id="sort-date" class="active" type="button">
+            <svg class="button-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 2v4"></path><path d="M16 2v4"></path><path d="M3 10h18"></path><rect x="3" y="4" width="18" height="18" rx="2"></rect></svg>
+            <span>依日期</span>
+          </button>
+          <button id="sort-currency" type="button">
+            <svg class="button-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2v20"></path><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7H14.5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+            <span>依幣別</span>
+          </button>
+        </div>
+        <div id="items"></div>
+      </div>
       <p id="items-status" class="status"></p>
     </section>
 
     <section id="view-stats" class="hidden">
-      <h2 class="section-title">幣別消費統計</h2>
+      <div id="stats-scope-card" class="control-card scope-card" aria-label="統計範圍">
+        <div class="segmented" aria-label="統計範圍">
+          <button id="stats-personal" class="active" type="button">我的消費</button>
+          <button id="stats-group" type="button">團體消費</button>
+        </div>
+      </div>
       <div id="stats"></div>
     </section>
   </main>
@@ -459,12 +609,16 @@ export function accountingPage() {
     const state = {
       liffId: "",
       profile: null,
+      lineContext: null,
       currentTab: "add",
       editingId: null,
       expenses: [],
       calendarMonth: null,
       sortMode: "date",
-      loadingExpenses: false,
+      addScope: "personal",
+      itemScope: "personal",
+      statsScope: "personal",
+      ledgerMembers: [],
       expandedCurrencies: new Set(),
     };
     const currencyMeta = {
@@ -488,11 +642,13 @@ export function accountingPage() {
             return;
           }
           state.profile = await liff.getProfile();
+          state.lineContext = liff.getContext ? liff.getContext() : null;
         } catch (error) {
           setStatus("LIFF 尚未完成設定，先用一般網頁模式測試。");
         }
       }
       bindEvents();
+      syncScopeControls();
       setDefaultDate();
       await refreshItems();
     }
@@ -504,6 +660,12 @@ export function accountingPage() {
       $("save").addEventListener("click", saveExpense);
       $("items").addEventListener("click", handleItemAction);
       $("stats").addEventListener("click", handleStatsAction);
+      $("add-personal").addEventListener("click", () => setAddScope("personal"));
+      $("add-group").addEventListener("click", () => setAddScope("group"));
+      $("items-personal").addEventListener("click", () => setItemScope("personal"));
+      $("items-group").addEventListener("click", () => setItemScope("group"));
+      $("stats-personal").addEventListener("click", () => setStatsScope("personal"));
+      $("stats-group").addEventListener("click", () => setStatsScope("group"));
       $("sort-date").addEventListener("click", () => setSortMode("date"));
       $("sort-currency").addEventListener("click", () => setSortMode("currency"));
       $("date-picker").addEventListener("click", openCalendar);
@@ -534,11 +696,63 @@ export function accountingPage() {
       refreshItems();
     }
 
+    function setAddScope(scope) {
+      state.addScope = scope;
+      $("add-personal").classList.toggle("active", scope === "personal");
+      $("add-group").classList.toggle("active", scope === "group");
+      if (scope === "group" && !hasGroupLedgerContext()) {
+        setStatus("團體消費需要從 LINE 群組或多人聊天室開啟。");
+      }
+      syncSplitPanel();
+      if (scope === "group" && hasGroupLedgerContext()) loadLedgerMembers();
+    }
+
+    function syncScopeControls() {
+      const hasGroup = hasGroupLedgerContext();
+      $("add-scope-card").classList.toggle("hidden", !hasGroup);
+      $("items-scope-card").classList.toggle("hidden", !hasGroup);
+      $("stats-scope-card").classList.toggle("hidden", !hasGroup);
+      if (!hasGroup) {
+        setAddScope("personal");
+        state.itemScope = "personal";
+        state.statsScope = "personal";
+        $("items-personal").classList.add("active");
+        $("items-group").classList.remove("active");
+        $("stats-personal").classList.add("active");
+        $("stats-group").classList.remove("active");
+      } else {
+        setAddScope("group");
+        state.itemScope = "group";
+        state.statsScope = "group";
+        $("items-personal").classList.remove("active");
+        $("items-group").classList.add("active");
+        $("stats-personal").classList.remove("active");
+        $("stats-group").classList.add("active");
+      }
+      syncSplitPanel();
+      if (hasGroup) loadLedgerMembers();
+    }
+
+    function setItemScope(scope) {
+      state.itemScope = scope;
+      $("items-personal").classList.toggle("active", scope === "personal");
+      $("items-group").classList.toggle("active", scope === "group");
+      refreshItems();
+    }
+
+    function setStatsScope(scope) {
+      state.statsScope = scope;
+      $("stats-personal").classList.toggle("active", scope === "personal");
+      $("stats-group").classList.toggle("active", scope === "group");
+      refreshStats();
+    }
+
     function formPayload() {
       const amount = Number($("amount").value.trim());
       const currencyCode = $("currency").value;
       const meta = currencyMeta[currencyCode];
       return {
+        expenseScope: state.addScope,
         date: $("date").value,
         amount,
         currencyCode,
@@ -548,11 +762,21 @@ export function accountingPage() {
         note: $("note").value.trim(),
         payerId: state.profile?.userId || "",
         payerName: state.profile?.displayName || "Lize",
+        splitMembers: selectedSplitMembers(),
+        ...ledgerContextPayload(),
       };
     }
 
     async function saveExpense() {
       const payload = formPayload();
+      if (payload.expenseScope === "group" && !hasGroupLedgerContext()) {
+        setStatus("團體消費需要從 LINE 群組或多人聊天室開啟。");
+        return;
+      }
+      if (payload.expenseScope === "group" && !payload.splitMembers.length) {
+        setStatus("請至少選擇一位分帳成員。");
+        return;
+      }
       if (!/^\\d{4}-\\d{2}-\\d{2}$/.test(payload.date)) {
         setStatus("日期格式請輸入 YYYY-MM-DD。");
         return;
@@ -594,10 +818,12 @@ export function accountingPage() {
       if (!item) return;
       state.editingId = id;
       setDateValue(item.date);
+      setAddScope(item.expense_scope || "personal");
       $("amount").value = item.amount;
       $("currency").value = item.currency_code;
       $("category").value = item.category;
       $("note").value = item.note || "";
+      renderSplitMembers(parseSplitMembers(item), { preserveSelection: true });
       $("save").textContent = "儲存修改";
       setStatus("正在修改 #" + id + "。");
       switchTab("add");
@@ -617,10 +843,14 @@ export function accountingPage() {
     }
 
     async function refreshItems() {
-      await loadExpenses();
+      if (state.itemScope === "group" && !hasGroupLedgerContext()) {
+        $("items").innerHTML = '<div class="empty">團體消費需要從 LINE 群組或多人聊天室開啟。</div>';
+        return;
+      }
+      await loadExpenses(state.itemScope);
       const root = $("items");
       if (!state.expenses.length) {
-        root.innerHTML = '<div class="empty">目前尚未記帳。</div>';
+        root.innerHTML = '<div class="empty">目前沒有' + (state.itemScope === "group" ? "團體" : "我的") + '消費。</div>';
         return;
       }
 
@@ -633,14 +863,21 @@ export function accountingPage() {
     }
 
     async function refreshStats() {
-      await loadExpenses();
+      if (state.statsScope === "group" && !hasGroupLedgerContext()) {
+        $("stats").innerHTML = '<div class="empty">團體統計需要從 LINE 群組或多人聊天室開啟。</div>';
+        return;
+      }
+      await loadExpenses(state.statsScope);
       const root = $("stats");
       if (!state.expenses.length) {
-        root.innerHTML = '<div class="empty">目前沒有統計資料。</div>';
+        root.innerHTML = '<div class="empty">目前沒有' + (state.statsScope === "group" ? "團體" : "我的") + '消費統計。</div>';
         return;
       }
       const totals = currencyTotals();
       root.innerHTML = totals.map(renderCurrencySummary).join("");
+      if (state.statsScope === "group") {
+        root.innerHTML = renderSplitSummary() + root.innerHTML;
+      }
     }
 
     function handleStatsAction(event) {
@@ -655,14 +892,35 @@ export function accountingPage() {
       refreshStats();
     }
 
-    async function loadExpenses() {
-      if (state.loadingExpenses) return;
-      state.loadingExpenses = true;
+    async function loadExpenses(expenseScope) {
+      const params = new URLSearchParams({
+        scope: "all",
+        expenseScope,
+        userId: currentUserId(),
+        displayName: state.profile?.displayName || "",
+        ...ledgerContextPayload(),
+      });
+      const data = await api("/api/expenses?" + params.toString());
+      state.expenses = data.expenses || [];
+    }
+
+    async function loadLedgerMembers() {
+      if (!hasGroupLedgerContext()) return;
+      const params = new URLSearchParams({
+        userId: currentUserId(),
+        displayName: state.profile?.displayName || "",
+        ...ledgerContextPayload(),
+      });
       try {
-        const data = await api("/api/expenses?scope=all");
-        state.expenses = data.expenses || [];
-      } finally {
-        state.loadingExpenses = false;
+        const data = await api("/api/ledger-members?" + params.toString());
+        state.ledgerMembers = data.members || [];
+        renderSplitMembers();
+        if (data.debug) {
+          const error = data.debug.syncError ? "，同步：" + data.debug.syncError : "";
+          setStatus("群組 context：" + data.debug.chatType + "，成員 " + state.ledgerMembers.length + " 人，LINE 同步 " + data.debug.syncedMemberCount + " 人" + error);
+        }
+      } catch (error) {
+        setStatus(error.message);
       }
     }
 
@@ -732,14 +990,18 @@ export function accountingPage() {
     }
 
     function renderCurrencyDetail(item) {
-      return '<li>' + escapeHtml(formatDate(item.date)) + '｜' + escapeHtml(item.category) + '｜' + escapeHtml(formatAmount(item)) + '</li>';
+      const payer = isGroupExpense(item) && item.payer_name ? '｜付款人：' + escapeHtml(item.payer_name) : "";
+      const split = splitText(item);
+      return '<li>' + escapeHtml(formatDate(item.date)) + '｜' + escapeHtml(item.category) + '｜' + escapeHtml(formatAmount(item)) + payer + split + '</li>';
     }
 
     function renderExpense(item, index) {
+      const payer = isGroupExpense(item) && item.payer_name ? '｜付款人：' + escapeHtml(item.payer_name) : "";
+      const meta = '#' + item.id + ' ' + escapeHtml(item.category) + payer + splitText(item);
       return '<li><article class="expense">' +
         '<div class="expense-main">' +
           '<div class="expense-title"><span>' + (index + 1) + '. ' + escapeHtml(item.note || "無備註") + '</span><span class="amount">' + formatAmount(item) + '</span></div>' +
-          '<div class="meta">#' + item.id + ' ' + escapeHtml(item.category) + '</div>' +
+          '<div class="meta">' + meta + '</div>' +
         '</div>' +
         '<div class="icon-actions">' +
           '<button class="icon-button" type="button" data-action="edit" data-id="' + item.id + '" aria-label="修改" title="修改">' + editIcon + '</button>' +
@@ -754,6 +1016,7 @@ export function accountingPage() {
       $("amount").value = "";
       $("note").value = "";
       $("save").textContent = "新增記帳";
+      renderSplitMembers();
     }
 
     async function api(path, options = {}) {
@@ -770,6 +1033,140 @@ export function accountingPage() {
     function setStatus(text) {
       $("status").textContent = text;
       $("items-status").textContent = text;
+    }
+
+    function currentUserId() {
+      return state.profile?.userId || "";
+    }
+
+    function isGroupExpense(item) {
+      return (item.expense_scope || "personal") === "group";
+    }
+
+    function ledgerContextPayload() {
+      const context = state.lineContext || {};
+      return {
+        chatType: context.type || "",
+        groupId: context.groupId || "",
+        roomId: context.roomId || "",
+      };
+    }
+
+    function hasGroupLedgerContext() {
+      const context = state.lineContext || {};
+      return Boolean(context.groupId || context.roomId);
+    }
+
+    function syncSplitPanel() {
+      $("split-panel").classList.toggle("hidden", state.addScope !== "group" || !hasGroupLedgerContext());
+      if (state.addScope === "group" && hasGroupLedgerContext()) renderSplitMembers();
+    }
+
+    function renderSplitMembers(selectedMembers = null, options = {}) {
+      if (!$("split-members")) return;
+      const selectedIds = new Set((selectedMembers || selectedSplitMembers()).map((member) => member.userId));
+      const members = normalizedLedgerMembers();
+      if (!options.preserveSelection && !selectedMembers) {
+        members.forEach((member) => selectedIds.add(member.userId));
+      }
+      $("split-members").innerHTML = members.length
+        ? members.map((member) =>
+            '<label class="member-option"><input type="checkbox" data-split-member="' + escapeHtml(member.userId) + '"' +
+            (selectedIds.has(member.userId) ? " checked" : "") + '> <span>' + escapeHtml(member.displayName || "未命名成員") + '</span></label>'
+          ).join("")
+        : '<div class="meta">群組成員開啟記帳本後，會出現在這裡。</div>';
+    }
+
+    function normalizedLedgerMembers() {
+      const members = [...state.ledgerMembers];
+      if (currentUserId() && !members.some((member) => member.user_id === currentUserId())) {
+        members.push({ user_id: currentUserId(), display_name: state.profile?.displayName || "Lize" });
+      }
+      return members.map((member) => ({
+        userId: member.user_id || member.userId,
+        displayName: member.display_name || member.displayName || "未命名成員",
+      })).filter((member) => member.userId);
+    }
+
+    function selectedSplitMembers() {
+      if (state.addScope !== "group") return [];
+      const members = normalizedLedgerMembers();
+      const checked = [...document.querySelectorAll("[data-split-member]:checked")].map((input) => input.dataset.splitMember);
+      const selectedIds = new Set(checked.length ? checked : members.map((member) => member.userId));
+      return members.filter((member) => selectedIds.has(member.userId));
+    }
+
+    function parseSplitMembers(item) {
+      try {
+        const members = JSON.parse(item.split_members || "[]");
+        return Array.isArray(members) ? members : [];
+      } catch {
+        return [];
+      }
+    }
+
+    function splitText(item) {
+      const members = parseSplitMembers(item);
+      return isGroupExpense(item) && members.length ? '｜分攤：' + members.length + '人' : "";
+    }
+
+    function renderSplitSummary() {
+      const summaries = splitSummaries();
+      if (!summaries.length) return "";
+      return '<section class="summary-card">' +
+        '<div class="summary-title">分帳統計</div>' +
+        '<ol class="summary-details">' + summaries.map((item) =>
+          '<li>' + escapeHtml(item.name) + '｜付款 ' + escapeHtml(item.paidText) + '｜應付 ' + escapeHtml(item.shareText) + '｜差額 ' + escapeHtml(item.balanceText) + '</li>'
+        ).join("") + '</ol>' +
+      '</section>';
+    }
+
+    function splitSummaries() {
+      const people = new Map();
+      for (const expense of state.expenses.filter(isGroupExpense)) {
+        const members = parseSplitMembers(expense);
+        if (!members.length) continue;
+        const code = expense.currency_code;
+        const symbol = expense.currency_symbol || "";
+        const amount = Number(expense.amount) || 0;
+        const share = amount / members.length;
+        const payer = ensurePerson(people, expense.payer_id, expense.payer_name);
+        payer.paid[code] = (payer.paid[code] || 0) + amount;
+        payer.symbols[code] = symbol;
+        for (const member of members) {
+          const person = ensurePerson(people, member.userId, member.displayName);
+          person.share[code] = (person.share[code] || 0) + share;
+          person.symbols[code] = symbol;
+        }
+      }
+      return [...people.values()].map((person) => ({
+        name: person.name,
+        paidText: currencyMapText(person.paid, person.symbols),
+        shareText: currencyMapText(person.share, person.symbols),
+        balanceText: currencyBalanceText(person.paid, person.share, person.symbols),
+      }));
+    }
+
+    function ensurePerson(people, id, name) {
+      const key = id || name || "unknown";
+      if (!people.has(key)) people.set(key, { name: name || "未命名成員", paid: {}, share: {}, symbols: {} });
+      return people.get(key);
+    }
+
+    function currencyMapText(values, symbols) {
+      const entries = Object.entries(values);
+      if (!entries.length) return "0";
+      return entries.map(([code, amount]) => (symbols[code] ? symbols[code] + " " : "") + numberText(amount)).join("、");
+    }
+
+    function currencyBalanceText(paid, share, symbols) {
+      const codes = new Set([...Object.keys(paid), ...Object.keys(share)]);
+      if (!codes.size) return "0";
+      return [...codes].map((code) => {
+        const balance = (paid[code] || 0) - (share[code] || 0);
+        const prefix = balance > 0 ? "+" : "";
+        return prefix + (symbols[code] ? symbols[code] + " " : "") + numberText(balance);
+      }).join("、");
     }
 
     function formatAmount(item) {
