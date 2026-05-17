@@ -183,15 +183,33 @@ function withWeather(message, weather) {
 }
 
 function selectRelativeDay(offsetDays) {
-  for (const day of ACTIVE_TRIP.daily_itinerary) {
-    const now = new Date(new Date().toLocaleString("en-US", { timeZone: day.timezone }));
-    now.setDate(now.getDate() + offsetDays);
-    const targetDate = formatLocalDate(now);
-    if (day.date === targetDate) {
-      return day;
-    }
+  const baseDate = currentTripDate();
+  const targetDate = addDays(baseDate, offsetDays);
+  return ACTIVE_TRIP.daily_itinerary.find((day) => day.date === targetDate) || null;
+}
+
+function currentTripDate() {
+  const now = new Date();
+  const activeDay = ACTIVE_TRIP.daily_itinerary.find((day) => {
+    return localDateInTimeZone(now, day.timezone) === day.date;
+  });
+
+  if (activeDay) {
+    return activeDay.date;
   }
-  return null;
+
+  const timezone = ACTIVE_TRIP.trip?.notification?.default_timezone || "Asia/Taipei";
+  return localDateInTimeZone(now, timezone);
+}
+
+function localDateInTimeZone(date, timeZone) {
+  return formatLocalDate(new Date(date.toLocaleString("en-US", { timeZone })));
+}
+
+function addDays(dateText, offsetDays) {
+  const date = new Date(`${dateText}T00:00:00Z`);
+  date.setUTCDate(date.getUTCDate() + offsetDays);
+  return date.toISOString().slice(0, 10);
 }
 
 function formatLocalDate(date) {
