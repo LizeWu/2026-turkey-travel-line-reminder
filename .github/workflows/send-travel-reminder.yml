@@ -22,10 +22,22 @@ jobs:
         with:
           python-version: "3.11"
 
+      - name: Prepare sent records directory
+        run: mkdir -p .sent-reminders
+
+      - name: Restore sent records
+        uses: actions/cache/restore@v4
+        with:
+          path: .sent-reminders
+          key: azuma-sent-reminders-${{ github.run_id }}
+          restore-keys: |
+            azuma-sent-reminders-
+
       - name: Send LINE reminder
         env:
           LINE_CHANNEL_ACCESS_TOKEN: ${{ secrets.LINE_CHANNEL_ACCESS_TOKEN }}
           LINE_USER_ID: ${{ secrets.LINE_USER_ID }}
+          SENT_RECORD_PATH: .sent-reminders/reminders.json
           INPUT_DAY: ${{ github.event.inputs.day }}
         run: |
           if [ -n "${INPUT_DAY}" ]; then
@@ -33,3 +45,10 @@ jobs:
           else
             python send_line_reminder.py
           fi
+
+      - name: Save sent records
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: .sent-reminders
+          key: azuma-sent-reminders-${{ github.run_id }}

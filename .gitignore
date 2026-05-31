@@ -3,6 +3,7 @@ __pycache__/
 *.pyc
 .env
 .DS_Store
+.sent-reminders/
 node_modules/
 extracted_travel_pdf.txt
 travel_data_draft.json

@@ -1,5 +1,60 @@
 # Worklog
 
+## 2026-05-31
+
+### 今日完成
+
+- 完成第一批行程推播可靠性修正：
+  - `send_line_reminder.py` 不再使用固定 2 小時時間窗阻擋推播。
+  - 晚間行程提醒改為：到達 reminder date 的指定時間後即可補送。
+  - 早安提醒改為：到達 itinerary day 的指定時間後即可補送。
+  - 推播判斷仍使用 itinerary day 的 IANA timezone，例如 `Asia/Taipei`、`Europe/Istanbul`。
+- 加入已送紀錄機制：
+  - 支援 `SENT_RECORD_PATH` 環境變數。
+  - 以 `trip_id + message_type + target_date` 產生 sent key。
+  - GitHub Actions 透過 `.sent-reminders/reminders.json` 與 `actions/cache` 保存已送紀錄，降低重複推播風險。
+- 強化 Actions log：
+  - 輸出旅程 ID 與旅程名稱。
+  - 輸出 selection reason。
+  - 輸出使用時區、當地時間、發送時間、提醒日期。
+  - 輸出每個 itinerary day 的診斷資訊。
+- 加入多旅程相容的小調整：
+  - `trips/2026-05-turkey.json` 補上穩定 `trip_id`。
+  - LINE 推播文案不再硬寫「土耳其旅行提醒」或「土耳其之旅」，改用旅程資料中的名稱。
+  - 後續新增其他國家/城市旅程時，可先沿用同一套推播判斷邏輯。
+- 更新 workflow：
+  - `send-travel-reminder.yml` 與 `send-morning-greeting.yml` 都會 restore/save sent records cache。
+  - `.gitignore` 加入 `.sent-reminders/`，避免本機測試紀錄被提交。
+
+### 已驗證
+
+- `PYTHONPYCACHEPREFIX=.pycache python3 -m py_compile send_line_reminder.py` 通過。
+- 模擬 `2026-05-18T14:57:10Z`，也就是台灣 2026-05-18 22:57，晚間提醒會選到 Day 2 / `2026-05-19`。
+- 模擬 `2026-05-19T06:59:54Z`，也就是土耳其 2026-05-19 09:59，早安提醒會選到 Day 2 / `2026-05-19`。
+
+## 2026-05-30
+
+### 今日排查
+
+- 回顧 2026-05-18 至 2026-05-29 旅行期間，阿珠媽的晚間行程提醒與早安提醒沒有穩定出現在 LINE。
+- 透過 GitHub Actions API 檢查後確認：
+  - `Send travel reminder` 與 `Send morning greeting` workflow 皆有 schedule run。
+  - 多數 run 顯示 `success`，不是 workflow 完全沒有啟動。
+  - 但 GitHub Actions schedule 經常延遲，許多執行時間落在程式允許的 2 小時發送時間窗之外。
+- 目前腳本行為：
+  - 晚間提醒只接受當地時間 `20:00-21:59`。
+  - 早安提醒只接受當地時間 `06:30-08:29`。
+  - 超過時間窗時會印出 `No itinerary matched today/day/date; nothing to send.`，並以 success 結束，因此 GitHub 畫面看起來正常，但實際沒有推 LINE。
+- 5/17 晚上有收到 Day 1 行程提醒，是因為該次 Actions 剛好在台灣時間 21:00 執行，仍落在允許時間窗內。
+
+### 後續修改項目
+
+1. 移除或放寬 `send_line_reminder.py` 的窄時間窗，避免 Actions 延遲後不送。
+2. 改為以 itinerary day 的 IANA timezone 判斷旅程日期，例如 `Europe/Istanbul`；`country` / `city` 僅作顯示用途。
+3. 加入已送紀錄，依 `trip_id + message_type + target_date` 判斷是否已推播，避免補送或重跑造成重複發送。
+4. 強化 log：輸出判斷日期、使用時區、目標行程日、是否送出、未送原因。
+5. 未來若讓朋友訂閱主動推播，需區分 `旅人` / `親友` / `群組` 角色，避免台灣親友跟著土耳其早上 6 點在台灣凌晨收到提醒。
+
 ## 2026-05-18
 
 ### 今日完成

@@ -6,7 +6,7 @@ import sys
 import urllib.error
 import urllib.parse
 import urllib.request
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
@@ -133,7 +133,12 @@ def weather_summary(day):
     return f"{location['name']}：{desc}，{temp_text}，{rain_text}"
 
 
-def build_flex(day, weather=None):
+def trip_title(data):
+    trip = data.get("trip", {})
+    return trip.get("trip_name") or trip.get("tour_name") or "旅行"
+
+
+def build_flex(day, weather=None, trip_title_text="旅行"):
     body = [
         text_block(f"Day {day['day']} / {day['date']} ({day['weekday']})", "md", "bold"),
         text_block(day["route"], "lg", "bold"),
@@ -186,7 +191,7 @@ def build_flex(day, weather=None):
 
     return {
         "type": "flex",
-        "altText": f"土耳其旅行提醒 Day {day['day']} / {day['date']}",
+        "altText": f"{trip_title_text}提醒 Day {day['day']} / {day['date']}",
         "contents": {
             "type": "bubble",
             "size": "mega",
@@ -195,9 +200,9 @@ def build_flex(day, weather=None):
     }
 
 
-def build_preview(day, weather=None):
+def build_preview(day, weather=None, trip_title_text="旅行"):
     lines = [
-        f"[土耳其旅行提醒] Day {day['day']} / {day['date']} ({day['weekday']})",
+        f"[{trip_title_text}提醒] Day {day['day']} / {day['date']} ({day['weekday']})",
         "",
         "今日路線：",
         day["route"],
@@ -251,40 +256,57 @@ def build_preview(day, weather=None):
 
 def generate_outputs(data, config):
     flex_path, preview_path = generated_paths(config)
-    messages = {str(day["day"]): build_flex(day) for day in data["daily_itinerary"]}
+    title = trip_title(data)
+    messages = {str(day["day"]): build_flex(day, trip_title_text=title) for day in data["daily_itinerary"]}
     flex_path.write_text(json.dumps(messages, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
 
     previews = ["# LINE 每日提醒預覽", ""]
     for day in data["daily_itinerary"]:
-        previews.extend([f"## Day {day['day']}", "", "```text", build_preview(day), "```", ""])
+        previews.extend([f"## Day {day['day']}", "", "```text", build_preview(day, trip_title_text=title), "```", ""])
     preview_path.write_text("\n".join(previews), encoding="utf-8")
     return messages
 
 
-def build_greeting(day, now):
+def build_greeting(day, now, trip_title_text="旅行"):
     return {
         "type": "text",
         "text": (
             f"早安，今天是 {day['date'].replace('-', '/')}（{day['weekday']}） "
             f"{now.strftime('%H:%M')}\n"
-            f"阿珠媽提醒你：今天是土耳其之旅 Day {day['day']}。"
+            f"阿珠媽提醒你：今天是{trip_title_text} Day {day['day']}。"
         ),
     }
 
 
-def is_time_window(now, send_time_local, window_minutes=120):
+def parse_time_minutes(send_time_local):
     hour, minute = [int(part) for part in send_time_local.split(":", 1)]
-    target_minutes = hour * 60 + minute
-    now_minutes = now.time().hour * 60 + now.time().minute
-    return target_minutes <= now_minutes < target_minutes + window_minutes
+    return hour * 60 + minute
 
 
-def is_due(day, reminder_timezone, send_time_local, send_days_before):
-    now = datetime.now(ZoneInfo(reminder_timezone))
-    reminder_date = (
+def local_minutes(now):
+    return now.time().hour * 60 + now.time().minute
+
+
+def local_now(timezone_name, now_utc=None):
+    if now_utc is not None:
+        return now_utc.astimezone(ZoneInfo(timezone_name))
+    return datetime.now(ZoneInfo(timezone_name))
+
+
+def parse_now_utc(value):
+    if not value:
+        return None
+    normalized = value.replace("Z", "+00:00")
+    parsed = datetime.fromisoformat(normalized)
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=timezone.utc)
+    return parsed.astimezone(timezone.utc)
+
+
+def reminder_date_for_day(day, send_days_before):
+    return (
         datetime.fromisoformat(day["date"]).date() - timedelta(days=send_days_before)
     ).isoformat()
-    return now.date().isoformat() == reminder_date and is_time_window(now, send_time_local)
 
 
 def reminder_timezone_for_day(itinerary, index):
@@ -293,36 +315,111 @@ def reminder_timezone_for_day(itinerary, index):
     return itinerary[index]["timezone"]
 
 
-def select_day(data, day=None, date=None):
+def trip_record_id(data, config):
+    trip = data.get("trip", {})
+    return trip.get("trip_id") or trip.get("tour_code") or config.get("active_trip", "active-trip")
+
+
+def sent_record_key(data, config, mode, day):
+    return f"{trip_record_id(data, config)}:{mode}:{day['date']}"
+
+
+def load_sent_records(path):
+    if not path:
+        return {}
+    record_path = Path(path)
+    if not record_path.exists():
+        return {}
+    with record_path.open(encoding="utf-8") as f:
+        return json.load(f)
+
+
+def save_sent_record(path, key, payload):
+    if not path:
+        return
+    record_path = Path(path)
+    record_path.parent.mkdir(parents=True, exist_ok=True)
+    records = load_sent_records(path)
+    records[key] = payload
+    record_path.write_text(json.dumps(records, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+
+
+def select_day(data, day=None, date=None, now_utc=None):
     if day is not None:
-        return next((item for item in data["daily_itinerary"] if item["day"] == day), None)
+        selected = next((item for item in data["daily_itinerary"] if item["day"] == day), None)
+        return selected, {"reason": f"manual day={day}", "timezone": selected["timezone"] if selected else None}
     if date is not None:
-        return next((item for item in data["daily_itinerary"] if item["date"] == date), None)
+        selected = next((item for item in data["daily_itinerary"] if item["date"] == date), None)
+        return selected, {"reason": f"manual date={date}", "timezone": selected["timezone"] if selected else None}
 
     notification = data["trip"]["notification"]
     send_time_local = notification["send_time_local"]
     send_days_before = int(notification.get("send_days_before", 0))
-    today_candidates = []
+    send_minutes = parse_time_minutes(send_time_local)
+    candidates = []
+    diagnostics = []
     itinerary = data["daily_itinerary"]
     for index, item in enumerate(itinerary):
         reminder_timezone = reminder_timezone_for_day(itinerary, index)
-        if is_due(item, reminder_timezone, send_time_local, send_days_before):
-            today_candidates.append(item)
-    return today_candidates[0] if today_candidates else None
+        now = local_now(reminder_timezone, now_utc)
+        reminder_date = reminder_date_for_day(item, send_days_before)
+        reached_send_time = local_minutes(now) >= send_minutes
+        diagnostics.append(
+            f"Day {item['day']} target={item['date']} reminder_date={reminder_date} "
+            f"timezone={reminder_timezone} now={now.strftime('%Y-%m-%d %H:%M')} "
+            f"send_time={send_time_local} reached={reached_send_time}"
+        )
+        if now.date().isoformat() == reminder_date and reached_send_time:
+            candidates.append((item, reminder_timezone, now, reminder_date))
+
+    if not candidates:
+        return None, {
+            "reason": "no itinerary reminder matched current local date/time",
+            "diagnostics": diagnostics,
+        }
+
+    selected, reminder_timezone, now, reminder_date = candidates[0]
+    return selected, {
+        "reason": "scheduled itinerary reminder due",
+        "timezone": reminder_timezone,
+        "local_now": now.strftime("%Y-%m-%d %H:%M"),
+        "reminder_date": reminder_date,
+        "send_time": send_time_local,
+        "diagnostics": diagnostics,
+    }
 
 
-def select_greeting_day(data, day=None, date=None):
+def select_greeting_day(data, day=None, date=None, now_utc=None):
     if day is not None:
-        return next((item for item in data["daily_itinerary"] if item["day"] == day), None)
+        selected = next((item for item in data["daily_itinerary"] if item["day"] == day), None)
+        return selected, {"reason": f"manual day={day}", "timezone": selected["timezone"] if selected else None}
     if date is not None:
-        return next((item for item in data["daily_itinerary"] if item["date"] == date), None)
+        selected = next((item for item in data["daily_itinerary"] if item["date"] == date), None)
+        return selected, {"reason": f"manual date={date}", "timezone": selected["timezone"] if selected else None}
 
     send_time_local = data["trip"]["notification"]["morning_greeting_time_local"]
+    send_minutes = parse_time_minutes(send_time_local)
+    diagnostics = []
     for item in data["daily_itinerary"]:
-        now = datetime.now(ZoneInfo(item["timezone"]))
-        if now.date().isoformat() == item["date"] and is_time_window(now, send_time_local):
-            return item
-    return None
+        now = local_now(item["timezone"], now_utc)
+        reached_send_time = local_minutes(now) >= send_minutes
+        diagnostics.append(
+            f"Day {item['day']} target={item['date']} timezone={item['timezone']} "
+            f"now={now.strftime('%Y-%m-%d %H:%M')} send_time={send_time_local} "
+            f"reached={reached_send_time}"
+        )
+        if now.date().isoformat() == item["date"] and reached_send_time:
+            return item, {
+                "reason": "scheduled morning greeting due",
+                "timezone": item["timezone"],
+                "local_now": now.strftime("%Y-%m-%d %H:%M"),
+                "send_time": send_time_local,
+                "diagnostics": diagnostics,
+            }
+    return None, {
+        "reason": "no morning greeting matched current local date/time",
+        "diagnostics": diagnostics,
+    }
 
 
 def send_line(message):
@@ -343,7 +440,7 @@ def send_line(message):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Build or send Turkey trip LINE reminders.")
+    parser = argparse.ArgumentParser(description="Build or send trip LINE reminders.")
     parser.add_argument("--build", action="store_true", help="Generate line_flex_messages.json and previews.")
     parser.add_argument("--dry-run", action="store_true", help="Print selected message preview without sending.")
     parser.add_argument(
@@ -354,29 +451,57 @@ def main():
     )
     parser.add_argument("--day", type=int, help="Send or preview a specific day number.")
     parser.add_argument("--date", help="Send or preview a specific date in YYYY-MM-DD.")
+    parser.add_argument("--force", action="store_true", help="Send even if the sent record already exists.")
+    parser.add_argument("--now-utc", help=argparse.SUPPRESS)
     args = parser.parse_args()
 
     config = load_config()
     data = load_data(config)
+    title = trip_title(data)
     messages = generate_outputs(data, config)
     if args.build:
         flex_path, preview_path = generated_paths(config)
         print(f"Generated {flex_path} and {preview_path}")
         return 0
 
+    now_utc = parse_now_utc(args.now_utc)
     if args.mode == "greeting":
-        selected = select_greeting_day(data, args.day, args.date)
+        selected, selection = select_greeting_day(data, args.day, args.date, now_utc)
     else:
-        selected = select_day(data, args.day, args.date)
+        selected, selection = select_day(data, args.day, args.date, now_utc)
+
+    print(f"Trip id: {trip_record_id(data, config)}")
+    print(f"Trip title: {title}")
+    print(f"Selection reason: {selection.get('reason')}")
+    if selection.get("timezone"):
+        print(f"Selection timezone: {selection['timezone']}")
+    if selection.get("local_now"):
+        print(f"Selection local now: {selection['local_now']}")
+    if selection.get("send_time"):
+        print(f"Selection send time: {selection['send_time']}")
+    if selection.get("reminder_date"):
+        print(f"Selection reminder date: {selection['reminder_date']}")
+    for line in selection.get("diagnostics", []):
+        print(f"  {line}")
+
     if not selected:
-        print("No itinerary matched today/day/date; nothing to send.")
+        print("No target matched; nothing to send.")
         return 0
 
-    now = datetime.now(ZoneInfo(selected["timezone"]))
+    record_path = os.environ.get("SENT_RECORD_PATH")
+    record_key = sent_record_key(data, config, args.mode, selected)
+    sent_records = load_sent_records(record_path)
+    if record_key in sent_records and not args.force and args.day is None and args.date is None:
+        print(f"Already sent {record_key}; skip duplicate send.")
+        return 0
+
+    now = local_now(selected["timezone"], now_utc)
     weather = None if args.mode == "greeting" else weather_summary(selected)
-    message = build_greeting(selected, now) if args.mode == "greeting" else build_flex(selected, weather)
+    message = build_greeting(selected, now, title) if args.mode == "greeting" else build_flex(selected, weather, title)
     if args.dry_run:
-        print(message["text"] if args.mode == "greeting" else build_preview(selected, weather))
+        print(f"Selected target: Day {selected['day']} / {selected['date']} ({selected['weekday']})")
+        print(f"Sent record key: {record_key}")
+        print(message["text"] if args.mode == "greeting" else build_preview(selected, weather, title))
         return 0
 
     try:
@@ -390,6 +515,19 @@ def main():
         print(f"LINE send failed: {exc}", file=sys.stderr)
         return 1
     print(f"LINE send status: {status} {body}")
+    save_sent_record(
+        record_path,
+        record_key,
+        {
+            "trip_id": trip_record_id(data, config),
+            "message_type": args.mode,
+            "target_date": selected["date"],
+            "day": selected["day"],
+            "sent_at_utc": datetime.now(timezone.utc).isoformat(),
+            "selection": selection,
+        },
+    )
+    print(f"Recorded sent key: {record_key}" if record_path else "No SENT_RECORD_PATH set; sent record not persisted.")
     return 0
 
 
