@@ -78,7 +78,7 @@ async function handleEvent(event, env) {
   const command = extractCommand(event);
   if (!command) return;
 
-  const message = await buildReply(command, env);
+  const message = await buildReply(command, env, event);
   await replyToLine(event.replyToken, message, env.LINE_CHANNEL_ACCESS_TOKEN);
 }
 
@@ -99,11 +99,10 @@ function extractCommand(event) {
   return null;
 }
 
-async function buildReply(command, env) {
+async function buildReply(command, env, event = null) {
   if (command === "accounting") {
-    const accountingUrl = env.LINE_LIFF_ID
-      ? `https://liff.line.me/${env.LINE_LIFF_ID}`
-      : `${env.WORKER_BASE_URL || "https://lize-tour-bot-webhook.retniw72.workers.dev"}/accounting`;
+    const activeTripId = await activeTripIdForEvent(env, event);
+    const accountingUrl = accountingUrlForTrip(env, activeTripId, chatContextFromEvent(event));
     return {
       type: "text",
       text: [
@@ -127,6 +126,48 @@ async function buildReply(command, env) {
 
   const weather = await weatherSummary(day);
   return withWeather(FLEX_MESSAGES[String(day.day)], weather);
+}
+
+function accountingUrlForTrip(env, activeTripId, chatContext = {}) {
+  const params = new URLSearchParams({ trip: activeTripId });
+  if (chatContext.chatType) params.set("chatType", chatContext.chatType);
+  if (chatContext.groupId) params.set("groupId", chatContext.groupId);
+  if (chatContext.roomId) params.set("roomId", chatContext.roomId);
+  if (env.LINE_LIFF_ID) {
+    return `https://liff.line.me/${env.LINE_LIFF_ID}?${params.toString()}`;
+  }
+  return `${env.WORKER_BASE_URL || "https://lize-tour-bot-webhook.retniw72.workers.dev"}/accounting?${params.toString()}`;
+}
+
+async function activeTripIdForEvent(env, event) {
+  const context = chatContextFromEvent(event);
+  const chatType = context.chatType;
+  const chatId = context.groupId || context.roomId || "";
+  if (!env.ACCOUNTING_DB || !chatType || !chatId) return tripId(env);
+
+  try {
+    const setting = await env.ACCOUNTING_DB.prepare(
+      `SELECT active_trip_id FROM group_trip_settings
+        WHERE chat_type = ? AND chat_id = ?
+        LIMIT 1`
+    )
+      .bind(chatType, chatId)
+      .first();
+    return tripId(env, setting?.active_trip_id);
+  } catch {
+    return tripId(env);
+  }
+}
+
+function chatContextFromEvent(event) {
+  const source = event?.source || {};
+  if (source.groupId) {
+    return { chatType: "group", groupId: source.groupId, roomId: "" };
+  }
+  if (source.roomId) {
+    return { chatType: "room", groupId: "", roomId: source.roomId };
+  }
+  return { chatType: "", groupId: "", roomId: "" };
 }
 
 async function weatherSummary(day) {
@@ -259,7 +300,7 @@ async function handleApi(request, env, url) {
     if (url.pathname === "/api/accounting/config" && request.method === "GET") {
       return jsonResponse({
         liffId: env.LINE_LIFF_ID || "",
-        tripId: tripId(env),
+        tripId: tripId(env, url.searchParams.get("trip") || url.searchParams.get("tripId")),
         tripName: ACTIVE_TRIP.trip?.tour_name || "旅行",
       });
     }
@@ -274,6 +315,7 @@ async function handleApi(request, env, url) {
         expenses: await listExpenses(env, {
           scope,
           expenseScope: url.searchParams.get("expenseScope") || "personal",
+          tripId: url.searchParams.get("trip") || url.searchParams.get("tripId") || "",
           userId: url.searchParams.get("userId") || "",
           displayName: url.searchParams.get("displayName") || "",
           chatType: url.searchParams.get("chatType") || "",
@@ -287,6 +329,7 @@ async function handleApi(request, env, url) {
       const result = await listLedgerMembers(env, {
         userId: url.searchParams.get("userId") || "",
         displayName: url.searchParams.get("displayName") || "",
+        tripId: url.searchParams.get("trip") || url.searchParams.get("tripId") || "",
         chatType: url.searchParams.get("chatType") || "",
         groupId: url.searchParams.get("groupId") || "",
         roomId: url.searchParams.get("roomId") || "",
@@ -295,6 +338,12 @@ async function handleApi(request, env, url) {
         members: result.members,
         debug: result.debug,
       });
+    }
+
+    if (url.pathname === "/api/ledger-members" && request.method === "POST") {
+      const payload = await request.json();
+      const member = await createManualLedgerMember(env, payload);
+      return jsonResponse({ member }, 201);
     }
 
     if (url.pathname === "/api/expenses" && request.method === "POST") {
@@ -327,7 +376,9 @@ async function handleApi(request, env, url) {
     }
 
     if (url.pathname === "/api/expenses/stats" && request.method === "GET") {
-      return jsonResponse(await expenseStats(env));
+      return jsonResponse(await expenseStats(env, {
+        tripId: url.searchParams.get("trip") || url.searchParams.get("tripId") || "",
+      }));
     }
 
     return jsonResponse({ error: "Not found" }, 404);
@@ -430,13 +481,14 @@ async function deleteExpense(env, id) {
 }
 
 async function getRecentExpense(env) {
+  const activeTripId = tripId(env);
   const expense = await env.ACCOUNTING_DB.prepare(
     `SELECT * FROM expenses
       WHERE trip_id = ? AND deleted_at IS NULL
       ORDER BY created_at DESC, id DESC
       LIMIT 1`
   )
-    .bind(tripId(env))
+    .bind(activeTripId)
     .first();
   if (!expense) {
     throw new Error("目前沒有可修改或刪除的記帳。");
@@ -445,11 +497,12 @@ async function getRecentExpense(env) {
 }
 
 async function getEditableExpense(env, id) {
+  const activeTripId = tripId(env);
   const expense = await env.ACCOUNTING_DB.prepare(
     `SELECT * FROM expenses
       WHERE id = ? AND trip_id = ? AND deleted_at IS NULL`
   )
-    .bind(id, tripId(env))
+    .bind(id, activeTripId)
     .first();
   if (!expense) {
     throw new Error("找不到這筆記帳，可能已經刪除。");
@@ -463,6 +516,7 @@ async function getExpense(env, id) {
 
 async function listExpenses(env, options = {}) {
   const scope = options.scope || "today";
+  const activeTripId = tripId(env, options.tripId);
   const expenseScope = normalizeExpenseScope(options.expenseScope);
   const userId = String(options.userId || "").trim().slice(0, 80);
   const displayName = String(options.displayName || "").trim().slice(0, 80);
@@ -474,7 +528,7 @@ async function listExpenses(env, options = {}) {
     roomId: options.roomId,
   });
   const filters = ["trip_id = ?", "deleted_at IS NULL", "COALESCE(expense_scope, 'personal') = ?"];
-  const bindings = [tripId(env), expenseScope];
+  const bindings = [activeTripId, expenseScope];
   if (scope === "today") {
     filters.push("date = ?");
     bindings.push(accountingDate());
@@ -487,7 +541,7 @@ async function listExpenses(env, options = {}) {
     bindings.push(ledger.ledger_id);
     if (userId) {
       await upsertLedgerMember(env, {
-        trip_id: tripId(env),
+        trip_id: activeTripId,
         ledger_id: ledger.ledger_id,
         chat_type: ledger.chat_type,
         chat_id: ledger.chat_id,
@@ -506,7 +560,8 @@ async function listExpenses(env, options = {}) {
   return result.results || [];
 }
 
-async function expenseStats(env) {
+async function expenseStats(env, options = {}) {
+  const activeTripId = tripId(env, options.tripId);
   const currencyTotals = await env.ACCOUNTING_DB.prepare(
     `SELECT currency_code, currency_label, currency_symbol, SUM(amount) AS total
       FROM expenses
@@ -514,7 +569,7 @@ async function expenseStats(env) {
       GROUP BY currency_code, currency_label, currency_symbol
       ORDER BY currency_code`
   )
-    .bind(tripId(env))
+    .bind(activeTripId)
     .all();
   const categoryTotals = await env.ACCOUNTING_DB.prepare(
     `SELECT category, currency_code, currency_label, SUM(amount) AS total
@@ -523,7 +578,7 @@ async function expenseStats(env) {
       GROUP BY category, currency_code, currency_label
       ORDER BY category, currency_code`
   )
-    .bind(tripId(env))
+    .bind(activeTripId)
     .all();
   return {
     currencyTotals: currencyTotals.results || [],
@@ -532,6 +587,7 @@ async function expenseStats(env) {
 }
 
 async function listLedgerMembers(env, options = {}) {
+  const activeTripId = tripId(env, options.tripId);
   const userId = String(options.userId || "").trim().slice(0, 80);
   const displayName = String(options.displayName || "").trim().slice(0, 80);
   const ledger = resolveLedger(env, {
@@ -543,7 +599,7 @@ async function listLedgerMembers(env, options = {}) {
   });
   if (userId) {
     await upsertLedgerMember(env, {
-      trip_id: tripId(env),
+      trip_id: activeTripId,
       ledger_id: ledger.ledger_id,
       chat_type: ledger.chat_type,
       chat_id: ledger.chat_id,
@@ -551,23 +607,54 @@ async function listLedgerMembers(env, options = {}) {
       created_by_name: displayName,
     });
   }
-  const sync = await syncLineChatMembers(env, ledger);
   const result = await env.ACCOUNTING_DB.prepare(
     `SELECT user_id, display_name, role, status, last_seen_at
       FROM ledger_members
       WHERE trip_id = ? AND ledger_id = ? AND status = 'active'
       ORDER BY last_seen_at ASC, id ASC`
   )
-    .bind(tripId(env), ledger.ledger_id)
+    .bind(activeTripId, ledger.ledger_id)
     .all();
   return {
     members: result.results || [],
     debug: {
+      tripId: activeTripId,
       chatType: ledger.chat_type,
       hasChatId: Boolean(ledger.chat_id),
-      syncedMemberCount: sync.count,
-      syncError: sync.error,
+      syncedMemberCount: 0,
+      syncError: "",
     },
+  };
+}
+
+async function createManualLedgerMember(env, payload = {}) {
+  const activeTripId = tripId(env, payload.tripId || payload.trip);
+  const name = String(payload.displayName || payload.name || "").trim().slice(0, 80);
+  if (!name) {
+    throw new Error("請輸入分帳成員名稱。");
+  }
+  const ledger = resolveLedger(env, {
+    expenseScope: "group",
+    payerId: payload.userId,
+    chatType: payload.chatType,
+    groupId: payload.groupId,
+    roomId: payload.roomId,
+  });
+  const userId = `manual:${crypto.randomUUID()}`;
+  const item = {
+    trip_id: activeTripId,
+    ledger_id: ledger.ledger_id,
+    chat_type: ledger.chat_type,
+    chat_id: ledger.chat_id,
+    created_by_id: userId,
+    created_by_name: name,
+  };
+  await upsertLedgerMember(env, item);
+  return {
+    user_id: userId,
+    display_name: name,
+    role: "member",
+    status: "active",
   };
 }
 
@@ -594,7 +681,7 @@ function normalizeExpense(env, payload) {
     payerName,
   });
   return {
-    trip_id: tripId(env),
+    trip_id: tripId(env, payload.tripId || payload.trip),
     date: normalizeDate(payload.date),
     amount,
     currency_code: currency.code,
@@ -700,59 +787,6 @@ async function upsertLedgerMember(env, item) {
     .run();
 }
 
-async function syncLineChatMembers(env, ledger) {
-  if (!env.LINE_CHANNEL_ACCESS_TOKEN || !["group", "room"].includes(ledger.chat_type)) {
-    return { count: 0, error: "missing-token-or-chat-context" };
-  }
-  try {
-    const memberIds = await fetchLineMemberIds(env, ledger);
-    await Promise.all(memberIds.slice(0, 100).map(async (userId) => {
-      const profile = await fetchLineMemberProfile(env, ledger, userId);
-      await upsertLedgerMember(env, {
-        trip_id: tripId(env),
-        ledger_id: ledger.ledger_id,
-        chat_type: ledger.chat_type,
-        chat_id: ledger.chat_id,
-        created_by_id: userId,
-        created_by_name: profile?.displayName || userId,
-      });
-    }));
-    return { count: memberIds.length, error: "" };
-  } catch (error) {
-    // If LINE member sync is unavailable, keep the members who opened LIFF.
-    return { count: 0, error: error.message || "member-sync-failed" };
-  }
-}
-
-async function fetchLineMemberIds(env, ledger) {
-  const ids = [];
-  let start = "";
-  do {
-    const params = start ? `?start=${encodeURIComponent(start)}` : "";
-    const response = await fetch(`${lineChatBaseUrl(ledger)}/members/ids${params}`, {
-      headers: { Authorization: `Bearer ${env.LINE_CHANNEL_ACCESS_TOKEN}` },
-    });
-    if (!response.ok) throw new Error(`LINE member IDs failed: ${response.status}`);
-    const data = await response.json();
-    ids.push(...(data.memberIds || []));
-    start = data.next || "";
-  } while (start);
-  return ids;
-}
-
-async function fetchLineMemberProfile(env, ledger, userId) {
-  const response = await fetch(`${lineChatBaseUrl(ledger)}/member/${encodeURIComponent(userId)}`, {
-    headers: { Authorization: `Bearer ${env.LINE_CHANNEL_ACCESS_TOKEN}` },
-  });
-  if (!response.ok) return null;
-  return response.json();
-}
-
-function lineChatBaseUrl(ledger) {
-  const type = ledger.chat_type === "room" ? "room" : "group";
-  return `https://api.line.me/v2/bot/${type}/${encodeURIComponent(ledger.chat_id)}`;
-}
-
 function normalizeDate(value) {
   const date = String(value || "").trim();
   if (/^\d{4}-\d{2}-\d{2}$/.test(date)) {
@@ -783,8 +817,12 @@ function accountingDate() {
   return formatLocalDate(now);
 }
 
-function tripId(env) {
-  return env.TRIP_ID || "2026-05-turkey";
+function tripId(env, value = "") {
+  const candidate = String(value || "").trim();
+  if (/^[a-zA-Z0-9._-]{3,80}$/.test(candidate)) {
+    return candidate;
+  }
+  return env.TRIP_ID || ACTIVE_TRIP.trip?.trip_id || "2026-05-turkey";
 }
 
 function jsonResponse(data, status = 200) {

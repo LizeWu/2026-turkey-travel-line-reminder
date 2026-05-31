@@ -1,5 +1,6 @@
 export const ACTIVE_TRIP = {
   "trip": {
+    "trip_id": "2026-05-turkey",
     "tour_code": "AALTK1260518IST",
     "tour_name": "土耳其 璀璨鄂圖曼 雙飛 三宮殿 12 天",
     "source_file": "/Users/u10a4057/Downloads/2026.05.18【巨匠】土耳其 璀璨鄂圖曼 雙飛 三宮殿12天 TK說資-更改0505.pdf",
@@ -569,7 +570,7 @@ export const ACTIVE_TRIP = {
 export const FLEX_MESSAGES = {
   "1": {
     "type": "flex",
-    "altText": "土耳其旅行提醒 Day 1 / 2026-05-18",
+    "altText": "土耳其 璀璨鄂圖曼 雙飛 三宮殿 12 天提醒 Day 1 / 2026-05-18",
     "contents": {
       "type": "bubble",
       "size": "mega",
@@ -740,7 +741,7 @@ export const FLEX_MESSAGES = {
   },
   "2": {
     "type": "flex",
-    "altText": "土耳其旅行提醒 Day 2 / 2026-05-19",
+    "altText": "土耳其 璀璨鄂圖曼 雙飛 三宮殿 12 天提醒 Day 2 / 2026-05-19",
     "contents": {
       "type": "bubble",
       "size": "mega",
@@ -947,7 +948,7 @@ export const FLEX_MESSAGES = {
   },
   "3": {
     "type": "flex",
-    "altText": "土耳其旅行提醒 Day 3 / 2026-05-20",
+    "altText": "土耳其 璀璨鄂圖曼 雙飛 三宮殿 12 天提醒 Day 3 / 2026-05-20",
     "contents": {
       "type": "bubble",
       "size": "mega",
@@ -1214,7 +1215,7 @@ export const FLEX_MESSAGES = {
   },
   "4": {
     "type": "flex",
-    "altText": "土耳其旅行提醒 Day 4 / 2026-05-21",
+    "altText": "土耳其 璀璨鄂圖曼 雙飛 三宮殿 12 天提醒 Day 4 / 2026-05-21",
     "contents": {
       "type": "bubble",
       "size": "mega",
@@ -1417,7 +1418,7 @@ export const FLEX_MESSAGES = {
   },
   "5": {
     "type": "flex",
-    "altText": "土耳其旅行提醒 Day 5 / 2026-05-22",
+    "altText": "土耳其 璀璨鄂圖曼 雙飛 三宮殿 12 天提醒 Day 5 / 2026-05-22",
     "contents": {
       "type": "bubble",
       "size": "mega",
@@ -1630,7 +1631,7 @@ export const FLEX_MESSAGES = {
   },
   "6": {
     "type": "flex",
-    "altText": "土耳其旅行提醒 Day 6 / 2026-05-23",
+    "altText": "土耳其 璀璨鄂圖曼 雙飛 三宮殿 12 天提醒 Day 6 / 2026-05-23",
     "contents": {
       "type": "bubble",
       "size": "mega",
@@ -1811,7 +1812,7 @@ export const FLEX_MESSAGES = {
   },
   "7": {
     "type": "flex",
-    "altText": "土耳其旅行提醒 Day 7 / 2026-05-24",
+    "altText": "土耳其 璀璨鄂圖曼 雙飛 三宮殿 12 天提醒 Day 7 / 2026-05-24",
     "contents": {
       "type": "bubble",
       "size": "mega",
@@ -2014,7 +2015,7 @@ export const FLEX_MESSAGES = {
   },
   "8": {
     "type": "flex",
-    "altText": "土耳其旅行提醒 Day 8 / 2026-05-25",
+    "altText": "土耳其 璀璨鄂圖曼 雙飛 三宮殿 12 天提醒 Day 8 / 2026-05-25",
     "contents": {
       "type": "bubble",
       "size": "mega",
@@ -2205,7 +2206,7 @@ export const FLEX_MESSAGES = {
   },
   "9": {
     "type": "flex",
-    "altText": "土耳其旅行提醒 Day 9 / 2026-05-26",
+    "altText": "土耳其 璀璨鄂圖曼 雙飛 三宮殿 12 天提醒 Day 9 / 2026-05-26",
     "contents": {
       "type": "bubble",
       "size": "mega",
@@ -2482,7 +2483,7 @@ export const FLEX_MESSAGES = {
   },
   "10": {
     "type": "flex",
-    "altText": "土耳其旅行提醒 Day 10 / 2026-05-27",
+    "altText": "土耳其 璀璨鄂圖曼 雙飛 三宮殿 12 天提醒 Day 10 / 2026-05-27",
     "contents": {
       "type": "bubble",
       "size": "mega",
@@ -2695,7 +2696,7 @@ export const FLEX_MESSAGES = {
   },
   "11": {
     "type": "flex",
-    "altText": "土耳其旅行提醒 Day 11 / 2026-05-28",
+    "altText": "土耳其 璀璨鄂圖曼 雙飛 三宮殿 12 天提醒 Day 11 / 2026-05-28",
     "contents": {
       "type": "bubble",
       "size": "mega",
@@ -2876,7 +2877,7 @@ export const FLEX_MESSAGES = {
   },
   "12": {
     "type": "flex",
-    "altText": "土耳其旅行提醒 Day 12 / 2026-05-29",
+    "altText": "土耳其 璀璨鄂圖曼 雙飛 三宮殿 12 天提醒 Day 12 / 2026-05-29",
     "contents": {
       "type": "bubble",
       "size": "mega",

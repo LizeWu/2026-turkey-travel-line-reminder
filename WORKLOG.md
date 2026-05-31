@@ -25,12 +25,46 @@
 - 更新 workflow：
   - `send-travel-reminder.yml` 與 `send-morning-greeting.yml` 都會 restore/save sent records cache。
   - `.gitignore` 加入 `.sent-reminders/`，避免本機測試紀錄被提交。
+- 開始多人與訂閱設計第一段調整：
+  - 群組呼叫記帳本時，回覆的 LIFF 連結會帶 `trip` 參數。
+  - 群組/多人聊天室呼叫記帳本時，LIFF 連結也會帶 `chatType` 與 `groupId`/`roomId`，避免關閉重開後遺失 LINE context 而查到空帳本。
+  - LIFF API 會帶入 `tripId`，讓團體帳本以 `trip_id + groupId/roomId` 作為實際歸屬。
+  - 新增 `0005_add_group_trip_settings.sql`，作為未來「群組目前啟用旅程」設定基礎。
+  - 分帳成員改採混合來源：已點 LIFF 的 LINE 成員自動加入，也可手動新增旅伴。
+  - 移除 UI 對 LINE 自動同步完整群組成員的依賴，避免再顯示 `LINE member IDs failed: 400`。
+- 推送第一批修正到 GitHub：
+  - commit：`03d2802 Fix scheduled travel reminder reliability`
+  - 已 push 到 `main`。
+
+### 今晚排查
+
+- 根據 13 張 LINE 截圖確認團體記帳異常：
+  - 新增團體消費後，當下可在 `消費項目` 與 `統計` 看見資料，代表資料有成功寫入。
+  - 關閉 LIFF 後重新從群組連結開啟，`分帳成員`、`消費項目`、`統計` 會消失。
+  - 再新增新資料後，只會看到新資料，看不到重開前新增的資料。
+- 判斷主因不是 D1 無法紀錄，而是團體帳本識別不穩：
+  - 新增當下與重新開啟後可能使用不同的 `groupId` / `roomId` / `ledger_id`。
+  - 造成同一個 LINE 群組看起來像讀到不同帳本。
+- 已先修正同一群組固定讀同一本 D1 帳本的核心邏輯：
+  - 前端會解析 LINE LIFF 重新導向後可能藏在 `liff.state` 裡的原始參數。
+  - 團體帳本優先使用阿珠媽在群組回覆連結時帶上的 `chatType` 與 `groupId`/`roomId`。
+  - `我要記帳`、`消費項目`、`統計` 會共用同一組群組 context。
+- 已由使用者部署今晚最後一段修正；接下來可直接在 LINE 群組重新呼叫 `阿珠`，用最新連結測試。
 
 ### 已驗證
 
 - `PYTHONPYCACHEPREFIX=.pycache python3 -m py_compile send_line_reminder.py` 通過。
 - 模擬 `2026-05-18T14:57:10Z`，也就是台灣 2026-05-18 22:57，晚間提醒會選到 Day 2 / `2026-05-19`。
 - 模擬 `2026-05-19T06:59:54Z`，也就是土耳其 2026-05-19 09:59，早安提醒會選到 Day 2 / `2026-05-19`。
+- `node --check webhook/cloudflare-worker/src/index.js` 通過。
+- `node --check webhook/cloudflare-worker/src/accounting-page.js` 通過。
+- 本機模擬 `liff.state` 解析，可正確取回 `trip`、`chatType`、`groupId`。
+
+### 明日接續
+
+1. 在同一個 LINE 群組重新輸入 `阿珠`，使用最新 LIFF 連結測試。
+2. 測試流程：新增手動分帳成員、新增團體消費、切到消費項目/統計確認，再關閉 LIFF 重開確認資料仍存在。
+3. 若舊測試資料仍分散在不同 ledger，先以新資料驗證穩定性，再評估是否需要清理或搬移舊資料。
 
 ## 2026-05-30
 

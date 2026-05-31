@@ -304,6 +304,25 @@ export function accountingPage() {
       display: grid;
       gap: 8px;
     }
+    .manual-member {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 8px;
+      margin-top: 10px;
+    }
+    .manual-member input {
+      min-height: 38px;
+      font-size: .92rem;
+    }
+    .manual-member button {
+      min-height: 38px;
+      border-radius: 8px;
+      padding: 0 12px;
+      color: var(--green);
+      font-size: .88rem;
+      font-weight: 800;
+      white-space: nowrap;
+    }
     .member-option {
       display: flex;
       align-items: center;
@@ -549,6 +568,10 @@ export function accountingPage() {
           <div id="split-panel" class="split-panel hidden">
             <p class="split-title">分帳成員</p>
             <div id="split-members" class="member-list"></div>
+            <div class="manual-member">
+              <input id="manual-member-name" placeholder="新增旅伴名稱">
+              <button id="add-manual-member" type="button">加入</button>
+            </div>
           </div>
         </div>
         <button id="save" class="primary" type="button">新增記帳</button>
@@ -608,8 +631,10 @@ export function accountingPage() {
   <script>
     const state = {
       liffId: "",
+      tripId: "",
       profile: null,
       lineContext: null,
+      urlContext: null,
       currentTab: "add",
       editingId: null,
       expenses: [],
@@ -634,6 +659,8 @@ export function accountingPage() {
     async function init() {
       const config = await api("/api/accounting/config");
       state.liffId = config.liffId || "";
+      state.tripId = urlTripId() || config.tripId || "";
+      state.urlContext = urlChatContext();
       if (state.liffId && window.liff) {
         try {
           await liff.init({ liffId: state.liffId });
@@ -677,6 +704,7 @@ export function accountingPage() {
         if (event.target === $("date-dialog")) closeCalendar();
       });
       $("calendar-grid").addEventListener("click", handleCalendarDay);
+      $("add-manual-member").addEventListener("click", addManualMember);
     }
 
     function switchTab(tab) {
@@ -763,6 +791,7 @@ export function accountingPage() {
         payerId: state.profile?.userId || "",
         payerName: state.profile?.displayName || "Lize",
         splitMembers: selectedSplitMembers(),
+        tripId: state.tripId,
         ...ledgerContextPayload(),
       };
     }
@@ -896,6 +925,7 @@ export function accountingPage() {
       const params = new URLSearchParams({
         scope: "all",
         expenseScope,
+        tripId: state.tripId,
         userId: currentUserId(),
         displayName: state.profile?.displayName || "",
         ...ledgerContextPayload(),
@@ -907,6 +937,7 @@ export function accountingPage() {
     async function loadLedgerMembers() {
       if (!hasGroupLedgerContext()) return;
       const params = new URLSearchParams({
+        tripId: state.tripId,
         userId: currentUserId(),
         displayName: state.profile?.displayName || "",
         ...ledgerContextPayload(),
@@ -917,8 +948,37 @@ export function accountingPage() {
         renderSplitMembers();
         if (data.debug) {
           const error = data.debug.syncError ? "，同步：" + data.debug.syncError : "";
-          setStatus("群組 context：" + data.debug.chatType + "，成員 " + state.ledgerMembers.length + " 人，LINE 同步 " + data.debug.syncedMemberCount + " 人" + error);
+          setStatus("旅程：" + data.debug.tripId + "，群組 context：" + data.debug.chatType + "，分帳成員 " + state.ledgerMembers.length + " 人" + error);
         }
+      } catch (error) {
+        setStatus(error.message);
+      }
+    }
+
+    async function addManualMember() {
+      const input = $("manual-member-name");
+      const name = input.value.trim();
+      if (!name) {
+        setStatus("請輸入旅伴名稱。");
+        return;
+      }
+      if (!hasGroupLedgerContext()) {
+        setStatus("新增分帳成員需要從 LINE 群組或多人聊天室開啟。");
+        return;
+      }
+      try {
+        await api("/api/ledger-members", {
+          method: "POST",
+          body: {
+            tripId: state.tripId,
+            displayName: name,
+            userId: currentUserId(),
+            ...ledgerContextPayload(),
+          },
+        });
+        input.value = "";
+        await loadLedgerMembers();
+        setStatus("已加入分帳成員：" + name);
       } catch (error) {
         setStatus(error.message);
       }
@@ -1044,7 +1104,7 @@ export function accountingPage() {
     }
 
     function ledgerContextPayload() {
-      const context = state.lineContext || {};
+      const context = effectiveLineContext();
       return {
         chatType: context.type || "",
         groupId: context.groupId || "",
@@ -1052,8 +1112,44 @@ export function accountingPage() {
       };
     }
 
+    function urlTripId() {
+      return appParams().get("trip") || "";
+    }
+
+    function urlChatContext() {
+      const params = appParams();
+      const chatType = params.get("chatType") || "";
+      const groupId = params.get("groupId") || "";
+      const roomId = params.get("roomId") || "";
+      if (chatType === "group" && groupId) return { type: "group", groupId, roomId: "" };
+      if (chatType === "room" && roomId) return { type: "room", groupId: "", roomId };
+      return null;
+    }
+
+    function appParams() {
+      const params = new URLSearchParams(window.location.search);
+      const liffState = params.get("liff.state") || "";
+      if (!liffState) return params;
+
+      const query = liffState.includes("?")
+        ? liffState.slice(liffState.indexOf("?") + 1)
+        : liffState.replace(/^\\?/, "");
+      const stateParams = new URLSearchParams(query);
+      stateParams.forEach((value, key) => {
+        if (!params.has(key)) params.set(key, value);
+      });
+      return params;
+    }
+
+    function effectiveLineContext() {
+      if (state.urlContext?.groupId || state.urlContext?.roomId) return state.urlContext;
+      const liffContext = state.lineContext || {};
+      if (liffContext.groupId || liffContext.roomId) return liffContext;
+      return {};
+    }
+
     function hasGroupLedgerContext() {
-      const context = state.lineContext || {};
+      const context = effectiveLineContext();
       return Boolean(context.groupId || context.roomId);
     }
 
