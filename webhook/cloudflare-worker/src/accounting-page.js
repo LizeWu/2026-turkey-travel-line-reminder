@@ -328,6 +328,9 @@ export function accountingPage() {
       color: var(--green);
       font-weight: 800;
     }
+    .payer-field {
+      margin-bottom: 10px;
+    }
     .member-list {
       display: grid;
       gap: 8px;
@@ -690,7 +693,11 @@ export function accountingPage() {
             <input id="note" placeholder="烤肉">
           </div>
           <div id="split-panel" class="split-panel hidden">
-            <p class="split-title">分帳成員</p>
+            <div class="payer-field">
+              <label for="payer">付款人</label>
+              <select id="payer"></select>
+            </div>
+            <p class="split-title">分攤成員</p>
             <div id="split-members" class="member-list"></div>
             <div class="manual-member">
               <input id="manual-member-name" placeholder="新增旅伴名稱">
@@ -766,6 +773,8 @@ export function accountingPage() {
       currentTab: "add",
       editingId: null,
       editingSplitMemberIds: null,
+      editingPayerId: "",
+      editingPayerName: "",
       saving: false,
       highlightedExpenseId: null,
       highlightType: "",
@@ -846,6 +855,7 @@ export function accountingPage() {
       $("add-manual-member").addEventListener("click", addManualMember);
       $("split-members").addEventListener("click", handleMemberAction);
       $("split-members").addEventListener("change", handleMemberSelectionChange);
+      $("payer").addEventListener("change", handlePayerChange);
       $("toast-root").addEventListener("click", handleToastAction);
     }
 
@@ -926,6 +936,7 @@ export function accountingPage() {
       const amount = Number($("amount").value.trim());
       const currencyCode = $("currency").value;
       const meta = currencyMeta[currencyCode] || currencyMeta.TWD;
+      const payer = selectedPayer();
       return {
         expenseScope: state.addScope,
         date: $("date").value,
@@ -935,8 +946,10 @@ export function accountingPage() {
         currencySymbol: meta.symbol,
         category: $("category").value,
         note: $("note").value.trim(),
-        payerId: state.profile?.userId || "",
-        payerName: state.profile?.displayName || "Lize",
+        payerId: payer.userId,
+        payerName: payer.displayName,
+        createdById: currentUserId(),
+        createdByName: currentUserName(),
         splitMembers: selectedSplitMembers(),
         tripId: state.tripId,
         ...ledgerContextPayload(),
@@ -952,8 +965,12 @@ export function accountingPage() {
         showError("團體消費需要從 LINE 群組或多人聊天室開啟。");
         return;
       }
+      if (payload.expenseScope === "group" && !payload.payerId) {
+        showError("請選擇付款人。");
+        return;
+      }
       if (payload.expenseScope === "group" && !payload.splitMembers.length) {
-        showError("請至少選擇一位分帳成員。");
+        showError("請至少選擇一位分攤成員。");
         return;
       }
       if (!/^\\d{4}-\\d{2}-\\d{2}$/.test(payload.date)) {
@@ -1007,6 +1024,8 @@ export function accountingPage() {
       const splitMembers = parseSplitMembers(item);
       state.editingId = id;
       state.editingSplitMemberIds = new Set(splitMembers.map(memberId).filter(Boolean));
+      state.editingPayerId = item.payer_id || "";
+      state.editingPayerName = item.payer_name || "";
       setDateValue(item.date);
       setAddScope(item.expense_scope || "personal");
       $("amount").value = item.amount;
@@ -1279,6 +1298,8 @@ export function accountingPage() {
     function resetForm() {
       state.editingId = null;
       state.editingSplitMemberIds = null;
+      state.editingPayerId = "";
+      state.editingPayerName = "";
       setDefaultDate();
       $("amount").value = "";
       $("note").value = "";
@@ -1383,6 +1404,10 @@ export function accountingPage() {
       return state.profile?.userId || "";
     }
 
+    function currentUserName() {
+      return state.profile?.displayName || "Lize";
+    }
+
     function isGroupExpense(item) {
       return (item.expense_scope || "personal") === "group";
     }
@@ -1446,6 +1471,7 @@ export function accountingPage() {
       if (!$("split-members")) return;
       const selectedIds = selectedMemberIds(selectedMembers);
       const members = normalizedLedgerMembers();
+      renderPayerOptions(members);
       if (!options.preserveSelection && !selectedMembers && !state.editingId) {
         members.forEach((member) => selectedIds.add(member.userId));
       }
@@ -1464,12 +1490,48 @@ export function accountingPage() {
     function normalizedLedgerMembers() {
       const members = [...state.ledgerMembers];
       if (currentUserId() && !members.some((member) => member.user_id === currentUserId())) {
-        members.push({ user_id: currentUserId(), display_name: state.profile?.displayName || "Lize" });
+        members.push({ user_id: currentUserId(), display_name: currentUserName() });
       }
-      return members.map((member) => ({
+      if (state.editingPayerId && !members.some((member) => (member.user_id || member.userId) === state.editingPayerId)) {
+        members.push({ user_id: state.editingPayerId, display_name: state.editingPayerName || "原付款人" });
+      }
+      const unique = new Map();
+      for (const member of members.map((member) => ({
         userId: member.user_id || member.userId,
         displayName: member.display_name || member.displayName || "未命名成員",
-      })).filter((member) => member.userId);
+      })).filter((member) => member.userId)) {
+        unique.set(member.userId, member);
+      }
+      return [...unique.values()];
+    }
+
+    function renderPayerOptions(members) {
+      if (!$("payer")) return;
+      const current = state.editingPayerId || $("payer").value || currentUserId();
+      $("payer").innerHTML = members.map((member) =>
+        '<option value="' + escapeHtml(member.userId) + '"' + (member.userId === current ? " selected" : "") + '>' + escapeHtml(member.displayName) + '</option>'
+      ).join("");
+      if (members.some((member) => member.userId === current)) {
+        $("payer").value = current;
+      } else if (members.length) {
+        $("payer").value = members[0].userId;
+      }
+    }
+
+    function selectedPayer() {
+      if (state.addScope !== "group") {
+        return { userId: currentUserId(), displayName: currentUserName() };
+      }
+      const payerId = $("payer").value || currentUserId();
+      const payer = normalizedLedgerMembers().find((member) => member.userId === payerId);
+      return {
+        userId: payer?.userId || payerId,
+        displayName: payer?.displayName || currentUserName(),
+      };
+    }
+
+    function handlePayerChange() {
+      state.editingPayerId = $("payer").value;
     }
 
     function selectedMemberIds(selectedMembers = null) {

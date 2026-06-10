@@ -716,6 +716,8 @@ function normalizeExpense(env, payload) {
   const expenseScope = normalizeExpenseScope(payload.expenseScope);
   const payerId = String(payload.payerId || "").slice(0, 80);
   const payerName = String(payload.payerName || "").slice(0, 80);
+  const createdById = String(payload.createdById || payerId).slice(0, 80);
+  const createdByName = String(payload.createdByName || payerName).slice(0, 80);
   const ledger = resolveLedger(env, {
     expenseScope,
     payerId,
@@ -725,8 +727,6 @@ function normalizeExpense(env, payload) {
   });
   const split = normalizeSplit(payload, {
     expenseScope,
-    payerId,
-    payerName,
   });
   return {
     trip_id: tripId(env, payload.tripId || payload.trip),
@@ -743,8 +743,8 @@ function normalizeExpense(env, payload) {
     chat_id: ledger.chat_id,
     expense_scope: expenseScope,
     ledger_id: ledger.ledger_id,
-    created_by_id: payerId,
-    created_by_name: payerName,
+    created_by_id: createdById,
+    created_by_name: createdByName,
     split_method: split.method,
     split_members: split.members,
     created_at: new Date().toISOString(),
@@ -762,9 +762,6 @@ function normalizeSplit(payload, context) {
       displayName: String(member.displayName || "").trim().slice(0, 80),
     }))
     .filter((member) => member.userId);
-  if (!members.some((member) => member.userId === context.payerId) && context.payerId) {
-    members.push({ userId: context.payerId, displayName: context.payerName });
-  }
   const unique = new Map();
   for (const member of members) unique.set(member.userId, member);
   return {
