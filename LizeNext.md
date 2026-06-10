@@ -1,9 +1,11 @@
 # Lize Next
 
-Updated at: 2026-05-31 22:00 CST
+Updated at: 2026-06-10 14:05 CST
+
+Note: New Codex sessions should read `AGENTS.md` first. It is the cross-machine handoff guide for company MacBook, home Apple Studio, and new Codex app chats.
 
 ```text
-請接續 2026-turkey-travel-line-reminder，先讀取 LizeNext.md。
+請接續 2026-turkey-travel-line-reminder，先讀取 AGENTS.md，再讀取 LizeNext.md。
 GitHub repo: https://github.com/LizeWu/2026-turkey-travel-line-reminder
 請再讀取 PROJECT_HANDOFF.md、WORKLOG.md、FILE_INDEX.md、docs/accounting-book.md、docs/liff-accounting-setup.md。
 目前狀態：LIFF 旅行記帳本已支援個人/團體消費基本流程，包含我要記帳、消費項目、統計、日期月曆、指定項目修改/刪除、幣別統計卡片；團體消費已改為依 LINE groupId/roomId 建立群組帳本並顯示付款人；一對一個人使用會隱藏團體切換，群組開啟會顯示團體消費；AI 辨識已移除；阿珠媽 LINE 加好友連結與分享小卡已完成。
