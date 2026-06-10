@@ -101,6 +101,9 @@ export function accountingPage() {
       background: var(--green);
       color: white;
     }
+    button:disabled {
+      opacity: .62;
+    }
     button.active {
       border-color: var(--green);
       background: var(--green-soft);
@@ -412,6 +415,25 @@ export function accountingPage() {
       color: var(--ink);
       font-weight: 800;
     }
+    .expense-title-main {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 0;
+      overflow-wrap: anywhere;
+    }
+    .expense-tag {
+      display: inline-flex;
+      align-items: center;
+      min-height: 22px;
+      border-radius: 999px;
+      padding: 2px 8px;
+      background: var(--green-soft);
+      color: var(--green);
+      font-size: .78rem;
+      font-weight: 800;
+      white-space: nowrap;
+    }
     .amount {
       white-space: nowrap;
     }
@@ -516,6 +538,61 @@ export function accountingPage() {
       border-top: 0;
       font-weight: 600;
     }
+    .toast-root {
+      position: fixed;
+      top: max(12px, env(safe-area-inset-top));
+      left: 0;
+      right: 0;
+      z-index: 40;
+      display: grid;
+      justify-items: center;
+      padding: 0 14px;
+      pointer-events: none;
+    }
+    .toast {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 36px;
+      align-items: center;
+      gap: 10px;
+      width: min(100%, 520px);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 10px 10px 10px 14px;
+      background: white;
+      color: var(--ink);
+      box-shadow: 0 12px 28px rgba(31, 41, 51, .18);
+      pointer-events: auto;
+    }
+    .toast.success {
+      border-color: #b9d8ca;
+      background: #eff8f3;
+      color: var(--green);
+    }
+    .toast.error {
+      border-color: #efcaca;
+      background: var(--danger-soft);
+      color: var(--danger);
+    }
+    .toast-message {
+      min-width: 0;
+      font-weight: 800;
+      line-height: 1.45;
+      overflow-wrap: anywhere;
+    }
+    .toast-close {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 36px;
+      height: 36px;
+      min-height: 36px;
+      padding: 0;
+      border-color: transparent;
+      background: transparent;
+      color: currentColor;
+      font-size: 1.35rem;
+      line-height: 1;
+    }
     .hidden { display: none; }
     .date-dialog.hidden { display: none; }
     @media (max-width: 420px) {
@@ -535,6 +612,7 @@ export function accountingPage() {
   <header>
     <h1>旅行記帳本</h1>
   </header>
+  <div id="toast-root" class="toast-root" aria-live="polite" aria-atomic="true"></div>
   <main>
     <nav class="toolbar" aria-label="主要功能">
       <button id="tab-add" class="active" type="button">我要記帳</button>
@@ -659,6 +737,11 @@ export function accountingPage() {
       currentTab: "add",
       editingId: null,
       editingSplitMemberIds: null,
+      saving: false,
+      highlightedExpenseId: null,
+      highlightType: "",
+      highlightTimer: null,
+      toastTimer: null,
       expenses: [],
       calendarMonth: null,
       sortMode: "date",
@@ -733,6 +816,7 @@ export function accountingPage() {
       $("add-manual-member").addEventListener("click", addManualMember);
       $("split-members").addEventListener("click", handleMemberAction);
       $("split-members").addEventListener("change", handleMemberSelectionChange);
+      $("toast-root").addEventListener("click", handleToastAction);
     }
 
     function switchTab(tab) {
@@ -825,36 +909,46 @@ export function accountingPage() {
     }
 
     async function saveExpense() {
+      if (state.saving) return;
       const payload = formPayload();
       if (payload.expenseScope === "group" && !hasGroupLedgerContext()) {
-        setStatus("團體消費需要從 LINE 群組或多人聊天室開啟。");
+        showError("團體消費需要從 LINE 群組或多人聊天室開啟。");
         return;
       }
       if (payload.expenseScope === "group" && !payload.splitMembers.length) {
-        setStatus("請至少選擇一位分帳成員。");
+        showError("請至少選擇一位分帳成員。");
         return;
       }
       if (!/^\\d{4}-\\d{2}-\\d{2}$/.test(payload.date)) {
-        setStatus("日期格式請輸入 YYYY-MM-DD。");
+        showError("日期格式請輸入 YYYY-MM-DD。");
         return;
       }
       if (!payload.amount || payload.amount <= 0) {
-        setStatus("請輸入正確金額。");
+        showError("請輸入正確金額。");
         return;
       }
+      setSaving(true);
       try {
+        const wasEditing = Boolean(state.editingId);
+        const targetScope = payload.expenseScope;
+        let result;
         if (state.editingId) {
-          const result = await api("/api/expenses/" + state.editingId, { method: "PATCH", body: payload });
-          setStatus("已更新 #" + result.expense.id + "，" + formatAmount(result.expense));
+          result = await api("/api/expenses/" + state.editingId, { method: "PATCH", body: payload });
         } else {
-          const result = await api("/api/expenses", { method: "POST", body: payload });
-          setStatus("已記帳 #" + result.expense.id + "，" + formatAmount(result.expense));
+          result = await api("/api/expenses", { method: "POST", body: payload });
         }
+        const label = successScopeText(targetScope);
+        const action = wasEditing ? "已更新" : "已新增";
+        setHighlight(result.expense.id, wasEditing ? "updated" : "created");
+        setStatus("");
+        showToast(action + label + "消費", "success");
         resetForm();
-        await refreshItems();
-        await refreshStats();
+        setListScope(targetScope);
+        switchTab("items");
       } catch (error) {
-        setStatus(error.message);
+        showError(error.message);
+      } finally {
+        setSaving(false);
       }
     }
 
@@ -892,12 +986,14 @@ export function accountingPage() {
       if (!confirm("確定刪除這筆記帳？")) return;
       try {
         const result = await api("/api/expenses/" + id, { method: "DELETE" });
-        setStatus("已刪除 #" + result.expense.id + "。");
+        setStatus("");
+        showToast("已刪除消費", "success");
         if (state.editingId === id) resetForm();
+        if (state.highlightedExpenseId === id) clearHighlight();
         await refreshItems();
         await refreshStats();
       } catch (error) {
-        setStatus(error.message);
+        showError(error.message);
       }
     }
 
@@ -986,11 +1082,11 @@ export function accountingPage() {
       const input = $("manual-member-name");
       const name = input.value.trim();
       if (!name) {
-        setStatus("請輸入旅伴名稱。");
+        showError("請輸入旅伴名稱。");
         return;
       }
       if (!hasGroupLedgerContext()) {
-        setStatus("新增分帳成員需要從 LINE 群組或多人聊天室開啟。");
+        showError("新增分帳成員需要從 LINE 群組或多人聊天室開啟。");
         return;
       }
       try {
@@ -1005,9 +1101,9 @@ export function accountingPage() {
         });
         input.value = "";
         await loadLedgerMembers();
-        setStatus("已加入分帳成員：" + name);
+        showToast("已加入分帳成員：" + name, "success");
       } catch (error) {
-        setStatus(error.message);
+        showError(error.message);
       }
     }
 
@@ -1029,7 +1125,7 @@ export function accountingPage() {
     async function deleteLedgerMember(userId, displayName) {
       if (!userId) return;
       if (userId === currentUserId()) {
-        setStatus("目前開啟記帳本的 LINE 成員會自動保留。");
+        showError("目前開啟記帳本的 LINE 成員會自動保留。");
         return;
       }
       const name = displayName || "這位成員";
@@ -1043,9 +1139,9 @@ export function accountingPage() {
         state.ledgerMembers = state.ledgerMembers.filter((member) => (member.user_id || member.userId) !== userId);
         if (state.editingSplitMemberIds) state.editingSplitMemberIds.delete(userId);
         renderSplitMembers(null, { preserveSelection: true });
-        setStatus("已刪除分帳成員：" + name);
+        showToast("已刪除分帳成員：" + name, "success");
       } catch (error) {
-        setStatus(error.message);
+        showError(error.message);
       }
     }
 
@@ -1123,9 +1219,12 @@ export function accountingPage() {
     function renderExpense(item, index) {
       const payer = isGroupExpense(item) && item.payer_name ? '｜付款人：' + escapeHtml(item.payer_name) : "";
       const meta = '#' + item.id + ' ' + escapeHtml(item.category) + payer + splitText(item);
+      const tag = Number(item.id) === state.highlightedExpenseId
+        ? '<span class="expense-tag">' + escapeHtml(state.highlightType === "updated" ? "已更新" : "已新增") + '</span>'
+        : "";
       return '<li><article class="expense">' +
         '<div class="expense-main">' +
-          '<div class="expense-title"><span>' + (index + 1) + '. ' + escapeHtml(item.note || "無備註") + '</span><span class="amount">' + formatAmount(item) + '</span></div>' +
+          '<div class="expense-title"><span class="expense-title-main"><span>' + (index + 1) + '. ' + escapeHtml(item.note || "無備註") + '</span>' + tag + '</span><span class="amount">' + formatAmount(item) + '</span></div>' +
           '<div class="meta">' + meta + '</div>' +
         '</div>' +
         '<div class="icon-actions">' +
@@ -1159,6 +1258,70 @@ export function accountingPage() {
     function setStatus(text) {
       $("status").textContent = text;
       $("items-status").textContent = text;
+    }
+
+    function showError(message) {
+      setStatus(message);
+      showToast(message, "error", { duration: 0 });
+    }
+
+    function showToast(message, type = "success", options = {}) {
+      const duration = options.duration ?? (type === "success" ? 2500 : 0);
+      if (state.toastTimer) clearTimeout(state.toastTimer);
+      $("toast-root").innerHTML = '<div class="toast ' + escapeHtml(type) + '" role="' + (type === "error" ? "alert" : "status") + '">' +
+        '<div class="toast-message">' + escapeHtml(message) + '</div>' +
+        '<button class="toast-close" type="button" aria-label="關閉提醒" title="關閉提醒" data-toast-close>×</button>' +
+        '</div>';
+      if (duration > 0) {
+        state.toastTimer = setTimeout(closeToast, duration);
+      }
+    }
+
+    function closeToast() {
+      if (state.toastTimer) clearTimeout(state.toastTimer);
+      state.toastTimer = null;
+      $("toast-root").innerHTML = "";
+    }
+
+    function handleToastAction(event) {
+      if (event.target.closest("[data-toast-close]")) closeToast();
+    }
+
+    function setSaving(isSaving) {
+      state.saving = isSaving;
+      $("save").disabled = isSaving;
+      if (isSaving) {
+        $("save").textContent = state.editingId ? "儲存中..." : "新增中...";
+      } else {
+        $("save").textContent = state.editingId ? "儲存修改" : "新增記帳";
+      }
+    }
+
+    function setListScope(scope) {
+      state.itemScope = scope;
+      $("items-personal").classList.toggle("active", scope === "personal");
+      $("items-group").classList.toggle("active", scope === "group");
+    }
+
+    function setHighlight(id, type) {
+      if (state.highlightTimer) clearTimeout(state.highlightTimer);
+      state.highlightedExpenseId = Number(id);
+      state.highlightType = type;
+      state.highlightTimer = setTimeout(() => {
+        clearHighlight();
+        if (state.currentTab === "items") refreshItems();
+      }, 8000);
+    }
+
+    function clearHighlight() {
+      if (state.highlightTimer) clearTimeout(state.highlightTimer);
+      state.highlightTimer = null;
+      state.highlightedExpenseId = null;
+      state.highlightType = "";
+    }
+
+    function successScopeText(scope) {
+      return scope === "group" ? "團體" : "我的";
     }
 
     function currentUserId() {
@@ -1276,8 +1439,9 @@ export function accountingPage() {
     function selectedSplitMembers() {
       if (state.addScope !== "group") return [];
       const members = normalizedLedgerMembers();
-      const checked = [...document.querySelectorAll("[data-split-member]:checked")].map((input) => input.dataset.splitMember);
-      const selectedIds = new Set(checked.length ? checked : members.map((member) => member.userId));
+      const inputs = [...document.querySelectorAll("[data-split-member]")];
+      const checked = inputs.filter((input) => input.checked).map((input) => input.dataset.splitMember);
+      const selectedIds = new Set(inputs.length ? checked : members.map((member) => member.userId));
       return members.filter((member) => selectedIds.has(member.userId));
     }
 
