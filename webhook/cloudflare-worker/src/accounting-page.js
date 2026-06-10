@@ -101,6 +101,24 @@ export function accountingPage() {
       background: var(--green);
       color: white;
     }
+    .form-actions {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 8px;
+      margin-top: 10px;
+    }
+    .form-actions.editing {
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    }
+    .form-actions button.primary {
+      margin-top: 0;
+    }
+    .button-secondary {
+      width: 100%;
+      border-color: var(--green);
+      color: var(--green);
+      background: white;
+    }
     button:disabled {
       opacity: .62;
     }
@@ -206,6 +224,13 @@ export function accountingPage() {
       margin: 10px 0 0;
       color: var(--muted);
       font-size: .92rem;
+    }
+    .edit-subtitle {
+      grid-column: 1 / -1;
+      margin: 0 0 4px;
+      color: var(--green);
+      font-size: 1rem;
+      font-weight: 800;
     }
     .segmented {
       display: grid;
@@ -629,6 +654,7 @@ export function accountingPage() {
       </div>
       <div class="panel">
         <div class="grid">
+          <h2 id="edit-subtitle" class="edit-subtitle hidden"></h2>
           <div class="full-row">
             <label for="date">消費日期</label>
             <input id="date" type="hidden">
@@ -672,7 +698,10 @@ export function accountingPage() {
             </div>
           </div>
         </div>
-        <button id="save" class="primary" type="button">新增記帳</button>
+        <div id="form-actions" class="form-actions">
+          <button id="save" class="primary" type="button">新增記帳</button>
+          <button id="cancel-edit" class="button-secondary hidden" type="button">取消</button>
+        </div>
         <p id="status" class="status"></p>
       </div>
     </section>
@@ -794,6 +823,7 @@ export function accountingPage() {
       $("tab-items").addEventListener("click", () => switchTab("items"));
       $("tab-stats").addEventListener("click", () => switchTab("stats"));
       $("save").addEventListener("click", saveExpense);
+      $("cancel-edit").addEventListener("click", cancelEdit);
       $("items").addEventListener("click", handleItemAction);
       $("stats").addEventListener("click", handleStatsAction);
       $("add-personal").addEventListener("click", () => setAddScope("personal"));
@@ -984,9 +1014,15 @@ export function accountingPage() {
       $("category").value = item.category;
       $("note").value = item.note || "";
       renderSplitMembers(splitMembers, { preserveSelection: true });
-      $("save").textContent = "儲存修改";
+      syncEditMode(id);
       switchTab("add", { preserveStatus: true });
-      setStatus("正在修改 #" + id + "。");
+    }
+
+    function cancelEdit() {
+      resetForm();
+      clearStatus();
+      closeToast();
+      switchTab("items");
     }
 
     async function deleteExpense(id) {
@@ -1246,7 +1282,7 @@ export function accountingPage() {
       setDefaultDate();
       $("amount").value = "";
       $("note").value = "";
-      $("save").textContent = "新增記帳";
+      syncEditMode();
       renderSplitMembers();
     }
 
@@ -1305,6 +1341,15 @@ export function accountingPage() {
       } else {
         $("save").textContent = state.editingId ? "儲存修改" : "新增記帳";
       }
+    }
+
+    function syncEditMode(id = null) {
+      const isEditing = Boolean(state.editingId);
+      $("save").textContent = isEditing ? "儲存修改" : "新增記帳";
+      $("cancel-edit").classList.toggle("hidden", !isEditing);
+      $("form-actions").classList.toggle("editing", isEditing);
+      $("edit-subtitle").classList.toggle("hidden", !isEditing);
+      $("edit-subtitle").textContent = isEditing ? "正在修改 #" + (id || state.editingId) : "";
     }
 
     function setListScope(scope) {
