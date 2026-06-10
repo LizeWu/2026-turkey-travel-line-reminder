@@ -22,12 +22,19 @@
 - `團體`：依 LINE `groupId` 或 `roomId` 建立獨立共享團體消費，並顯示付款人。
 - 若不是從 LINE 群組或多人聊天室開啟，團體帳本會提示需從群組開啟。
 - 團體分帳採混合成員來源：已從該群組開啟 LIFF 的 LINE 成員會自動加入，也可手動新增旅伴。
+- 團體消費可指定付款人；付款人與分攤成員可不同，付款人不會被自動加入分攤成員。
 - 不再依賴 LINE Messaging API 自動同步完整群組成員；這條路曾回傳 `LINE member IDs failed: 400`，不適合作為主要流程。
 - 群組呼叫阿珠媽時，記帳本 LIFF 連結會帶上 `trip` 與群組 context，例如 `https://liff.line.me/<line-liff-id>?trip=2026-05-turkey&chatType=group&groupId=<line-group-id>`。
 - LIFF 頁面優先使用 LINE context；若重新開啟時 LINE context 不完整，會 fallback 使用 URL 上的 `groupId` / `roomId`，避免查到空的團體帳本。
 - 團體帳本以 `trip_id + groupId/roomId` 判定，因此同一個 LINE 群組可在不同旅程擁有不同帳本。
 - 團體統計已有付款、應付與差額雛形；不同幣別分開計算，但重新開啟 LIFF 後仍需確認資料一致性。
 - 尚未實作指定金額分攤、結算狀態或自動產生誰該轉帳給誰。
+
+開發測試：
+
+- Worker 目前預設 `TRIP_ID=dev-sandbox`，LIFF 記帳開發測試會寫入 `開發沙盒旅程` 帳本。
+- `config.json` 仍指向 `trips/2026-05-turkey.json`，行程提醒資料不受 `dev-sandbox` 影響。
+- 可用 GitHub Actions `Accounting maintenance` workflow 清理指定 trip 的 remote D1 測試資料。
 
 已移除 AI 照片辨識，Worker 程式不再使用 `OPENAI_API_KEY`。
 

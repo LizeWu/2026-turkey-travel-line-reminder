@@ -16,6 +16,7 @@
 | --- | --- |
 | `config.json` | 指定目前啟用中的旅程資料檔，以及生成檔案輸出資料夾。 |
 | `trips/2026-05-turkey.json` | 目前啟用中的土耳其旅程資料庫：日期、路線、景點、活動、拉車時間、餐食、飯店、地圖連結與通知設定。 |
+| `trips/dev-sandbox.json` | LIFF 記帳開發測試用旅程，`trip_id` 為 `dev-sandbox`，避免測試資料污染正式/歷史旅程帳本。 |
 | `send_line_reminder.py` | 主要腳本：產生 LINE Flex Message、發送前一晚行程提醒、查詢天氣，以及發送早安訊息。 |
 | `generated/line_flex_messages.json` | 已產生的 LINE Flex Message JSON，用於行程提醒。 |
 | `generated/line_message_previews.md` | 12 天行程提醒的純文字預覽，方便人工檢查。 |
@@ -28,6 +29,8 @@
 | --- | --- |
 | `.github/workflows/send-travel-reminder.yml` | 在前一日當地時間 20:00 發送隔天完整行程。 |
 | `.github/workflows/send-morning-greeting.yml` | 在旅行期間每日當地時間 06:30 發送早安訊息。 |
+| `.github/workflows/deploy-cloudflare-worker.yml` | Worker 相關檔案 push 到 `main` 後自動 build、檢查並部署 Cloudflare Worker。 |
+| `.github/workflows/accounting-maintenance.yml` | 手動維護 workflow，可清理指定 trip 的 D1 記帳測試資料。 |
 
 ## Rich Menu / Webhook
 

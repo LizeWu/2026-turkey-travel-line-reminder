@@ -31,6 +31,7 @@ LINE Rich Menu → 旅行記帳本 → 開啟 LIFF 頁面
 - 我的消費只顯示目前 LIFF 使用者建立的個人消費。
 - 團體消費依 LINE 群組或多人聊天室建立獨立共享流水帳，並標示付款人。
 - 團體分帳採混合成員來源：從該群組開啟過 LIFF 的 LINE 成員會自動加入，也可手動新增尚未綁定 LINE 的旅伴。
+- 團體消費可指定付款人；付款人與分攤成員可不同，例如某人先刷卡但不參與分攤。
 - 團體統計已有付款、應付與差額雛形；不同幣別分開計算，不做匯率換算，但重新開啟 LIFF 後仍需驗證資料一致性。
 - 消費項目可依日期分組，也可切換為依幣別分組。
 - 統計頁以幣別卡片呈現總額。
@@ -51,12 +52,12 @@ LINE Rich Menu → 旅行記帳本 → 開啟 LIFF 頁面
 | `note` | 備註，例如烤肉、計程車、紀念品。 |
 | `expense_scope` | 消費形式：`personal` 或 `group`。 |
 | `ledger_id` | 帳本範圍。個人消費為 `personal:<userId>`；團體消費為 `group:<groupId>` 或 `room:<roomId>`，並與 `trip_id` 一起決定實際帳本。 |
-| `payer_id` | LIFF 取得的 LINE 使用者 ID，用於我的消費與未來分帳。 |
-| `payer_name` | LIFF 取得的 LINE 顯示名稱。 |
-| `created_by_id` | 建立者 LINE 使用者 ID，目前與付款人相同。 |
-| `created_by_name` | 建立者 LINE 顯示名稱，目前與付款人相同。 |
+| `payer_id` | 實際付款人 ID，團體消費可從分帳成員中選擇。 |
+| `payer_name` | 實際付款人顯示名稱。 |
+| `created_by_id` | 建立或修改這筆紀錄的 LIFF 使用者 ID。 |
+| `created_by_name` | 建立或修改這筆紀錄的 LIFF 使用者顯示名稱。 |
 | `split_method` | 分帳方式雛形，目前團體消費規劃使用 `equal`，個人消費為 `none`。 |
-| `split_members` | 分攤成員 JSON，包含 LINE userId 或 `manual:<id>` 與 displayName。 |
+| `split_members` | 分攤成員 JSON，包含 LINE userId 或 `manual:<id>` 與 displayName；不會自動包含付款人。 |
 | `chat_type` | `user`、`group` 或 `room`。 |
 | `chat_id` | 個人 LINE user ID、LINE group ID 或 room ID。 |
 | `created_at` | 記帳時間。 |
@@ -186,7 +187,7 @@ trip_id + LINE groupId/roomId = 同一本團體帳本
 1. 2026/05/20｜餐食｜₺ 520 (里拉)｜付款人：Bill
 ```
 
-分帳統計目前為雛形，下一步需先穩定分帳成員來源，再確認重開 LIFF 後資料仍一致。
+分帳統計目前為雛形；付款人與分攤成員已可分開，下一步需在 LINE 群組中確認付款、應付與差額符合實際情境。
 
 ## 不在第一版處理
 

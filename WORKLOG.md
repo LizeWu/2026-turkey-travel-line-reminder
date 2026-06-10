@@ -2,6 +2,56 @@
 
 ## 2026-06-10
 
+### 今日完成
+
+- 建立 Cloudflare Worker 自動部署流程：
+  - 新增 `.github/workflows/deploy-cloudflare-worker.yml`。
+  - GitHub push 到 `main` 且 Worker / trip data 相關檔案變更時，會自動 `npm ci`、語法檢查、`npm run build:data`、`npx wrangler deploy`。
+  - GitHub secret 使用 `CLOUDFLARE_TOKEN`。
+- 建立 D1 記帳資料維護流程：
+  - 新增 `.github/workflows/accounting-maintenance.yml`。
+  - 可手動輸入 `trip_id` 與確認字串，軟刪除指定 trip 的 active expenses，並停用 active ledger members。
+  - 已用此 workflow 清除 `2026-05-turkey` 殘留測試資料，驗證 active expenses / ledger members 皆為 0。
+- 建立開發測試旅程：
+  - 新增 `trips/dev-sandbox.json`，`trip_id` 為 `dev-sandbox`，顯示名稱為 `開發沙盒旅程`。
+  - Worker 預設 `TRIP_ID` 改為 `dev-sandbox`，讓 LIFF 記帳測試不污染過去的土耳其旅程帳本。
+  - `config.json` 未改，行程提醒仍使用 `trips/2026-05-turkey.json`。
+- 調整 LIFF 記帳 UX：
+  - 成功操作改用可關閉 toast；成功 toast 2.5 秒自動關閉，錯誤 toast 不自動關閉。
+  - 新增 / 更新成功後回到 `消費項目` 列表，並在該筆資料上顯示 `已新增` / `已更新` tag。
+  - 儲存按鈕加入 saving 狀態，避免重複送出。
+  - 清掉上一個步驟殘留的頁尾狀態文字，避免 `正在修改 #...` 或旅程 debug 類文字停留在列表。
+  - 編輯模式把 `正在修改 #...` 移到表單上方次標題，並在 `儲存修改` 旁新增 `取消`；取消會回到列表。
+- 調整團體分帳邏輯：
+  - 團體消費新增 `付款人` 下拉選單。
+  - `付款人` 與 `分攤成員` 拆開；付款人不再被強制加入分攤成員。
+  - 前端送出 `payerId/payerName` 與 `createdById/createdByName`。
+  - 後端 `normalizeExpense()` 已改為分別保存實際付款人與建立者。
+  - 編輯既有團體消費時，會帶回原付款人與原分攤成員。
+- 調整幣別與欄位順序：
+  - 表單順序改為 `消費日期`、`幣別`、`金額`、`分類`、`備註`。
+  - 幣別目前以 `台幣`、`日幣` 為主，並依此排序。
+- 分帳成員清單加入刪除 icon button，刪除成員時使用 D1 `ledger_members.status = inactive`。
+
+### 今日已驗證
+
+- `node --check webhook/cloudflare-worker/src/index.js` 通過。
+- `node --check webhook/cloudflare-worker/src/accounting-page.js` 通過。
+- `npm run build:data` 通過。
+- 多次 GitHub Actions `Deploy Cloudflare Worker` 成功。
+- `Accounting maintenance` workflow 成功清除指定 trip 的 remote D1 active 測試資料。
+
+### 下次接續
+
+1. 在 LINE 群組使用 `dev-sandbox` 帳本實測：
+   - 新增團體消費。
+   - 選擇不同付款人。
+   - 分攤成員不包含付款人。
+   - 編輯既有項目時確認付款人與分攤成員都能維持原值。
+   - 統計頁確認付款 / 應付 / 差額符合預期。
+2. 若付款人與分攤成員流程穩定，下一步再做誰欠誰建議與結算狀態。
+3. 繼續暫緩 repo rename；未來確認時再改為 `azuma-papago`。
+
 ### 命名決策更新
 
 - 未來通用旅行助理的預計 repo / 專案名稱改為 `azuma-papago`。
