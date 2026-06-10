@@ -658,6 +658,7 @@ export function accountingPage() {
       urlContext: null,
       currentTab: "add",
       editingId: null,
+      editingSplitMemberIds: null,
       expenses: [],
       calendarMonth: null,
       sortMode: "date",
@@ -731,6 +732,7 @@ export function accountingPage() {
       $("calendar-grid").addEventListener("click", handleCalendarDay);
       $("add-manual-member").addEventListener("click", addManualMember);
       $("split-members").addEventListener("click", handleMemberAction);
+      $("split-members").addEventListener("change", handleMemberSelectionChange);
     }
 
     function switchTab(tab) {
@@ -871,14 +873,16 @@ export function accountingPage() {
     function startEdit(id) {
       const item = state.expenses.find((expense) => expense.id === id);
       if (!item) return;
+      const splitMembers = parseSplitMembers(item);
       state.editingId = id;
+      state.editingSplitMemberIds = new Set(splitMembers.map(memberId).filter(Boolean));
       setDateValue(item.date);
       setAddScope(item.expense_scope || "personal");
       $("amount").value = item.amount;
       $("currency").value = item.currency_code;
       $("category").value = item.category;
       $("note").value = item.note || "";
-      renderSplitMembers(parseSplitMembers(item), { preserveSelection: true });
+      renderSplitMembers(splitMembers, { preserveSelection: true });
       $("save").textContent = "儲存修改";
       setStatus("正在修改 #" + id + "。");
       switchTab("add");
@@ -1015,6 +1019,13 @@ export function accountingPage() {
       deleteLedgerMember(button.dataset.memberDelete, button.dataset.memberName || "");
     }
 
+    function handleMemberSelectionChange(event) {
+      if (!state.editingId || !event.target.matches("[data-split-member]")) return;
+      state.editingSplitMemberIds = new Set(
+        [...document.querySelectorAll("[data-split-member]:checked")].map((input) => input.dataset.splitMember)
+      );
+    }
+
     async function deleteLedgerMember(userId, displayName) {
       if (!userId) return;
       if (userId === currentUserId()) {
@@ -1030,6 +1041,7 @@ export function accountingPage() {
         });
         await api("/api/ledger-members/" + encodeURIComponent(userId) + "?" + params.toString(), { method: "DELETE" });
         state.ledgerMembers = state.ledgerMembers.filter((member) => (member.user_id || member.userId) !== userId);
+        if (state.editingSplitMemberIds) state.editingSplitMemberIds.delete(userId);
         renderSplitMembers(null, { preserveSelection: true });
         setStatus("已刪除分帳成員：" + name);
       } catch (error) {
@@ -1125,6 +1137,7 @@ export function accountingPage() {
 
     function resetForm() {
       state.editingId = null;
+      state.editingSplitMemberIds = null;
       setDefaultDate();
       $("amount").value = "";
       $("note").value = "";
@@ -1213,7 +1226,7 @@ export function accountingPage() {
 
     function renderSplitMembers(selectedMembers = null, options = {}) {
       if (!$("split-members")) return;
-      const selectedIds = new Set((selectedMembers || selectedSplitMembers()).map((member) => member.userId));
+      const selectedIds = selectedMemberIds(selectedMembers);
       const members = normalizedLedgerMembers();
       if (!options.preserveSelection && !selectedMembers) {
         members.forEach((member) => selectedIds.add(member.userId));
@@ -1239,6 +1252,20 @@ export function accountingPage() {
         userId: member.user_id || member.userId,
         displayName: member.display_name || member.displayName || "未命名成員",
       })).filter((member) => member.userId);
+    }
+
+    function selectedMemberIds(selectedMembers = null) {
+      if (selectedMembers) {
+        return new Set(selectedMembers.map(memberId).filter(Boolean));
+      }
+      if (state.editingId && state.editingSplitMemberIds) {
+        return new Set(state.editingSplitMemberIds);
+      }
+      return new Set(selectedSplitMembers().map((member) => member.userId));
+    }
+
+    function memberId(member) {
+      return member?.userId || member?.user_id || "";
     }
 
     function currencyRank(code) {
