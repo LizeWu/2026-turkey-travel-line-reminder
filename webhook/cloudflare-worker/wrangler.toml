@@ -12,6 +12,6 @@ database_id = "10a439ff-7a2c-4056-b2f0-eed34047ebfc"
 
 # Optional Worker variables:
 [vars]
-TRIP_ID = "2026-05-turkey"
+TRIP_ID = "test"
 LINE_LIFF_ID = "2010099376-ZFLjEHk4"
 WORKER_BASE_URL = "https://lize-tour-bot-webhook.retniw72.workers.dev"

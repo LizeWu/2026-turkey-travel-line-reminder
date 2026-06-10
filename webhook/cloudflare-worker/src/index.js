@@ -143,7 +143,9 @@ async function activeTripIdForEvent(env, event) {
   const context = chatContextFromEvent(event);
   const chatType = context.chatType;
   const chatId = context.groupId || context.roomId || "";
-  if (!env.ACCOUNTING_DB || !chatType || !chatId) return tripId(env);
+  const defaultTripId = tripId(env);
+  if (defaultTripId === "test") return defaultTripId;
+  if (!env.ACCOUNTING_DB || !chatType || !chatId) return defaultTripId;
 
   try {
     const setting = await env.ACCOUNTING_DB.prepare(
@@ -155,7 +157,7 @@ async function activeTripIdForEvent(env, event) {
       .first();
     return tripId(env, setting?.active_trip_id);
   } catch {
-    return tripId(env);
+    return defaultTripId;
   }
 }
 
@@ -298,10 +300,11 @@ async function verifyLineSignature(body, signature, channelSecret) {
 async function handleApi(request, env, url) {
   try {
     if (url.pathname === "/api/accounting/config" && request.method === "GET") {
+      const activeTripId = tripId(env, url.searchParams.get("trip") || url.searchParams.get("tripId"));
       return jsonResponse({
         liffId: env.LINE_LIFF_ID || "",
-        tripId: tripId(env, url.searchParams.get("trip") || url.searchParams.get("tripId")),
-        tripName: ACTIVE_TRIP.trip?.tour_name || "旅行",
+        tripId: activeTripId,
+        tripName: tripName(activeTripId),
       });
     }
 
@@ -866,6 +869,14 @@ function tripId(env, value = "") {
     return candidate;
   }
   return env.TRIP_ID || ACTIVE_TRIP.trip?.trip_id || "2026-05-turkey";
+}
+
+function tripName(activeTripId) {
+  if (activeTripId === "test") return "開發測試旅程";
+  if (activeTripId === ACTIVE_TRIP.trip?.trip_id) {
+    return ACTIVE_TRIP.trip?.tour_name || "旅行";
+  }
+  return "旅行";
 }
 
 function jsonResponse(data, status = 200) {

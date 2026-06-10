@@ -652,6 +652,7 @@ export function accountingPage() {
     const state = {
       liffId: "",
       tripId: "",
+      tripName: "",
       profile: null,
       lineContext: null,
       urlContext: null,
@@ -676,9 +677,14 @@ export function accountingPage() {
     const deleteIcon = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18"></path><path d="M8 6V4h8v2"></path><path d="M19 6l-1 14H6L5 6"></path><path d="M10 11v5"></path><path d="M14 11v5"></path></svg>';
 
     async function init() {
-      const config = await api("/api/accounting/config");
+      const requestedTripId = urlTripId();
+      const configPath = requestedTripId
+        ? "/api/accounting/config?tripId=" + encodeURIComponent(requestedTripId)
+        : "/api/accounting/config";
+      const config = await api(configPath);
       state.liffId = config.liffId || "";
-      state.tripId = urlTripId() || config.tripId || "";
+      state.tripId = requestedTripId || config.tripId || "";
+      state.tripName = config.tripName || "旅行";
       state.urlContext = urlChatContext();
       if (state.liffId && window.liff) {
         try {
@@ -966,10 +972,7 @@ export function accountingPage() {
         const data = await api("/api/ledger-members?" + params.toString());
         state.ledgerMembers = data.members || [];
         renderSplitMembers();
-        if (data.debug) {
-          const error = data.debug.syncError ? "，同步：" + data.debug.syncError : "";
-          setStatus("旅程：" + data.debug.tripId + "，群組 context：" + data.debug.chatType + "，分帳成員 " + state.ledgerMembers.length + " 人" + error);
-        }
+        setStatus("旅程：" + state.tripName + "，分帳成員 " + state.ledgerMembers.length + " 人");
       } catch (error) {
         setStatus(error.message);
       }

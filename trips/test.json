@@ -1,0 +1,43 @@
+{
+  "trip": {
+    "trip_id": "test",
+    "tour_code": "TEST",
+    "tour_name": "開發測試旅程",
+    "source_file": "manual",
+    "start_date": "2026-06-10",
+    "end_date": "2026-06-10",
+    "notification": {
+      "channel": "line",
+      "recipient": "self",
+      "message_type": "daily_itinerary",
+      "send_time_local": "20:00",
+      "send_days_before": 1,
+      "morning_greeting_time_local": "06:30",
+      "timezone_mode": "fixed",
+      "default_timezone": "Asia/Taipei",
+      "destination_timezone": "Asia/Taipei"
+    },
+    "preferences": {
+      "confirmed_hot_air_balloon": false,
+      "include_morning_call": false,
+      "include_diet_preferences": false
+    }
+  },
+  "contacts": [],
+  "daily_itinerary": [
+    {
+      "day": 1,
+      "date": "2026-06-10",
+      "weekday": "三",
+      "timezone": "Asia/Taipei",
+      "weather_location": null,
+      "route": "開發測試",
+      "sights": [],
+      "activities": ["LIFF 記帳與分帳測試"],
+      "driving_time": [],
+      "meals": {"breakfast": "自理", "lunch": "自理", "dinner": "自理"},
+      "hotel": {"name": "N/A", "google_maps_url": null},
+      "notes": ["此旅程只用於開發測試，不代表實際旅行。"]
+    }
+  ]
+}
