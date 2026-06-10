@@ -346,6 +346,17 @@ async function handleApi(request, env, url) {
       return jsonResponse({ member }, 201);
     }
 
+    const ledgerMemberMatch = url.pathname.match(/^\/api\/ledger-members\/(.+)$/);
+    if (ledgerMemberMatch && request.method === "DELETE") {
+      const member = await deleteLedgerMember(env, decodeURIComponent(ledgerMemberMatch[1]), {
+        tripId: url.searchParams.get("trip") || url.searchParams.get("tripId") || "",
+        chatType: url.searchParams.get("chatType") || "",
+        groupId: url.searchParams.get("groupId") || "",
+        roomId: url.searchParams.get("roomId") || "",
+      });
+      return jsonResponse({ member });
+    }
+
     if (url.pathname === "/api/expenses" && request.method === "POST") {
       const payload = await request.json();
       const expense = await createExpense(env, payload);
@@ -438,7 +449,7 @@ async function updateExpense(env, id, payload) {
   }
   await env.ACCOUNTING_DB.prepare(
     `UPDATE expenses
-      SET amount = ?, currency_code = ?, currency_label = ?, currency_symbol = ?,
+      SET date = ?, amount = ?, currency_code = ?, currency_label = ?, currency_symbol = ?,
           category = ?, note = ?, payer_id = ?, payer_name = ?,
           expense_scope = ?, ledger_id = ?, created_by_id = ?, created_by_name = ?,
           split_method = ?, split_members = ?,
@@ -446,6 +457,7 @@ async function updateExpense(env, id, payload) {
       WHERE id = ? AND deleted_at IS NULL`
   )
     .bind(
+      item.date,
       item.amount,
       item.currency_code,
       item.currency_label,
@@ -658,6 +670,39 @@ async function createManualLedgerMember(env, payload = {}) {
   };
 }
 
+async function deleteLedgerMember(env, userId, options = {}) {
+  const activeTripId = tripId(env, options.tripId || options.trip);
+  const normalizedUserId = String(userId || "").trim().slice(0, 120);
+  if (!normalizedUserId) {
+    throw new Error("找不到要刪除的分帳成員。");
+  }
+  const ledger = resolveLedger(env, {
+    expenseScope: "group",
+    chatType: options.chatType,
+    groupId: options.groupId,
+    roomId: options.roomId,
+  });
+  const existing = await env.ACCOUNTING_DB.prepare(
+    `SELECT user_id, display_name, role, status
+      FROM ledger_members
+      WHERE trip_id = ? AND ledger_id = ? AND user_id = ? AND status = 'active'
+      LIMIT 1`
+  )
+    .bind(activeTripId, ledger.ledger_id, normalizedUserId)
+    .first();
+  if (!existing) {
+    throw new Error("找不到這位分帳成員，可能已經刪除。");
+  }
+  await env.ACCOUNTING_DB.prepare(
+    `UPDATE ledger_members
+      SET status = 'inactive', last_seen_at = ?
+      WHERE trip_id = ? AND ledger_id = ? AND user_id = ?`
+  )
+    .bind(new Date().toISOString(), activeTripId, ledger.ledger_id, normalizedUserId)
+    .run();
+  return existing;
+}
+
 function normalizeExpense(env, payload) {
   const amount = Number(payload.amount);
   if (!Number.isFinite(amount) || amount <= 0) {
@@ -797,12 +842,10 @@ function normalizeDate(value) {
 
 function currencyInfo(code) {
   const currencies = {
-    TRY: { code: "TRY", label: "里拉", symbol: "₺" },
     TWD: { code: "TWD", label: "台幣", symbol: "NT$" },
-    EUR: { code: "EUR", label: "歐元", symbol: "€" },
-    USD: { code: "USD", label: "美金", symbol: "US$" },
+    JPY: { code: "JPY", label: "日幣", symbol: "¥" },
   };
-  return currencies[code] || currencies.TRY;
+  return currencies[code] || currencies.TWD;
 }
 
 function accountingDate() {

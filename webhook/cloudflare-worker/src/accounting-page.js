@@ -324,9 +324,20 @@ export function accountingPage() {
       white-space: nowrap;
     }
     .member-option {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 36px;
+      align-items: center;
+      gap: 8px;
+      margin: 0;
+      color: var(--ink);
+      font-size: .92rem;
+      font-weight: 700;
+    }
+    .member-check {
       display: flex;
       align-items: center;
       gap: 8px;
+      min-width: 0;
       margin: 0;
       color: var(--ink);
       font-size: .92rem;
@@ -336,6 +347,17 @@ export function accountingPage() {
       width: auto;
       min-height: auto;
       margin: 0;
+    }
+    .member-check span {
+      min-width: 0;
+      overflow-wrap: anywhere;
+    }
+    .member-option .icon-button {
+      width: 36px;
+      height: 36px;
+      min-height: 36px;
+      border-color: transparent;
+      background: transparent;
     }
     .date-group {
       background: var(--panel);
@@ -538,17 +560,15 @@ export function accountingPage() {
             </button>
           </div>
           <div>
-            <label for="amount">金額</label>
-            <input id="amount" inputmode="decimal" placeholder="120">
-          </div>
-          <div>
             <label for="currency">幣別</label>
             <select id="currency">
-              <option value="TRY">里拉 ₺</option>
               <option value="TWD">台幣 NT$</option>
-              <option value="EUR">歐元 €</option>
-              <option value="USD">美金 US$</option>
+              <option value="JPY">日幣 ¥</option>
             </select>
+          </div>
+          <div>
+            <label for="amount">金額</label>
+            <input id="amount" inputmode="decimal" placeholder="120">
           </div>
           <div>
             <label for="category">分類</label>
@@ -647,11 +667,10 @@ export function accountingPage() {
       expandedCurrencies: new Set(),
     };
     const currencyMeta = {
-      TRY: { label: "里拉", symbol: "₺" },
       TWD: { label: "台幣", symbol: "NT$" },
-      EUR: { label: "歐元", symbol: "€" },
-      USD: { label: "美金", symbol: "US$" },
+      JPY: { label: "日幣", symbol: "¥" },
     };
+    const currencyOrder = ["TWD", "JPY"];
     const $ = (id) => document.getElementById(id);
     const editIcon = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20h9"></path><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"></path></svg>';
     const deleteIcon = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18"></path><path d="M8 6V4h8v2"></path><path d="M19 6l-1 14H6L5 6"></path><path d="M10 11v5"></path><path d="M14 11v5"></path></svg>';
@@ -705,6 +724,7 @@ export function accountingPage() {
       });
       $("calendar-grid").addEventListener("click", handleCalendarDay);
       $("add-manual-member").addEventListener("click", addManualMember);
+      $("split-members").addEventListener("click", handleMemberAction);
     }
 
     function switchTab(tab) {
@@ -778,7 +798,7 @@ export function accountingPage() {
     function formPayload() {
       const amount = Number($("amount").value.trim());
       const currencyCode = $("currency").value;
-      const meta = currencyMeta[currencyCode];
+      const meta = currencyMeta[currencyCode] || currencyMeta.TWD;
       return {
         expenseScope: state.addScope,
         date: $("date").value,
@@ -984,6 +1004,36 @@ export function accountingPage() {
       }
     }
 
+    function handleMemberAction(event) {
+      const button = event.target.closest("button[data-member-delete]");
+      if (!button) return;
+      event.preventDefault();
+      event.stopPropagation();
+      deleteLedgerMember(button.dataset.memberDelete, button.dataset.memberName || "");
+    }
+
+    async function deleteLedgerMember(userId, displayName) {
+      if (!userId) return;
+      if (userId === currentUserId()) {
+        setStatus("目前開啟記帳本的 LINE 成員會自動保留。");
+        return;
+      }
+      const name = displayName || "這位成員";
+      if (!confirm("確定刪除分帳成員「" + name + "」？")) return;
+      try {
+        const params = new URLSearchParams({
+          tripId: state.tripId,
+          ...ledgerContextPayload(),
+        });
+        await api("/api/ledger-members/" + encodeURIComponent(userId) + "?" + params.toString(), { method: "DELETE" });
+        state.ledgerMembers = state.ledgerMembers.filter((member) => (member.user_id || member.userId) !== userId);
+        renderSplitMembers(null, { preserveSelection: true });
+        setStatus("已刪除分帳成員：" + name);
+      } catch (error) {
+        setStatus(error.message);
+      }
+    }
+
     function groupedExpenses() {
       const groups = new Map();
       const sorted = [...state.expenses].sort(compareExpenses);
@@ -998,7 +1048,7 @@ export function accountingPage() {
 
     function compareExpenses(a, b) {
       if (state.sortMode === "currency") {
-        const currency = String(a.currency_code).localeCompare(String(b.currency_code));
+        const currency = currencyRank(a.currency_code) - currencyRank(b.currency_code);
         if (currency) return currency;
       }
       const date = String(b.date).localeCompare(String(a.date));
@@ -1030,7 +1080,7 @@ export function accountingPage() {
           if (date) return date;
           return Number(b.id) - Number(a.id);
         }),
-      })).sort((a, b) => a.code.localeCompare(b.code));
+      })).sort((a, b) => currencyRank(a.code) - currencyRank(b.code));
     }
 
     function renderCurrencySummary(item) {
@@ -1167,8 +1217,12 @@ export function accountingPage() {
       }
       $("split-members").innerHTML = members.length
         ? members.map((member) =>
-            '<label class="member-option"><input type="checkbox" data-split-member="' + escapeHtml(member.userId) + '"' +
-            (selectedIds.has(member.userId) ? " checked" : "") + '> <span>' + escapeHtml(member.displayName || "未命名成員") + '</span></label>'
+            '<div class="member-option"><label class="member-check"><input type="checkbox" data-split-member="' + escapeHtml(member.userId) + '"' +
+            (selectedIds.has(member.userId) ? " checked" : "") + '> <span>' + escapeHtml(member.displayName || "未命名成員") + '</span></label>' +
+            (member.userId === currentUserId()
+              ? '<span></span>'
+              : '<button class="icon-button danger" type="button" data-member-delete="' + escapeHtml(member.userId) + '" data-member-name="' + escapeHtml(member.displayName || "未命名成員") + '" aria-label="刪除成員" title="刪除成員">' + deleteIcon + '</button>') +
+            '</div>'
           ).join("")
         : '<div class="meta">群組成員開啟記帳本後，會出現在這裡。</div>';
     }
@@ -1182,6 +1236,11 @@ export function accountingPage() {
         userId: member.user_id || member.userId,
         displayName: member.display_name || member.displayName || "未命名成員",
       })).filter((member) => member.userId);
+    }
+
+    function currencyRank(code) {
+      const index = currencyOrder.indexOf(String(code));
+      return index >= 0 ? index : currencyOrder.length;
     }
 
     function selectedSplitMembers() {
