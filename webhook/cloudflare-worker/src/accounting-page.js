@@ -1228,7 +1228,7 @@ export function accountingPage() {
       if (!$("split-members")) return;
       const selectedIds = selectedMemberIds(selectedMembers);
       const members = normalizedLedgerMembers();
-      if (!options.preserveSelection && !selectedMembers) {
+      if (!options.preserveSelection && !selectedMembers && !state.editingId) {
         members.forEach((member) => selectedIds.add(member.userId));
       }
       $("split-members").innerHTML = members.length
