@@ -144,7 +144,7 @@ async function activeTripIdForEvent(env, event) {
   const chatType = context.chatType;
   const chatId = context.groupId || context.roomId || "";
   const defaultTripId = tripId(env);
-  if (defaultTripId === "test") return defaultTripId;
+  if (isDevelopmentTrip(defaultTripId)) return defaultTripId;
   if (!env.ACCOUNTING_DB || !chatType || !chatId) return defaultTripId;
 
   try {
@@ -872,11 +872,15 @@ function tripId(env, value = "") {
 }
 
 function tripName(activeTripId) {
-  if (activeTripId === "test") return "開發測試旅程";
+  if (activeTripId === "dev-sandbox") return "開發沙盒旅程";
   if (activeTripId === ACTIVE_TRIP.trip?.trip_id) {
     return ACTIVE_TRIP.trip?.tour_name || "旅行";
   }
   return "旅行";
+}
+
+function isDevelopmentTrip(activeTripId) {
+  return activeTripId === "dev-sandbox";
 }
 
 function jsonResponse(data, status = 200) {
