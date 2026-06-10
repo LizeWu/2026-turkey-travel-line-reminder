@@ -819,7 +819,8 @@ export function accountingPage() {
       $("toast-root").addEventListener("click", handleToastAction);
     }
 
-    function switchTab(tab) {
+    function switchTab(tab, options = {}) {
+      if (!options.preserveStatus) clearStatus();
       state.currentTab = tab;
       for (const name of ["add", "items", "stats"]) {
         $("tab-" + name).classList.toggle("active", name === tab);
@@ -830,6 +831,7 @@ export function accountingPage() {
     }
 
     function setSortMode(mode) {
+      clearStatus();
       state.sortMode = mode;
       $("sort-date").classList.toggle("active", mode === "date");
       $("sort-currency").classList.toggle("active", mode === "currency");
@@ -837,11 +839,12 @@ export function accountingPage() {
     }
 
     function setAddScope(scope) {
+      clearStatus();
       state.addScope = scope;
       $("add-personal").classList.toggle("active", scope === "personal");
       $("add-group").classList.toggle("active", scope === "group");
       if (scope === "group" && !hasGroupLedgerContext()) {
-        setStatus("團體消費需要從 LINE 群組或多人聊天室開啟。");
+        showError("團體消費需要從 LINE 群組或多人聊天室開啟。");
       }
       syncSplitPanel();
       if (scope === "group" && hasGroupLedgerContext()) loadLedgerMembers();
@@ -874,6 +877,7 @@ export function accountingPage() {
     }
 
     function setItemScope(scope) {
+      clearStatus();
       state.itemScope = scope;
       $("items-personal").classList.toggle("active", scope === "personal");
       $("items-group").classList.toggle("active", scope === "group");
@@ -881,6 +885,7 @@ export function accountingPage() {
     }
 
     function setStatsScope(scope) {
+      clearStatus();
       state.statsScope = scope;
       $("stats-personal").classList.toggle("active", scope === "personal");
       $("stats-group").classList.toggle("active", scope === "group");
@@ -910,6 +915,8 @@ export function accountingPage() {
 
     async function saveExpense() {
       if (state.saving) return;
+      clearStatus();
+      closeToast();
       const payload = formPayload();
       if (payload.expenseScope === "group" && !hasGroupLedgerContext()) {
         showError("團體消費需要從 LINE 群組或多人聊天室開啟。");
@@ -978,8 +985,8 @@ export function accountingPage() {
       $("note").value = item.note || "";
       renderSplitMembers(splitMembers, { preserveSelection: true });
       $("save").textContent = "儲存修改";
+      switchTab("add", { preserveStatus: true });
       setStatus("正在修改 #" + id + "。");
-      switchTab("add");
     }
 
     async function deleteExpense(id) {
@@ -1072,9 +1079,8 @@ export function accountingPage() {
         const data = await api("/api/ledger-members?" + params.toString());
         state.ledgerMembers = data.members || [];
         renderSplitMembers();
-        setStatus("旅程：" + state.tripName + "，分帳成員 " + state.ledgerMembers.length + " 人");
       } catch (error) {
-        setStatus(error.message);
+        showError(error.message);
       }
     }
 
@@ -1258,6 +1264,10 @@ export function accountingPage() {
     function setStatus(text) {
       $("status").textContent = text;
       $("items-status").textContent = text;
+    }
+
+    function clearStatus() {
+      setStatus("");
     }
 
     function showError(message) {
