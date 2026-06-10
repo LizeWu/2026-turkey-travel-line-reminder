@@ -21,7 +21,7 @@ This file is the first handoff point for Codex sessions on any machine.
 
 The product is `阿珠媽旅行提醒`, a LINE travel assistant for scheduled itinerary reminders, rich menu replies, weather, and a LIFF travel accounting book.
 
-Current GitHub repo name is still `2026-turkey-travel-line-reminder`, but the intended future product direction is `azuma-travel-assistant` for reuse across trips.
+Current GitHub repo name is still `2026-turkey-travel-line-reminder`, but the intended future product/repo direction is `azuma-papago` for reuse across trips.
 
 ## Development Rules
 
@@ -84,4 +84,4 @@ If switching between company MacBook and home Apple Studio, update `LizeNext.md`
 
 - Verify group LIFF accounting after reopening from LINE group context.
 - Verify scheduled reminder workflow restore/save behavior for `.sent-reminders/reminders.json`.
-- Later, after confirmation, rename the project from `2026-turkey-travel-line-reminder` to `azuma-travel-assistant`.
+- Later, after confirmation, rename the project from `2026-turkey-travel-line-reminder` to `azuma-papago`.

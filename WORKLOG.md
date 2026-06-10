@@ -1,5 +1,18 @@
 # Worklog
 
+## 2026-06-10
+
+### 命名決策更新
+
+- 未來通用旅行助理的預計 repo / 專案名稱改為 `azuma-papago`。
+- 目前 GitHub repo 仍維持 `2026-turkey-travel-line-reminder`，先不要立即 rename。
+- 正式 rename 時需同步更新：
+  - GitHub repo 名稱。
+  - 本機 git remote。
+  - README、LizeNext、AGENTS 與相關文件中的舊名稱。
+  - Codex app 專案指向的 repo。
+- LINE Official Account 顯示名稱 `阿珠媽旅行提醒` 可先保持不變。
+
 ## 2026-05-31
 
 ### 今日完成
