@@ -331,6 +331,24 @@ export function accountingPage() {
     .payer-field {
       margin-bottom: 10px;
     }
+    .split-method {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+    .split-method button {
+      min-height: 38px;
+      border-radius: 999px;
+      color: var(--green);
+      background: white;
+      font-size: .9rem;
+    }
+    .split-method button.active {
+      border-color: var(--green);
+      background: var(--green);
+      color: white;
+    }
     .member-list {
       display: grid;
       gap: 8px;
@@ -356,7 +374,7 @@ export function accountingPage() {
     }
     .member-option {
       display: grid;
-      grid-template-columns: minmax(0, 1fr) 36px;
+      grid-template-columns: minmax(0, 1fr) minmax(92px, 120px) 36px;
       align-items: center;
       gap: 8px;
       margin: 0;
@@ -378,6 +396,15 @@ export function accountingPage() {
       width: auto;
       min-height: auto;
       margin: 0;
+    }
+    .member-option .split-amount {
+      width: 100%;
+      min-height: 38px;
+      padding: 7px 8px;
+      font-size: .9rem;
+    }
+    .member-option.equal-mode {
+      grid-template-columns: minmax(0, 1fr) 36px;
     }
     .member-check span {
       min-width: 0;
@@ -471,6 +498,18 @@ export function accountingPage() {
       font-weight: 600;
       line-height: 1.45;
       overflow-wrap: anywhere;
+    }
+    .expense-meta {
+      display: grid;
+      gap: 2px;
+    }
+    .meta-line {
+      min-width: 0;
+      overflow-wrap: anywhere;
+    }
+    .meta-line.primary {
+      color: var(--ink);
+      font-weight: 700;
     }
     .icon-actions {
       display: flex;
@@ -566,6 +605,136 @@ export function accountingPage() {
       border-top: 0;
       font-weight: 600;
     }
+    .split-summary {
+      display: grid;
+      gap: 10px;
+      margin-top: 10px;
+      padding-top: 10px;
+    }
+    .split-person {
+      display: grid;
+      gap: 6px;
+    }
+    .split-person-name {
+      color: var(--ink);
+      font-weight: 800;
+      overflow-wrap: anywhere;
+    }
+    .split-metrics {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
+    }
+    .split-metric {
+      min-width: 0;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 8px;
+      background: #f8faf8;
+    }
+    .split-metric-label {
+      color: var(--muted);
+      font-size: .78rem;
+      font-weight: 800;
+    }
+    .split-metric-value {
+      margin-top: 3px;
+      color: var(--ink);
+      font-size: .9rem;
+      font-weight: 800;
+      overflow-wrap: anywhere;
+    }
+    .settlement-list {
+      display: grid;
+      gap: 8px;
+      margin-top: 10px;
+    }
+    .settlement-title {
+      margin-top: 12px;
+      padding-top: 10px;
+      color: var(--green);
+      font-weight: 800;
+    }
+    .settlement-row {
+      display: grid;
+      grid-template-columns: minmax(92px, .72fr) minmax(0, 1fr);
+      align-items: start;
+      gap: 8px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 8px;
+      padding-top: 8px;
+      background: #f8faf8;
+    }
+    .settlement-text {
+      min-width: 0;
+      color: var(--muted);
+      font-size: .92rem;
+      font-weight: 700;
+      line-height: 1.45;
+      overflow-wrap: anywhere;
+    }
+    .settlement-from {
+      align-self: center;
+      min-width: 0;
+      color: var(--ink);
+      font-size: .92rem;
+      font-weight: 800;
+      overflow-wrap: anywhere;
+    }
+    .settlement-main-wrap {
+      display: grid;
+      gap: 8px;
+      min-width: 0;
+    }
+    .settlement-main {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 8px;
+      min-width: 0;
+    }
+    .settlement-main + .settlement-main {
+      padding-top: 8px;
+      border-top: 1px solid var(--line);
+    }
+    .settlement-detail {
+      margin-top: 3px;
+      color: var(--muted);
+      font-size: .84rem;
+      font-weight: normal;
+      line-height: 1.45;
+      overflow-wrap: anywhere;
+    }
+    .settlement-to {
+      min-width: 0;
+      color: var(--muted);
+      font-size: .92rem;
+      font-weight: 700;
+      overflow-wrap: anywhere;
+    }
+    .settlement-to div b {
+      background: #009688;
+      padding: 4px 8px;
+      border-radius: 12px;
+      font-weight: normal;
+      color: #fff;
+    }
+    .settlement-to div span {
+      color: #009688;
+    }
+    .settlement-action {
+      min-height: 34px;
+      padding: 0 10px;
+      border-radius: 999px;
+      color: var(--green);
+      font-size: .86rem;
+      white-space: nowrap;
+    }
+    .settlement-action.settled {
+      border-color: var(--green);
+      background: var(--green-soft);
+    }
     .toast-root {
       position: fixed;
       top: max(12px, env(safe-area-inset-top));
@@ -628,6 +797,17 @@ export function accountingPage() {
         grid-template-columns: 1fr;
       }
       .expense {
+        grid-template-columns: 1fr;
+      }
+      .member-option,
+      .member-option.equal-mode,
+      .settlement-row {
+        grid-template-columns: 1fr;
+      }
+      .split-metrics {
+        grid-template-columns: 1fr;
+      }
+      .settlement-main {
         grid-template-columns: 1fr;
       }
       .icon-actions {
@@ -696,6 +876,10 @@ export function accountingPage() {
             <div class="payer-field">
               <label for="payer">付款人</label>
               <select id="payer"></select>
+            </div>
+            <div class="split-method" aria-label="分攤方式">
+              <button id="split-equal" class="active" type="button">平均分攤</button>
+              <button id="split-custom" type="button">指定金額</button>
             </div>
             <p class="split-title">分攤成員</p>
             <div id="split-members" class="member-list"></div>
@@ -775,6 +959,8 @@ export function accountingPage() {
       editingSplitMemberIds: null,
       editingPayerId: "",
       editingPayerName: "",
+      splitMethod: "equal",
+      editingCustomSplitAmounts: {},
       saving: false,
       highlightedExpenseId: null,
       highlightType: "",
@@ -787,6 +973,7 @@ export function accountingPage() {
       itemScope: "personal",
       statsScope: "personal",
       ledgerMembers: [],
+      settlements: [],
       expandedCurrencies: new Set(),
     };
     const currencyMeta = {
@@ -855,6 +1042,9 @@ export function accountingPage() {
       $("add-manual-member").addEventListener("click", addManualMember);
       $("split-members").addEventListener("click", handleMemberAction);
       $("split-members").addEventListener("change", handleMemberSelectionChange);
+      $("split-members").addEventListener("input", handleSplitAmountInput);
+      $("split-equal").addEventListener("click", () => setSplitMethod("equal"));
+      $("split-custom").addEventListener("click", () => setSplitMethod("custom"));
       $("payer").addEventListener("change", handlePayerChange);
       $("toast-root").addEventListener("click", handleToastAction);
     }
@@ -950,6 +1140,7 @@ export function accountingPage() {
         payerName: payer.displayName,
         createdById: currentUserId(),
         createdByName: currentUserName(),
+        splitMethod: state.addScope === "group" ? state.splitMethod : "none",
         splitMembers: selectedSplitMembers(),
         tripId: state.tripId,
         ...ledgerContextPayload(),
@@ -972,6 +1163,17 @@ export function accountingPage() {
       if (payload.expenseScope === "group" && !payload.splitMembers.length) {
         showError("請至少選擇一位分攤成員。");
         return;
+      }
+      if (payload.expenseScope === "group" && payload.splitMethod === "custom") {
+        const total = roundMoney(payload.splitMembers.reduce((sum, member) => sum + (Number(member.amount) || 0), 0));
+        if (payload.splitMembers.some((member) => !member.amount || member.amount <= 0)) {
+          showError("指定金額分攤需為每位成員輸入大於 0 的金額。");
+          return;
+        }
+        if (Math.abs(total - roundMoney(payload.amount)) > 0.01) {
+          showError("指定金額加總需等於消費金額，目前加總為 " + numberText(total) + "。");
+          return;
+        }
       }
       if (!/^\\d{4}-\\d{2}-\\d{2}$/.test(payload.date)) {
         showError("日期格式請輸入 YYYY-MM-DD。");
@@ -1026,6 +1228,8 @@ export function accountingPage() {
       state.editingSplitMemberIds = new Set(splitMembers.map(memberId).filter(Boolean));
       state.editingPayerId = item.payer_id || "";
       state.editingPayerName = item.payer_name || "";
+      state.splitMethod = item.split_method === "custom" ? "custom" : "equal";
+      state.editingCustomSplitAmounts = Object.fromEntries(splitMembers.map((member) => [memberId(member), Number(member.amount) || ""]));
       setDateValue(item.date);
       setAddScope(item.expense_scope || "personal");
       $("amount").value = item.amount;
@@ -1085,6 +1289,11 @@ export function accountingPage() {
         return;
       }
       await loadExpenses(state.statsScope);
+      if (state.statsScope === "group") {
+        await loadSettlements();
+      } else {
+        state.settlements = [];
+      }
       const root = $("stats");
       if (!state.expenses.length) {
         root.innerHTML = '<div class="empty">目前沒有' + (state.statsScope === "group" ? "團體" : "我的") + '消費統計。</div>';
@@ -1098,6 +1307,11 @@ export function accountingPage() {
     }
 
     function handleStatsAction(event) {
+      const settlementButton = event.target.closest("button[data-settlement-action]");
+      if (settlementButton) {
+        toggleSettlement(settlementButton);
+        return;
+      }
       const button = event.target.closest("button[data-currency]");
       if (!button) return;
       const code = button.dataset.currency;
@@ -1120,6 +1334,16 @@ export function accountingPage() {
       });
       const data = await api("/api/expenses?" + params.toString());
       state.expenses = data.expenses || [];
+    }
+
+    async function loadSettlements() {
+      if (!hasGroupLedgerContext()) return;
+      const params = new URLSearchParams({
+        tripId: state.tripId,
+        ...ledgerContextPayload(),
+      });
+      const data = await api("/api/settlements?" + params.toString());
+      state.settlements = data.settlements || [];
     }
 
     async function loadLedgerMembers() {
@@ -1177,7 +1401,10 @@ export function accountingPage() {
     }
 
     function handleMemberSelectionChange(event) {
-      if (!state.editingId || !event.target.matches("[data-split-member]")) return;
+      if (!event.target.matches("[data-split-member]")) return;
+      const amountInput = splitAmountInput(event.target.dataset.splitMember);
+      if (amountInput) amountInput.disabled = !event.target.checked;
+      if (!state.editingId) return;
       state.editingSplitMemberIds = new Set(
         [...document.querySelectorAll("[data-split-member]:checked")].map((input) => input.dataset.splitMember)
       );
@@ -1278,8 +1505,7 @@ export function accountingPage() {
     }
 
     function renderExpense(item, index) {
-      const payer = isGroupExpense(item) && item.payer_name ? '｜付款人：' + escapeHtml(item.payer_name) : "";
-      const meta = '#' + item.id + ' ' + escapeHtml(item.category) + payer + splitText(item);
+      const meta = renderExpenseMeta(item);
       const tag = Number(item.id) === state.highlightedExpenseId
         ? '<span class="expense-tag">' + escapeHtml(state.highlightType === "updated" ? "已更新" : "已新增") + '</span>'
         : "";
@@ -1295,11 +1521,28 @@ export function accountingPage() {
       '</article></li>';
     }
 
+    function renderExpenseMeta(item) {
+      if (!isGroupExpense(item)) {
+        return '#' + item.id + ' ' + escapeHtml(item.category);
+      }
+      const note = item.note || "無備註";
+      const payer = item.payer_name || "未命名付款人";
+      const members = parseSplitMembers(item).map((member) => member.displayName || "未命名成員");
+      const memberText = members.length ? members.join("、") : "未選擇";
+      return '<div class="expense-meta">' +
+        '<div class="meta-line primary">#' + item.id + ' ' + escapeHtml(item.category) + '｜' + escapeHtml(note) + '</div>' +
+        '<div class="meta-line">付款人：' + escapeHtml(payer) + '</div>' +
+        '<div class="meta-line">分攤成員：' + escapeHtml(memberText) + '</div>' +
+      '</div>';
+    }
+
     function resetForm() {
       state.editingId = null;
       state.editingSplitMemberIds = null;
       state.editingPayerId = "";
       state.editingPayerName = "";
+      state.splitMethod = "equal";
+      state.editingCustomSplitAmounts = {};
       setDefaultDate();
       $("amount").value = "";
       $("note").value = "";
@@ -1467,8 +1710,20 @@ export function accountingPage() {
       if (state.addScope === "group" && hasGroupLedgerContext()) renderSplitMembers();
     }
 
+    function setSplitMethod(method) {
+      state.splitMethod = method === "custom" ? "custom" : "equal";
+      syncSplitMethodButtons();
+      renderSplitMembers(null, { preserveSelection: true });
+    }
+
+    function syncSplitMethodButtons() {
+      $("split-equal").classList.toggle("active", state.splitMethod !== "custom");
+      $("split-custom").classList.toggle("active", state.splitMethod === "custom");
+    }
+
     function renderSplitMembers(selectedMembers = null, options = {}) {
       if (!$("split-members")) return;
+      syncSplitMethodButtons();
       const selectedIds = selectedMemberIds(selectedMembers);
       const members = normalizedLedgerMembers();
       renderPayerOptions(members);
@@ -1477,8 +1732,11 @@ export function accountingPage() {
       }
       $("split-members").innerHTML = members.length
         ? members.map((member) =>
-            '<div class="member-option"><label class="member-check"><input type="checkbox" data-split-member="' + escapeHtml(member.userId) + '"' +
+            '<div class="member-option' + (state.splitMethod === "custom" ? "" : " equal-mode") + '"><label class="member-check"><input type="checkbox" data-split-member="' + escapeHtml(member.userId) + '"' +
             (selectedIds.has(member.userId) ? " checked" : "") + '> <span>' + escapeHtml(member.displayName || "未命名成員") + '</span></label>' +
+            (state.splitMethod === "custom"
+              ? '<input class="split-amount" data-split-amount="' + escapeHtml(member.userId) + '" inputmode="decimal" placeholder="金額" value="' + escapeHtml(splitAmountValue(member.userId)) + '"' + (selectedIds.has(member.userId) ? "" : " disabled") + '>'
+              : "") +
             (member.userId === currentUserId()
               ? '<span></span>'
               : '<button class="icon-button danger" type="button" data-member-delete="' + escapeHtml(member.userId) + '" data-member-name="' + escapeHtml(member.displayName || "未命名成員") + '" aria-label="刪除成員" title="刪除成員">' + deleteIcon + '</button>') +
@@ -1534,6 +1792,12 @@ export function accountingPage() {
       state.editingPayerId = $("payer").value;
     }
 
+    function handleSplitAmountInput(event) {
+      const input = event.target.closest("[data-split-amount]");
+      if (!input) return;
+      state.editingCustomSplitAmounts[input.dataset.splitAmount] = input.value;
+    }
+
     function selectedMemberIds(selectedMembers = null) {
       if (selectedMembers) {
         return new Set(selectedMembers.map(memberId).filter(Boolean));
@@ -1559,13 +1823,33 @@ export function accountingPage() {
       const inputs = [...document.querySelectorAll("[data-split-member]")];
       const checked = inputs.filter((input) => input.checked).map((input) => input.dataset.splitMember);
       const selectedIds = new Set(inputs.length ? checked : members.map((member) => member.userId));
-      return members.filter((member) => selectedIds.has(member.userId));
+      return members.filter((member) => selectedIds.has(member.userId)).map((member) => {
+        if (state.splitMethod !== "custom") return member;
+        return {
+          ...member,
+          amount: roundMoney(splitAmountValue(member.userId)),
+        };
+      });
+    }
+
+    function splitAmountValue(userId) {
+      const input = splitAmountInput(userId);
+      const value = input ? input.value : state.editingCustomSplitAmounts[userId];
+      return value == null ? "" : String(value);
+    }
+
+    function splitAmountInput(userId) {
+      return [...document.querySelectorAll("[data-split-amount]")].find((input) => input.dataset.splitAmount === userId) || null;
     }
 
     function parseSplitMembers(item) {
       try {
         const members = JSON.parse(item.split_members || "[]");
-        return Array.isArray(members) ? members : [];
+        return Array.isArray(members) ? members.map((member) => ({
+          userId: member.userId || member.user_id || "",
+          displayName: member.displayName || member.display_name || "未命名成員",
+          amount: member.amount == null ? null : Number(member.amount),
+        })).filter((member) => member.userId) : [];
       } catch {
         return [];
       }
@@ -1573,49 +1857,93 @@ export function accountingPage() {
 
     function splitText(item) {
       const members = parseSplitMembers(item);
-      return isGroupExpense(item) && members.length ? '｜分攤：' + members.length + '人' : "";
+      if (!isGroupExpense(item) || !members.length) return "";
+      return '｜分攤：' + members.length + '人' + (item.split_method === "custom" ? "｜指定金額" : "");
     }
 
     function renderSplitSummary() {
       const summaries = splitSummaries();
-      if (!summaries.length) return "";
+      const suggestions = settlementSuggestions();
+      if (!summaries.length && !suggestions.length) return "";
       return '<section class="summary-card">' +
         '<div class="summary-title">分帳統計</div>' +
-        '<ol class="summary-details">' + summaries.map((item) =>
-          '<li>' + escapeHtml(item.name) + '｜付款 ' + escapeHtml(item.paidText) + '｜應付 ' + escapeHtml(item.shareText) + '｜差額 ' + escapeHtml(item.balanceText) + '</li>'
-        ).join("") + '</ol>' +
+        '<div class="split-summary">' + summaries.map(renderSplitPersonSummary).join("") + '</div>' +
+        renderSettlementSuggestions(suggestions) +
       '</section>';
+    }
+
+    function renderSplitPersonSummary(item) {
+      return '<div class="split-person">' +
+        '<div class="split-person-name">' + escapeHtml(item.name) + '</div>' +
+        '<div class="split-metrics">' +
+          renderSplitMetric("已支付", item.paidText) +
+          renderSplitMetric("應收款項", item.receivableText) +
+          renderSplitMetric("應付款項", item.payableText) +
+        '</div>' +
+      '</div>';
+    }
+
+    function renderSplitMetric(label, value) {
+      return '<div class="split-metric">' +
+        '<div class="split-metric-label">' + escapeHtml(label) + '</div>' +
+        '<div class="split-metric-value">' + escapeHtml(value) + '</div>' +
+      '</div>';
     }
 
     function splitSummaries() {
       const people = new Map();
       for (const expense of state.expenses.filter(isGroupExpense)) {
-        const members = parseSplitMembers(expense);
-        if (!members.length) continue;
         const code = expense.currency_code;
         const symbol = expense.currency_symbol || "";
         const amount = Number(expense.amount) || 0;
-        const share = amount / members.length;
         const payer = ensurePerson(people, expense.payer_id, expense.payer_name);
         payer.paid[code] = (payer.paid[code] || 0) + amount;
         payer.symbols[code] = symbol;
-        for (const member of members) {
-          const person = ensurePerson(people, member.userId, member.displayName);
-          person.share[code] = (person.share[code] || 0) + share;
+        payer.labels[code] = expense.currency_label;
+        for (const allocation of splitAllocations(expense)) {
+          const person = ensurePerson(people, allocation.userId, allocation.displayName);
+          person.share[code] = (person.share[code] || 0) + allocation.amount;
           person.symbols[code] = symbol;
+          person.labels[code] = expense.currency_label;
         }
       }
       return [...people.values()].map((person) => ({
+        id: person.id,
         name: person.name,
+        paid: person.paid,
+        share: person.share,
+        symbols: person.symbols,
+        labels: person.labels,
         paidText: currencyMapText(person.paid, person.symbols),
         shareText: currencyMapText(person.share, person.symbols),
         balanceText: currencyBalanceText(person.paid, person.share, person.symbols),
+        receivableText: balanceDirectionText(person.paid, person.share, person.symbols, "receivable"),
+        payableText: balanceDirectionText(person.paid, person.share, person.symbols, "payable"),
+      }));
+    }
+
+    function splitAllocations(expense) {
+      const members = parseSplitMembers(expense);
+      if (!members.length) return [];
+      if (expense.split_method === "custom") {
+        return members.map((member) => ({
+          userId: member.userId,
+          displayName: member.displayName,
+          amount: roundMoney(member.amount),
+        })).filter((member) => member.amount > 0);
+      }
+      const amount = Number(expense.amount) || 0;
+      const share = amount / members.length;
+      return members.map((member) => ({
+        userId: member.userId,
+        displayName: member.displayName,
+        amount: share,
       }));
     }
 
     function ensurePerson(people, id, name) {
       const key = id || name || "unknown";
-      if (!people.has(key)) people.set(key, { name: name || "未命名成員", paid: {}, share: {}, symbols: {} });
+      if (!people.has(key)) people.set(key, { id: key, name: name || "未命名成員", paid: {}, share: {}, symbols: {}, labels: {} });
       return people.get(key);
     }
 
@@ -1635,8 +1963,163 @@ export function accountingPage() {
       }).join("、");
     }
 
+    function balanceDirectionText(paid, share, symbols, direction) {
+      const values = [];
+      for (const code of new Set([...Object.keys(paid), ...Object.keys(share)])) {
+        const balance = roundMoney((paid[code] || 0) - (share[code] || 0));
+        const text = (symbols[code] ? symbols[code] + " " : "") + numberText(Math.abs(balance));
+        if (direction === "receivable" && balance > 0.01) values.push(text);
+        if (direction === "payable" && balance < -0.01) values.push(text);
+      }
+      return values.length ? values.join("、") : "0";
+    }
+
+    function settlementSuggestions() {
+      const groups = new Map();
+      for (const expense of state.expenses.filter(isGroupExpense)) {
+        const payerId = expense.payer_id || "";
+        const payerName = expense.payer_name || "未命名付款人";
+        for (const allocation of splitAllocations(expense)) {
+          if (!allocation.userId || allocation.userId === payerId || allocation.amount <= 0) continue;
+          const key = [allocation.userId, payerId, expense.currency_code].join("|");
+          if (!groups.has(key)) {
+            groups.set(key, {
+              currencyCode: expense.currency_code,
+              currencyLabel: expense.currency_label,
+              currencySymbol: expense.currency_symbol || "",
+              fromUserId: allocation.userId,
+              fromName: allocation.displayName,
+              toUserId: payerId,
+              toName: payerName,
+              amount: 0,
+              details: [],
+            });
+          }
+          const group = groups.get(key);
+          group.amount = roundMoney(group.amount + allocation.amount);
+          group.details.push({
+            note: expense.note || expense.category || "無備註",
+            amount: allocation.amount,
+            symbol: expense.currency_symbol || "",
+          });
+        }
+      }
+      return [...groups.values()].map((item) => ({
+        ...item,
+        key: settlementKey(item.currencyCode, item.fromUserId, item.toUserId, item.amount),
+      }));
+    }
+
+    function renderSettlementSuggestions(suggestions) {
+      const title = '<div class="settlement-title">結算</div>';
+      if (!suggestions.length) {
+        return title + '<div class="settlement-list"><div class="settlement-text">目前沒有需要結算的差額。</div></div>';
+      }
+      const settled = new Set(state.settlements.map((item) => item.settlement_key));
+      const sorted = [...suggestions].sort((a, b) => {
+        const from = String(a.fromName).localeCompare(String(b.fromName), "zh-Hant");
+        if (from) return from;
+        const to = String(a.toName).localeCompare(String(b.toName), "zh-Hant");
+        if (to) return to;
+        const currency = currencyRank(a.currencyCode) - currencyRank(b.currencyCode);
+        if (currency) return currency;
+        return Number(settled.has(a.key)) - Number(settled.has(b.key));
+      });
+      const groups = new Map();
+      for (const item of sorted) {
+        if (!groups.has(item.fromUserId)) {
+          groups.set(item.fromUserId, { fromName: item.fromName, items: [] });
+        }
+        groups.get(item.fromUserId).items.push(item);
+      }
+      return title + '<div class="settlement-list">' + [...groups.values()].map((group) =>
+        '<div class="settlement-row">' +
+          '<div class="settlement-from">' + escapeHtml(group.fromName) + '</div>' +
+          '<div class="settlement-main-wrap">' + group.items.map((item) => renderSettlementMain(item, settled.has(item.key))).join("") + '</div>' +
+        '</div>'
+      ).join("") + '</div>';
+    }
+
+    function renderSettlementMain(item, isSettled) {
+      return '<div class="settlement-main">' +
+        '<div class="settlement-to">' +
+          '<div>付給 <b>' + escapeHtml(item.toName) + '</b> <span>' + escapeHtml(moneyText(item.currencySymbol, item.amount)) + '</span></div>' +
+          '<div class="settlement-detail">' + escapeHtml(settlementDetailText(item)) + '</div>' +
+        '</div>' +
+        '<button class="settlement-action' + (isSettled ? " settled" : "") + '" type="button" data-settlement-action="' + (isSettled ? "unset" : "settle") + '"' +
+          ' data-settlement-key="' + escapeHtml(item.key) + '"' +
+          ' data-currency-code="' + escapeHtml(item.currencyCode) + '"' +
+          ' data-currency-label="' + escapeHtml(item.currencyLabel) + '"' +
+          ' data-currency-symbol="' + escapeHtml(item.currencySymbol) + '"' +
+          ' data-from-user-id="' + escapeHtml(item.fromUserId) + '"' +
+          ' data-from-name="' + escapeHtml(item.fromName) + '"' +
+          ' data-to-user-id="' + escapeHtml(item.toUserId) + '"' +
+          ' data-to-name="' + escapeHtml(item.toName) + '"' +
+          ' data-amount="' + escapeHtml(String(item.amount)) + '">' + (isSettled ? "已結清" : "待結清") + '</button>' +
+      '</div>';
+    }
+
+    function settlementDetailText(item) {
+      const details = Array.isArray(item.details) ? item.details : [];
+      if (!details.length) return "";
+      return details.map((detail) => {
+        const note = detail.note || "無備註";
+        const symbol = detail.symbol || item.currencySymbol || "";
+        return note + " " + moneyText(symbol, detail.amount);
+      }).join(" + ");
+    }
+
+    async function toggleSettlement(button) {
+      const action = button.dataset.settlementAction;
+      const key = button.dataset.settlementKey;
+      if (!key) return;
+      button.disabled = true;
+      try {
+        if (action === "settle") {
+          await api("/api/settlements", {
+            method: "POST",
+            body: {
+              tripId: state.tripId,
+              currencyCode: button.dataset.currencyCode,
+              currencyLabel: button.dataset.currencyLabel,
+              currencySymbol: button.dataset.currencySymbol,
+              fromUserId: button.dataset.fromUserId,
+              fromName: button.dataset.fromName,
+              toUserId: button.dataset.toUserId,
+              toName: button.dataset.toName,
+              amount: Number(button.dataset.amount),
+              settledById: currentUserId(),
+              settledByName: currentUserName(),
+              ...ledgerContextPayload(),
+            },
+          });
+          showToast("已標記結清", "success");
+        } else {
+          const params = new URLSearchParams({
+            tripId: state.tripId,
+            ...ledgerContextPayload(),
+          });
+          await api("/api/settlements/" + encodeURIComponent(key) + "?" + params.toString(), { method: "DELETE" });
+          showToast("已取消結清", "success");
+        }
+        await refreshStats();
+      } catch (error) {
+        showError(error.message);
+      } finally {
+        button.disabled = false;
+      }
+    }
+
     function formatAmount(item) {
       return (item.currency_symbol ? item.currency_symbol + " " : "") + numberText(item.amount) + " (" + item.currency_label + ")";
+    }
+
+    function moneyText(symbol, amount) {
+      return (symbol ? symbol + " " : "") + numberText(amount);
+    }
+
+    function settlementKey(currencyCode, fromUserId, toUserId, amount) {
+      return [currencyCode, fromUserId, toUserId, roundMoney(amount).toFixed(2)].join("|");
     }
 
     function formatDate(value) {
@@ -1723,6 +2206,10 @@ export function accountingPage() {
 
     function numberText(value) {
       return Number(value).toLocaleString("zh-TW", { maximumFractionDigits: 2 });
+    }
+
+    function roundMoney(value) {
+      return Math.round((Number(value) || 0) * 100) / 100;
     }
 
     function escapeHtml(value) {

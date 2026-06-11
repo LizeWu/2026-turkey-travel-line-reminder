@@ -32,7 +32,8 @@ LINE Rich Menu → 旅行記帳本 → 開啟 LIFF 頁面
 - 團體消費依 LINE 群組或多人聊天室建立獨立共享流水帳，並標示付款人。
 - 團體分帳採混合成員來源：從該群組開啟過 LIFF 的 LINE 成員會自動加入，也可手動新增尚未綁定 LINE 的旅伴。
 - 團體消費可指定付款人；付款人與分攤成員可不同，例如某人先刷卡但不參與分攤。
-- 團體統計已有付款、應付與差額雛形；不同幣別分開計算，不做匯率換算，但重新開啟 LIFF 後仍需驗證資料一致性。
+- 團體消費支援平均分攤與指定金額分攤；指定金額分攤會檢查每位成員金額加總是否等於消費金額。
+- 團體統計支援付款、應付、差額、誰欠誰建議與結算狀態；不同幣別分開計算，不做匯率換算。
 - 消費項目可依日期分組，也可切換為依幣別分組。
 - 統計頁以幣別卡片呈現總額。
 - 統計卡片可展開或收合，展開後以有序清單顯示該幣別的消費項目、金額與日期。
@@ -56,8 +57,8 @@ LINE Rich Menu → 旅行記帳本 → 開啟 LIFF 頁面
 | `payer_name` | 實際付款人顯示名稱。 |
 | `created_by_id` | 建立或修改這筆紀錄的 LIFF 使用者 ID。 |
 | `created_by_name` | 建立或修改這筆紀錄的 LIFF 使用者顯示名稱。 |
-| `split_method` | 分帳方式雛形，目前團體消費規劃使用 `equal`，個人消費為 `none`。 |
-| `split_members` | 分攤成員 JSON，包含 LINE userId 或 `manual:<id>` 與 displayName；不會自動包含付款人。 |
+| `split_method` | 分帳方式：個人消費為 `none`，團體消費可為 `equal` 或 `custom`。 |
+| `split_members` | 分攤成員 JSON，包含 LINE userId 或 `manual:<id>` 與 displayName；`custom` 時也包含該成員指定分攤金額；不會自動包含付款人。 |
 | `chat_type` | `user`、`group` 或 `room`。 |
 | `chat_id` | 個人 LINE user ID、LINE group ID 或 room ID。 |
 | `created_at` | 記帳時間。 |
@@ -145,6 +146,36 @@ trip_id + LINE groupId/roomId = 同一本團體帳本
 
 例如同一個 LINE 群組這次去和歌山、下次去東京，會分別形成不同旅程帳本，不會混用消費紀錄。
 
+結算狀態表：
+
+```sql
+CREATE TABLE settlements (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  trip_id TEXT NOT NULL,
+  ledger_id TEXT NOT NULL,
+  chat_type TEXT NOT NULL,
+  chat_id TEXT NOT NULL,
+  settlement_key TEXT NOT NULL,
+  currency_code TEXT NOT NULL,
+  currency_label TEXT NOT NULL,
+  currency_symbol TEXT,
+  from_user_id TEXT NOT NULL,
+  from_name TEXT,
+  to_user_id TEXT NOT NULL,
+  to_name TEXT,
+  amount REAL NOT NULL,
+  status TEXT NOT NULL DEFAULT 'settled',
+  settled_by_id TEXT,
+  settled_by_name TEXT,
+  settled_at TEXT NOT NULL,
+  updated_at TEXT,
+  note TEXT,
+  UNIQUE (trip_id, ledger_id, settlement_key)
+);
+```
+
+`settlement_key` 由幣別、付款人、收款人與金額組成；如果消費紀錄修改導致結算建議金額改變，會形成新的待結算建議，避免舊狀態錯套到新金額。
+
 ## LIFF 顯示格式
 
 成功記帳狀態：
@@ -187,14 +218,17 @@ trip_id + LINE groupId/roomId = 同一本團體帳本
 1. 2026/05/20｜餐食｜₺ 520 (里拉)｜付款人：Bill
 ```
 
-分帳統計目前為雛形；付款人與分攤成員已可分開，下一步需在 LINE 群組中確認付款、應付與差額符合實際情境。
+團體統計中的 `分帳統計` 顯示：
+
+- 成員摘要：付款、應付、差額。
+- 誰欠誰建議：依幣別分開計算，例如 `A 付給 B NT$ 300`。
+- 結算狀態：每筆建議可標記 `已結清`，也可取消結清回到待結算。
 
 ## 不在第一版處理
 
 - 自動匯率換算。
 - 自動抓取完整 LINE 群組成員名單。
-- 指定金額分攤、結算狀態、誰該轉帳給誰。
-- LINE id token 強驗證與離開群組後的自動撤權。
+- LINE id token 強驗證與離開群組後的自動撤權，預計保留到第三階段。
 - 發票照片辨識或 AI 圖片辨識。
 - 匯出 CSV。
 
@@ -210,3 +244,4 @@ trip_id + LINE groupId/roomId = 同一本團體帳本
 | `webhook/cloudflare-worker/migrations/0002_add_expense_scope.sql` | 新增個人/團體消費 scope 與共享 ledger 欄位。 |
 | `webhook/cloudflare-worker/migrations/0003_add_ledger_members.sql` | 新增群組帳本成員表。 |
 | `webhook/cloudflare-worker/migrations/0004_add_split_fields.sql` | 新增分帳方式與分攤成員欄位。 |
+| `webhook/cloudflare-worker/migrations/0006_create_settlements.sql` | 新增團體分帳結算狀態表。 |

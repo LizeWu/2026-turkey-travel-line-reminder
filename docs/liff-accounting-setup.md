@@ -9,6 +9,7 @@
 - `/api/expenses/recent`：修改或刪除最近一筆，保留作為相容 API；目前 LIFF UI 主要使用指定項目修改/刪除。
 - `/api/expenses/stats`：查詢統計。
 - `/api/ledger-members`：查詢團體分帳成員；POST 可手動新增未綁定 LINE 的旅伴。
+- `/api/settlements`：查詢與標記團體分帳結算狀態；DELETE `/api/settlements/:settlement_key` 可取消結清。
 
 目前 LIFF 頁面包含：
 
@@ -27,8 +28,9 @@
 - 群組呼叫阿珠媽時，記帳本 LIFF 連結會帶上 `trip` 與群組 context，例如 `https://liff.line.me/<line-liff-id>?trip=2026-05-turkey&chatType=group&groupId=<line-group-id>`。
 - LIFF 頁面優先使用 LINE context；若重新開啟時 LINE context 不完整，會 fallback 使用 URL 上的 `groupId` / `roomId`，避免查到空的團體帳本。
 - 團體帳本以 `trip_id + groupId/roomId` 判定，因此同一個 LINE 群組可在不同旅程擁有不同帳本。
-- 團體統計已有付款、應付與差額雛形；不同幣別分開計算，但重新開啟 LIFF 後仍需確認資料一致性。
-- 尚未實作指定金額分攤、結算狀態或自動產生誰該轉帳給誰。
+- 團體消費支援平均分攤與指定金額分攤；指定金額會檢查加總需等於消費金額。
+- 團體統計已支援付款、應付、差額、誰欠誰建議與結算狀態；不同幣別分開計算，不做匯率換算。
+- LINE id token 強驗證與離開群組後撤權保留到第三階段。
 
 開發測試：
 
@@ -76,6 +78,7 @@ npm run deploy
 - `0003_add_ledger_members.sql`：團體帳本成員。
 - `0004_add_split_fields.sql`：分帳方式與分帳成員欄位。
 - `0005_add_group_trip_settings.sql`：群組目前啟用旅程設定。
+- `0006_create_settlements.sql`：團體分帳結算狀態。
 
 ## LINE LIFF
 

@@ -349,6 +349,34 @@ async function handleApi(request, env, url) {
       return jsonResponse({ member }, 201);
     }
 
+    if (url.pathname === "/api/settlements" && request.method === "GET") {
+      return jsonResponse({
+        settlements: await listSettlements(env, {
+          tripId: url.searchParams.get("trip") || url.searchParams.get("tripId") || "",
+          chatType: url.searchParams.get("chatType") || "",
+          groupId: url.searchParams.get("groupId") || "",
+          roomId: url.searchParams.get("roomId") || "",
+        }),
+      });
+    }
+
+    if (url.pathname === "/api/settlements" && request.method === "POST") {
+      const payload = await request.json();
+      const settlement = await upsertSettlement(env, payload);
+      return jsonResponse({ settlement }, 201);
+    }
+
+    const settlementMatch = url.pathname.match(/^\/api\/settlements\/(.+)$/);
+    if (settlementMatch && request.method === "DELETE") {
+      const settlement = await deleteSettlement(env, decodeURIComponent(settlementMatch[1]), {
+        tripId: url.searchParams.get("trip") || url.searchParams.get("tripId") || "",
+        chatType: url.searchParams.get("chatType") || "",
+        groupId: url.searchParams.get("groupId") || "",
+        roomId: url.searchParams.get("roomId") || "",
+      });
+      return jsonResponse({ settlement });
+    }
+
     const ledgerMemberMatch = url.pathname.match(/^\/api\/ledger-members\/(.+)$/);
     if (ledgerMemberMatch && request.method === "DELETE") {
       const member = await deleteLedgerMember(env, decodeURIComponent(ledgerMemberMatch[1]), {
@@ -706,6 +734,159 @@ async function deleteLedgerMember(env, userId, options = {}) {
   return existing;
 }
 
+async function listSettlements(env, options = {}) {
+  const activeTripId = tripId(env, options.tripId || options.trip);
+  const ledger = resolveLedger(env, {
+    expenseScope: "group",
+    chatType: options.chatType,
+    groupId: options.groupId,
+    roomId: options.roomId,
+  });
+  const result = await env.ACCOUNTING_DB.prepare(
+    `SELECT *
+      FROM settlements
+      WHERE trip_id = ? AND ledger_id = ? AND status = 'settled'
+      ORDER BY settled_at DESC, id DESC`
+  )
+    .bind(activeTripId, ledger.ledger_id)
+    .all();
+  return result.results || [];
+}
+
+async function upsertSettlement(env, payload = {}) {
+  const item = normalizeSettlement(env, payload);
+  await env.ACCOUNTING_DB.prepare(
+    `INSERT INTO settlements (
+      trip_id, ledger_id, chat_type, chat_id, settlement_key,
+      currency_code, currency_label, currency_symbol,
+      from_user_id, from_name, to_user_id, to_name, amount,
+      status, settled_by_id, settled_by_name, settled_at, updated_at, note
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'settled', ?, ?, ?, ?, ?)
+    ON CONFLICT(trip_id, ledger_id, settlement_key) DO UPDATE SET
+      currency_label = excluded.currency_label,
+      currency_symbol = excluded.currency_symbol,
+      from_name = excluded.from_name,
+      to_name = excluded.to_name,
+      amount = excluded.amount,
+      status = 'settled',
+      settled_by_id = excluded.settled_by_id,
+      settled_by_name = excluded.settled_by_name,
+      settled_at = excluded.settled_at,
+      updated_at = excluded.updated_at,
+      note = excluded.note`
+  )
+    .bind(
+      item.trip_id,
+      item.ledger_id,
+      item.chat_type,
+      item.chat_id,
+      item.settlement_key,
+      item.currency_code,
+      item.currency_label,
+      item.currency_symbol,
+      item.from_user_id,
+      item.from_name,
+      item.to_user_id,
+      item.to_name,
+      item.amount,
+      item.settled_by_id,
+      item.settled_by_name,
+      item.settled_at,
+      item.updated_at,
+      item.note
+    )
+    .run();
+  return getSettlement(env, item.trip_id, item.ledger_id, item.settlement_key);
+}
+
+async function deleteSettlement(env, settlementKey, options = {}) {
+  const activeTripId = tripId(env, options.tripId || options.trip);
+  const ledger = resolveLedger(env, {
+    expenseScope: "group",
+    chatType: options.chatType,
+    groupId: options.groupId,
+    roomId: options.roomId,
+  });
+  const existing = await getSettlement(env, activeTripId, ledger.ledger_id, settlementKey);
+  if (!existing) {
+    throw new Error("找不到這筆結算紀錄。");
+  }
+  await env.ACCOUNTING_DB.prepare(
+    `DELETE FROM settlements
+      WHERE trip_id = ? AND ledger_id = ? AND settlement_key = ?`
+  )
+    .bind(activeTripId, ledger.ledger_id, settlementKey)
+    .run();
+  return existing;
+}
+
+async function getSettlement(env, activeTripId, ledgerId, settlementKey) {
+  return env.ACCOUNTING_DB.prepare(
+    `SELECT *
+      FROM settlements
+      WHERE trip_id = ? AND ledger_id = ? AND settlement_key = ?
+      LIMIT 1`
+  )
+    .bind(activeTripId, ledgerId, settlementKey)
+    .first();
+}
+
+function normalizeSettlement(env, payload = {}) {
+  const activeTripId = tripId(env, payload.tripId || payload.trip);
+  const ledger = resolveLedger(env, {
+    expenseScope: "group",
+    chatType: payload.chatType,
+    groupId: payload.groupId,
+    roomId: payload.roomId,
+  });
+  const amount = roundMoney(Number(payload.amount));
+  if (!Number.isFinite(amount) || amount <= 0) {
+    throw new Error("結算金額需大於 0。");
+  }
+  const currency = currencyInfo(payload.currencyCode);
+  const fromUserId = String(payload.fromUserId || "").trim().slice(0, 80);
+  const toUserId = String(payload.toUserId || "").trim().slice(0, 80);
+  if (!fromUserId || !toUserId || fromUserId === toUserId) {
+    throw new Error("結算需要有效的付款人與收款人。");
+  }
+  const settlementKey = settlementKeyFor({
+    currencyCode: currency.code,
+    fromUserId,
+    toUserId,
+    amount,
+  });
+  const now = new Date().toISOString();
+  return {
+    trip_id: activeTripId,
+    ledger_id: ledger.ledger_id,
+    chat_type: ledger.chat_type,
+    chat_id: ledger.chat_id,
+    settlement_key: settlementKey,
+    currency_code: currency.code,
+    currency_label: payload.currencyLabel || currency.label,
+    currency_symbol: payload.currencySymbol || currency.symbol,
+    from_user_id: fromUserId,
+    from_name: String(payload.fromName || "").trim().slice(0, 80),
+    to_user_id: toUserId,
+    to_name: String(payload.toName || "").trim().slice(0, 80),
+    amount,
+    settled_by_id: String(payload.settledById || "").trim().slice(0, 80),
+    settled_by_name: String(payload.settledByName || "").trim().slice(0, 80),
+    settled_at: now,
+    updated_at: now,
+    note: String(payload.note || "").trim().slice(0, 120),
+  };
+}
+
+function settlementKeyFor(item) {
+  return [
+    String(item.currencyCode || ""),
+    String(item.fromUserId || ""),
+    String(item.toUserId || ""),
+    roundMoney(Number(item.amount) || 0).toFixed(2),
+  ].join("|");
+}
+
 function normalizeExpense(env, payload) {
   const amount = Number(payload.amount);
   if (!Number.isFinite(amount) || amount <= 0) {
@@ -755,19 +936,42 @@ function normalizeSplit(payload, context) {
   if (context.expenseScope !== "group") {
     return { method: "none", members: "" };
   }
+  const method = payload.splitMethod === "custom" ? "custom" : "equal";
   const rawMembers = Array.isArray(payload.splitMembers) ? payload.splitMembers : [];
   const members = rawMembers
-    .map((member) => ({
-      userId: String(member.userId || "").trim().slice(0, 80),
-      displayName: String(member.displayName || "").trim().slice(0, 80),
-    }))
+    .map((member) => normalizeSplitMember(member, method))
     .filter((member) => member.userId);
   const unique = new Map();
   for (const member of members) unique.set(member.userId, member);
+  const normalizedMembers = [...unique.values()];
+  if (method === "custom") {
+    const total = roundMoney(normalizedMembers.reduce((sum, member) => sum + (Number(member.amount) || 0), 0));
+    const amount = roundMoney(Number(payload.amount) || 0);
+    if (!normalizedMembers.length) {
+      throw new Error("請至少選擇一位分攤成員。");
+    }
+    if (normalizedMembers.some((member) => !Number.isFinite(member.amount) || member.amount <= 0)) {
+      throw new Error("指定金額分攤需為每位成員輸入大於 0 的金額。");
+    }
+    if (Math.abs(total - amount) > 0.01) {
+      throw new Error(`指定金額加總需等於消費金額，目前加總為 ${total}。`);
+    }
+  }
   return {
-    method: "equal",
-    members: JSON.stringify([...unique.values()]),
+    method,
+    members: JSON.stringify(normalizedMembers),
   };
+}
+
+function normalizeSplitMember(member, method) {
+  const item = {
+    userId: String(member.userId || "").trim().slice(0, 80),
+    displayName: String(member.displayName || "").trim().slice(0, 80),
+  };
+  if (method === "custom") {
+    item.amount = roundMoney(Number(member.amount));
+  }
+  return item;
 }
 
 function normalizeExpenseScope(value) {
@@ -846,6 +1050,10 @@ function currencyInfo(code) {
     JPY: { code: "JPY", label: "日幣", symbol: "¥" },
   };
   return currencies[code] || currencies.TWD;
+}
+
+function roundMoney(value) {
+  return Math.round((Number(value) || 0) * 100) / 100;
 }
 
 function accountingDate() {
