@@ -441,10 +441,16 @@ export function accountingPage() {
     .date-heading {
       margin: 0 0 4px;
       color: var(--green);
-      font-size: .98rem;
+      font-size: 1.125rem;
       font-weight: 800;
+      text-align: right;
+      padding: 0 16px 0 0;
+      line-height: 2;
     }
     .expense-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
       margin: 0;
       padding: 0;
       list-style: none;
@@ -454,11 +460,9 @@ export function accountingPage() {
       grid-template-columns: minmax(0, 1fr) auto;
       align-items: center;
       gap: 10px;
-      padding: 10px 0;
-      border-top: 1px solid var(--line);
-    }
-    .date-heading + .expense {
-      border-top: 0;
+      padding: 10px 16px;
+      background: #f7f7f7;
+      border-radius: 8px;
     }
     .expense-main {
       min-width: 0;
@@ -474,6 +478,29 @@ export function accountingPage() {
       display: flex;
       align-items: center;
       gap: 8px;
+      min-width: 0;
+      overflow-wrap: anywhere;
+    }
+    .expense-category {
+      display: inline-flex;
+      align-items: center;
+      min-height: 22px;
+      padding: 2px 8px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: var(--panel);
+      color: var(--green);
+      font-size: .78rem;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+    .expense-seq,
+    .expense-id {
+      color: #adadad;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+    .expense-note {
       min-width: 0;
       overflow-wrap: anywhere;
     }
@@ -493,6 +520,7 @@ export function accountingPage() {
       white-space: nowrap;
     }
     .meta {
+      margin-top: 10px;
       color: var(--muted);
       font-size: .9rem;
       font-weight: 600;
@@ -508,7 +536,7 @@ export function accountingPage() {
       overflow-wrap: anywhere;
     }
     .meta-line.primary {
-      color: var(--ink);
+      color: #adadad;
       font-weight: 700;
     }
     .icon-actions {
@@ -565,8 +593,40 @@ export function accountingPage() {
       gap: 10px;
     }
     .summary-title {
+      display: grid;
+      gap: 2px;
       min-width: 0;
+      color: var(--green);
+      font-size: 1.125rem;
+      font-weight: 800;
+      padding: 0 14px 4px;
+      line-height: 2;
+      margin: 0 -14px;
+    }
+    .summary-title-main {
+      min-width: 0;
+      overflow-wrap: anywhere;
+    }
+    .summary-title-note {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      min-width: 0;
+      color: var(--muted);
+      font-size: .84rem;
+      font-weight: 700;
       line-height: 1.45;
+      overflow-wrap: anywhere;
+    }
+    .summary-title-note svg {
+      width: 15px;
+      height: 15px;
+      flex: 0 0 auto;
+      stroke: currentColor;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      fill: none;
     }
     .summary-toggle {
       display: inline-flex;
@@ -608,29 +668,66 @@ export function accountingPage() {
     .split-summary {
       display: grid;
       gap: 10px;
-      margin-top: 10px;
-      padding-top: 10px;
     }
     .split-person {
       display: grid;
       gap: 6px;
     }
     .split-person-name {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
       color: var(--ink);
       font-weight: 800;
+      line-height: 2;
+      overflow-wrap: anywhere;
+    }
+    .member-avatar {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 28px;
+      height: 28px;
+      flex: 0 0 auto;
+      border-radius: 999px;
+      overflow: hidden;
+      background: currentColor;
+      color: var(--muted);
+      box-shadow: rgba(0, 0, 0, 0.08) 0px 0px 0px 1px;
+    }
+    .member-avatar img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+    .member-avatar svg {
+      width: 20px;
+      height: 20px;
+      stroke: rgb(255 255 255);
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      fill: none;
+    }
+    .member-name {
+      min-width: 0;
       overflow-wrap: anywhere;
     }
     .split-metrics {
       display: grid;
       grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 8px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #f8faf8;
     }
     .split-metric {
       min-width: 0;
-      border: 1px solid var(--line);
-      border-radius: 8px;
       padding: 8px;
-      background: #f8faf8;
+    }
+    .split-metrics .split-metric:nth-child(2) {
+      border-left: 1px solid var(--line);
+      border-right: 1px solid var(--line);
     }
     .split-metric-label {
       color: var(--muted);
@@ -650,10 +747,13 @@ export function accountingPage() {
       margin-top: 10px;
     }
     .settlement-title {
-      margin-top: 12px;
-      padding-top: 10px;
+      display: grid;
+      gap: 2px;
       color: var(--green);
+      font-size: 1.125rem;
       font-weight: 800;
+      padding: 0 16px 0 0;
+      line-height: 2;
     }
     .settlement-row {
       display: grid;
@@ -675,6 +775,9 @@ export function accountingPage() {
       overflow-wrap: anywhere;
     }
     .settlement-from {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
       align-self: center;
       min-width: 0;
       color: var(--ink);
@@ -698,6 +801,19 @@ export function accountingPage() {
       padding-top: 8px;
       border-top: 1px solid var(--line);
     }
+    .settlement-section-label {
+      color: var(--green);
+      font-size: .9rem;
+      font-weight: 900;
+      line-height: 1.45;
+    }
+    .settlement-net-note {
+      color: var(--muted);
+      font-size: .78rem;
+      font-weight: 700;
+      line-height: 1.45;
+      overflow-wrap: anywhere;
+    }
     .settlement-detail {
       margin-top: 3px;
       color: var(--muted);
@@ -714,14 +830,17 @@ export function accountingPage() {
       overflow-wrap: anywhere;
     }
     .settlement-to div b {
-      background: #009688;
+      background: #fff;
       padding: 4px 8px;
       border-radius: 12px;
       font-weight: normal;
-      color: #fff;
+      box-shadow: rgba(0, 0, 0, 0.05) 0px 6px 24px 0px, rgba(0, 0, 0, 0.08) 0px 0px 0px 1px;
+      margin: 0 2px;
+      white-space: nowrap;
     }
     .settlement-to div span {
       color: #009688;
+      white-space: nowrap;
     }
     .settlement-action {
       min-height: 34px;
@@ -734,6 +853,63 @@ export function accountingPage() {
     .settlement-action.settled {
       border-color: var(--green);
       background: var(--green-soft);
+    }
+    .settlement-source {
+      min-width: 0;
+      border-top: 1px solid var(--line);
+      padding-top: 8px;
+    }
+    .settlement-source summary {
+      cursor: pointer;
+      color: var(--muted);
+      font-size: .84rem;
+      font-weight: 800;
+      line-height: 1.6;
+      list-style-position: inside;
+      overflow-wrap: anywhere;
+    }
+    .settlement-source-list {
+      display: grid;
+      gap: 6px;
+      max-height: 300px;
+      margin-top: 8px;
+      overflow-y: auto;
+      overscroll-behavior: contain;
+      padding-right: 2px;
+    }
+    .settlement-source-row {
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr) auto;
+      gap: 4px 8px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+      padding: 8px;
+      color: var(--muted);
+      font-size: .82rem;
+      font-weight: 700;
+      line-height: 1.45;
+    }
+    .settlement-source-index {
+      color: var(--muted);
+      font-weight: 900;
+      white-space: nowrap;
+    }
+    .settlement-source-row span,
+    .settlement-source-row small {
+      min-width: 0;
+      overflow-wrap: anywhere;
+    }
+    .settlement-source-row b {
+      color: #009688;
+      font-weight: 900;
+      white-space: nowrap;
+    }
+    .settlement-source-row small {
+      grid-column: 2 / -1;
+      color: var(--muted);
+      font-size: .78rem;
+      font-weight: normal;
     }
     .toast-root {
       position: fixed;
@@ -792,20 +968,53 @@ export function accountingPage() {
     }
     .hidden { display: none; }
     .date-dialog.hidden { display: none; }
-    @media (max-width: 420px) {
+    @media (max-width: 720px) {
       .grid {
         grid-template-columns: 1fr;
       }
       .expense {
         grid-template-columns: 1fr;
       }
+      .expense-title {
+        flex-direction: column;
+        gap: 5px;
+      }
       .member-option,
       .member-option.equal-mode,
       .settlement-row {
         grid-template-columns: 1fr;
       }
+      .settlement-row {
+        border: 0;
+        border-radius: 0;
+        padding: 0;
+        padding-top: 0;
+        background: transparent;
+      }
+      .settlement-main-wrap {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 12px;
+        background: #f8faf8;
+      }
       .split-metrics {
         grid-template-columns: 1fr;
+      }
+      .split-metrics .split-metric:nth-child(2) {
+        border-left: none;
+        border-right: none;
+      }
+      .split-person-name,
+      .settlement-from {
+        text-align: right;
+      }
+      .split-person-name,
+      .settlement-from {
+        justify-content: flex-end;
+      }
+      .settlement-from {
+        font-size: inherit;
+        line-height: 2;
       }
       .settlement-main {
         grid-template-columns: 1fr;
@@ -984,6 +1193,8 @@ export function accountingPage() {
     const $ = (id) => document.getElementById(id);
     const editIcon = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20h9"></path><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"></path></svg>';
     const deleteIcon = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18"></path><path d="M8 6V4h8v2"></path><path d="M19 6l-1 14H6L5 6"></path><path d="M10 11v5"></path><path d="M14 11v5"></path></svg>';
+    const infoIcon = '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><path d="M12 16v-4"></path><path d="M12 8h.01"></path></svg>';
+    const circleUserIcon = '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="10" r="3"></circle><path d="M7 20.662V19a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v1.662"></path></svg>';
 
     async function init() {
       const requestedTripId = urlTripId();
@@ -1140,6 +1351,7 @@ export function accountingPage() {
         payerName: payer.displayName,
         createdById: currentUserId(),
         createdByName: currentUserName(),
+        createdByPictureUrl: currentUserPictureUrl(),
         splitMethod: state.addScope === "group" ? state.splitMethod : "none",
         splitMembers: selectedSplitMembers(),
         tripId: state.tripId,
@@ -1290,6 +1502,7 @@ export function accountingPage() {
       }
       await loadExpenses(state.statsScope);
       if (state.statsScope === "group") {
+        await loadLedgerMembers();
         await loadSettlements();
       } else {
         state.settlements = [];
@@ -1330,6 +1543,7 @@ export function accountingPage() {
         tripId: state.tripId,
         userId: currentUserId(),
         displayName: state.profile?.displayName || "",
+        pictureUrl: currentUserPictureUrl(),
         ...ledgerContextPayload(),
       });
       const data = await api("/api/expenses?" + params.toString());
@@ -1352,6 +1566,7 @@ export function accountingPage() {
         tripId: state.tripId,
         userId: currentUserId(),
         displayName: state.profile?.displayName || "",
+        pictureUrl: currentUserPictureUrl(),
         ...ledgerContextPayload(),
       });
       try {
@@ -1509,9 +1724,13 @@ export function accountingPage() {
       const tag = Number(item.id) === state.highlightedExpenseId
         ? '<span class="expense-tag">' + escapeHtml(state.highlightType === "updated" ? "已更新" : "已新增") + '</span>'
         : "";
+      const title = '<span class="expense-seq">' + (index + 1) + '.</span>' +
+        '<span class="expense-id">#' + item.id + '</span>' +
+        '<span class="expense-category">' + escapeHtml(item.category) + '</span>' +
+        '<span class="expense-note">' + escapeHtml(item.note || "無備註") + '</span>';
       return '<li><article class="expense">' +
         '<div class="expense-main">' +
-          '<div class="expense-title"><span class="expense-title-main"><span>' + (index + 1) + '. ' + escapeHtml(item.note || "無備註") + '</span>' + tag + '</span><span class="amount">' + formatAmount(item) + '</span></div>' +
+          '<div class="expense-title"><span class="expense-title-main">' + title + tag + '</span><span class="amount">' + formatAmount(item) + '</span></div>' +
           '<div class="meta">' + meta + '</div>' +
         '</div>' +
         '<div class="icon-actions">' +
@@ -1523,14 +1742,12 @@ export function accountingPage() {
 
     function renderExpenseMeta(item) {
       if (!isGroupExpense(item)) {
-        return '#' + item.id + ' ' + escapeHtml(item.category);
+        return "";
       }
-      const note = item.note || "無備註";
       const payer = item.payer_name || "未命名付款人";
       const members = parseSplitMembers(item).map((member) => member.displayName || "未命名成員");
       const memberText = members.length ? members.join("、") : "未選擇";
       return '<div class="expense-meta">' +
-        '<div class="meta-line primary">#' + item.id + ' ' + escapeHtml(item.category) + '｜' + escapeHtml(note) + '</div>' +
         '<div class="meta-line">付款人：' + escapeHtml(payer) + '</div>' +
         '<div class="meta-line">分攤成員：' + escapeHtml(memberText) + '</div>' +
       '</div>';
@@ -1651,6 +1868,10 @@ export function accountingPage() {
       return state.profile?.displayName || "Lize";
     }
 
+    function currentUserPictureUrl() {
+      return state.profile?.pictureUrl || "";
+    }
+
     function isGroupExpense(item) {
       return (item.expense_scope || "personal") === "group";
     }
@@ -1748,7 +1969,7 @@ export function accountingPage() {
     function normalizedLedgerMembers() {
       const members = [...state.ledgerMembers];
       if (currentUserId() && !members.some((member) => member.user_id === currentUserId())) {
-        members.push({ user_id: currentUserId(), display_name: currentUserName() });
+        members.push({ user_id: currentUserId(), display_name: currentUserName(), picture_url: currentUserPictureUrl() });
       }
       if (state.editingPayerId && !members.some((member) => (member.user_id || member.userId) === state.editingPayerId)) {
         members.push({ user_id: state.editingPayerId, display_name: state.editingPayerName || "原付款人" });
@@ -1757,6 +1978,7 @@ export function accountingPage() {
       for (const member of members.map((member) => ({
         userId: member.user_id || member.userId,
         displayName: member.display_name || member.displayName || "未命名成員",
+        pictureUrl: member.picture_url || member.pictureUrl || "",
       })).filter((member) => member.userId)) {
         unique.set(member.userId, member);
       }
@@ -1864,23 +2086,44 @@ export function accountingPage() {
     function renderSplitSummary() {
       const summaries = splitSummaries();
       const suggestions = settlementSuggestions();
+      const simplifiedSuggestions = simplifiedSettlementSuggestions(summaries);
       if (!summaries.length && !suggestions.length) return "";
-      return '<section class="summary-card">' +
-        '<div class="summary-title">分帳統計</div>' +
-        '<div class="split-summary">' + summaries.map(renderSplitPersonSummary).join("") + '</div>' +
-        renderSettlementSuggestions(suggestions) +
-      '</section>';
+      const splitCard = summaries.length
+        ? '<section class="summary-card">' +
+          '<div class="summary-title">' +
+            '<span class="summary-title-main">分帳統計</span>' +
+            '<span class="summary-title-note">' + infoIcon + '每個人的支付與分攤總覽</span>' +
+          '</div>' +
+          '<div class="split-summary">' + summaries.map(renderSplitPersonSummary).join("") + '</div>' +
+        '</section>'
+        : "";
+      return splitCard + renderSettlementSuggestions(suggestions, simplifiedSuggestions);
     }
 
     function renderSplitPersonSummary(item) {
       return '<div class="split-person">' +
-        '<div class="split-person-name">' + escapeHtml(item.name) + '</div>' +
+        '<div class="split-person-name">' + renderMemberAvatar(item.id, item.name) + '<span class="member-name">' + escapeHtml(item.name) + '</span></div>' +
         '<div class="split-metrics">' +
           renderSplitMetric("已支付", item.paidText) +
           renderSplitMetric("應收款項", item.receivableText) +
           renderSplitMetric("應付款項", item.payableText) +
         '</div>' +
       '</div>';
+    }
+
+    function renderMemberAvatar(userId, name) {
+      const pictureUrl = memberPictureUrl(userId);
+      if (pictureUrl) {
+        return '<span class="member-avatar"><img src="' + escapeHtml(pictureUrl) + '" alt="' + escapeHtml(name || "成員") + '" loading="lazy"></span>';
+      }
+      return '<span class="member-avatar default" aria-hidden="true">' + circleUserIcon + '</span>';
+    }
+
+    function memberPictureUrl(userId) {
+      const id = String(userId || "");
+      if (!id || id.startsWith("manual:")) return "";
+      const member = normalizedLedgerMembers().find((item) => item.userId === id);
+      return member?.pictureUrl || "";
     }
 
     function renderSplitMetric(label, value) {
@@ -2010,13 +2253,74 @@ export function accountingPage() {
       }));
     }
 
-    function renderSettlementSuggestions(suggestions) {
-      const title = '<div class="settlement-title">結算</div>';
-      if (!suggestions.length) {
-        return title + '<div class="settlement-list"><div class="settlement-text">目前沒有需要結算的差額。</div></div>';
+    function simplifiedSettlementSuggestions(summaries) {
+      const currencies = new Map();
+      for (const person of summaries) {
+        const codes = new Set([...Object.keys(person.paid), ...Object.keys(person.share)]);
+        for (const code of codes) {
+          const balance = roundMoney((person.paid[code] || 0) - (person.share[code] || 0));
+          if (Math.abs(balance) <= 0.01) continue;
+          if (!currencies.has(code)) {
+            currencies.set(code, { debtors: [], creditors: [] });
+          }
+          const entry = {
+            userId: person.id,
+            name: person.name,
+            currencyCode: code,
+            currencyLabel: person.labels[code] || code,
+            currencySymbol: person.symbols[code] || "",
+            amount: Math.abs(balance),
+          };
+          if (balance < 0) {
+            currencies.get(code).debtors.push(entry);
+          } else {
+            currencies.get(code).creditors.push(entry);
+          }
+        }
+      }
+      const suggestions = [];
+      for (const currency of currencies.values()) {
+        const debtors = currency.debtors.sort((a, b) => String(a.name).localeCompare(String(b.name), "zh-Hant"));
+        const creditors = currency.creditors.sort((a, b) => String(a.name).localeCompare(String(b.name), "zh-Hant"));
+        let debtorIndex = 0;
+        let creditorIndex = 0;
+        while (debtorIndex < debtors.length && creditorIndex < creditors.length) {
+          const debtor = debtors[debtorIndex];
+          const creditor = creditors[creditorIndex];
+          const amount = roundMoney(Math.min(debtor.amount, creditor.amount));
+          if (amount > 0.01) {
+            suggestions.push({
+              currencyCode: debtor.currencyCode,
+              currencyLabel: debtor.currencyLabel,
+              currencySymbol: debtor.currencySymbol,
+              fromUserId: debtor.userId,
+              fromName: debtor.name,
+              toUserId: creditor.userId,
+              toName: creditor.name,
+              amount,
+              details: [],
+              key: settlementKey(debtor.currencyCode, debtor.userId, creditor.userId, amount),
+            });
+          }
+          debtor.amount = roundMoney(debtor.amount - amount);
+          creditor.amount = roundMoney(creditor.amount - amount);
+          if (debtor.amount <= 0.01) debtorIndex += 1;
+          if (creditor.amount <= 0.01) creditorIndex += 1;
+        }
+      }
+      return suggestions;
+    }
+
+    function renderSettlementSuggestions(suggestions, simplifiedSuggestions) {
+      const title = '<div class="settlement-title">' +
+        '<span class="summary-title-main">結算清單</span>' +
+        '<span class="summary-title-note">' + infoIcon + '成員間的付款建議與結算依據</span>' +
+      '</div>';
+      if (!simplifiedSuggestions.length) {
+        return '<section class="summary-card">' + title + '<div class="settlement-list"><div class="settlement-text">目前沒有需要結算的差額。</div></div></section>';
       }
       const settled = new Set(state.settlements.map((item) => item.settlement_key));
-      const sorted = [...suggestions].sort((a, b) => {
+      const sorted = [...simplifiedSuggestions].sort((a, b) => {
         const from = String(a.fromName).localeCompare(String(b.fromName), "zh-Hant");
         if (from) return from;
         const to = String(a.toName).localeCompare(String(b.toName), "zh-Hant");
@@ -2028,23 +2332,29 @@ export function accountingPage() {
       const groups = new Map();
       for (const item of sorted) {
         if (!groups.has(item.fromUserId)) {
-          groups.set(item.fromUserId, { fromName: item.fromName, items: [] });
+          groups.set(item.fromUserId, { fromUserId: item.fromUserId, fromName: item.fromName, items: [] });
         }
         groups.get(item.fromUserId).items.push(item);
       }
-      return title + '<div class="settlement-list">' + [...groups.values()].map((group) =>
+      return '<section class="summary-card">' + title + '<div class="settlement-list">' + [...groups.values()].map((group) =>
         '<div class="settlement-row">' +
-          '<div class="settlement-from">' + escapeHtml(group.fromName) + '</div>' +
-          '<div class="settlement-main-wrap">' + group.items.map((item) => renderSettlementMain(item, settled.has(item.key))).join("") + '</div>' +
+          '<div class="settlement-from">' + renderMemberAvatar(group.fromUserId, group.fromName) + '<span class="member-name">' + escapeHtml(group.fromName) + '</span></div>' +
+          '<div class="settlement-main-wrap">' +
+            '<div class="settlement-section-label">建議付款方式</div>' +
+            group.items.map((item) => renderSettlementMain(item, settled.has(item.key))).join("") +
+            '<div class="settlement-net-note">已依同幣別淨額簡化付款對象。</div>' +
+            renderSettlementSources(group, suggestions) +
+          '</div>' +
         '</div>'
-      ).join("") + '</div>';
+      ).join("") + '</div></section>';
     }
 
     function renderSettlementMain(item, isSettled) {
+      const detail = settlementDetailText(item);
       return '<div class="settlement-main">' +
         '<div class="settlement-to">' +
           '<div>付給 <b>' + escapeHtml(item.toName) + '</b> <span>' + escapeHtml(moneyText(item.currencySymbol, item.amount)) + '</span></div>' +
-          '<div class="settlement-detail">' + escapeHtml(settlementDetailText(item)) + '</div>' +
+          (detail ? '<div class="settlement-detail">' + escapeHtml(detail) + '</div>' : '') +
         '</div>' +
         '<button class="settlement-action' + (isSettled ? " settled" : "") + '" type="button" data-settlement-action="' + (isSettled ? "unset" : "settle") + '"' +
           ' data-settlement-key="' + escapeHtml(item.key) + '"' +
@@ -2056,6 +2366,37 @@ export function accountingPage() {
           ' data-to-user-id="' + escapeHtml(item.toUserId) + '"' +
           ' data-to-name="' + escapeHtml(item.toName) + '"' +
           ' data-amount="' + escapeHtml(String(item.amount)) + '">' + (isSettled ? "已結清" : "待結清") + '</button>' +
+      '</div>';
+    }
+
+    function renderSettlementSources(group, suggestions) {
+      const sources = settlementSourcesForGroup(group, suggestions);
+      if (!sources.length) return "";
+      const summary = '相關結算依據（' + sources.length + '筆）';
+      return '<details class="settlement-source">' +
+        '<summary>' + escapeHtml(summary) + '</summary>' +
+        '<div class="settlement-source-list">' +
+          sources.map((item, index) => renderSettlementSourceRow(item, index)).join("") +
+        '</div>' +
+      '</details>';
+    }
+
+    function settlementSourcesForGroup(group, suggestions) {
+      return suggestions.filter((item) =>
+        item.fromUserId === group.fromUserId
+      ).sort((a, b) => {
+        const currency = currencyRank(a.currencyCode) - currencyRank(b.currencyCode);
+        if (currency) return currency;
+        return String(a.toName).localeCompare(String(b.toName), "zh-Hant");
+      });
+    }
+
+    function renderSettlementSourceRow(item, index) {
+      return '<div class="settlement-source-row">' +
+        '<span class="settlement-source-index">' + escapeHtml(String(index + 1)) + '.</span>' +
+        '<span>' + escapeHtml(item.fromName) + ' 應付 ' + escapeHtml(item.toName) + '</span>' +
+        '<b>' + escapeHtml(moneyText(item.currencySymbol, item.amount)) + '</b>' +
+        '<small>' + escapeHtml(settlementDetailText(item) || "原始分帳明細") + '</small>' +
       '</div>';
     }
 

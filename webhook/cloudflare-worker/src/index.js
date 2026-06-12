@@ -321,6 +321,7 @@ async function handleApi(request, env, url) {
           tripId: url.searchParams.get("trip") || url.searchParams.get("tripId") || "",
           userId: url.searchParams.get("userId") || "",
           displayName: url.searchParams.get("displayName") || "",
+          pictureUrl: url.searchParams.get("pictureUrl") || "",
           chatType: url.searchParams.get("chatType") || "",
           groupId: url.searchParams.get("groupId") || "",
           roomId: url.searchParams.get("roomId") || "",
@@ -332,6 +333,7 @@ async function handleApi(request, env, url) {
       const result = await listLedgerMembers(env, {
         userId: url.searchParams.get("userId") || "",
         displayName: url.searchParams.get("displayName") || "",
+        pictureUrl: url.searchParams.get("pictureUrl") || "",
         tripId: url.searchParams.get("trip") || url.searchParams.get("tripId") || "",
         chatType: url.searchParams.get("chatType") || "",
         groupId: url.searchParams.get("groupId") || "",
@@ -563,6 +565,7 @@ async function listExpenses(env, options = {}) {
   const expenseScope = normalizeExpenseScope(options.expenseScope);
   const userId = String(options.userId || "").trim().slice(0, 80);
   const displayName = String(options.displayName || "").trim().slice(0, 80);
+  const pictureUrl = String(options.pictureUrl || "").trim().slice(0, 500);
   const ledger = resolveLedger(env, {
     expenseScope,
     payerId: userId,
@@ -590,6 +593,7 @@ async function listExpenses(env, options = {}) {
         chat_id: ledger.chat_id,
         created_by_id: userId,
         created_by_name: displayName,
+        created_by_picture_url: pictureUrl,
       });
     }
   }
@@ -633,6 +637,7 @@ async function listLedgerMembers(env, options = {}) {
   const activeTripId = tripId(env, options.tripId);
   const userId = String(options.userId || "").trim().slice(0, 80);
   const displayName = String(options.displayName || "").trim().slice(0, 80);
+  const pictureUrl = String(options.pictureUrl || "").trim().slice(0, 500);
   const ledger = resolveLedger(env, {
     expenseScope: "group",
     payerId: userId,
@@ -648,10 +653,11 @@ async function listLedgerMembers(env, options = {}) {
       chat_id: ledger.chat_id,
       created_by_id: userId,
       created_by_name: displayName,
+      created_by_picture_url: pictureUrl,
     });
   }
   const result = await env.ACCOUNTING_DB.prepare(
-    `SELECT user_id, display_name, role, status, last_seen_at
+    `SELECT user_id, display_name, picture_url, role, status, last_seen_at
       FROM ledger_members
       WHERE trip_id = ? AND ledger_id = ? AND status = 'active'
       ORDER BY last_seen_at ASC, id ASC`
@@ -691,6 +697,7 @@ async function createManualLedgerMember(env, payload = {}) {
     chat_id: ledger.chat_id,
     created_by_id: userId,
     created_by_name: name,
+    created_by_picture_url: "",
   };
   await upsertLedgerMember(env, item);
   return {
@@ -899,6 +906,7 @@ function normalizeExpense(env, payload) {
   const payerName = String(payload.payerName || "").slice(0, 80);
   const createdById = String(payload.createdById || payerId).slice(0, 80);
   const createdByName = String(payload.createdByName || payerName).slice(0, 80);
+  const createdByPictureUrl = String(payload.createdByPictureUrl || "").trim().slice(0, 500);
   const ledger = resolveLedger(env, {
     expenseScope,
     payerId,
@@ -926,6 +934,7 @@ function normalizeExpense(env, payload) {
     ledger_id: ledger.ledger_id,
     created_by_id: createdById,
     created_by_name: createdByName,
+    created_by_picture_url: createdByPictureUrl,
     split_method: split.method,
     split_members: split.members,
     created_at: new Date().toISOString(),
@@ -1013,13 +1022,15 @@ function resolveLedger(env, options = {}) {
 async function upsertLedgerMember(env, item) {
   if (!item.created_by_id) return;
   const now = new Date().toISOString();
+  const pictureUrl = String(item.created_by_picture_url || "").trim().slice(0, 500);
   await env.ACCOUNTING_DB.prepare(
     `INSERT INTO ledger_members (
-      trip_id, ledger_id, chat_type, chat_id, user_id, display_name,
+      trip_id, ledger_id, chat_type, chat_id, user_id, display_name, picture_url,
       role, status, joined_at, last_seen_at
-    ) VALUES (?, ?, ?, ?, ?, ?, 'member', 'active', ?, ?)
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, 'member', 'active', ?, ?)
     ON CONFLICT(trip_id, ledger_id, user_id) DO UPDATE SET
       display_name = excluded.display_name,
+      picture_url = COALESCE(NULLIF(excluded.picture_url, ''), ledger_members.picture_url),
       status = 'active',
       last_seen_at = excluded.last_seen_at`
   )
@@ -1030,6 +1041,7 @@ async function upsertLedgerMember(env, item) {
       item.chat_id,
       item.created_by_id,
       item.created_by_name,
+      pictureUrl,
       now,
       now
     )

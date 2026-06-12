@@ -1,5 +1,40 @@
 # Worklog
 
+## 2026-06-12
+
+### 今日完成
+
+- 依回饋調整 LIFF 記帳 UI：
+  - `消費項目` 卡片化，標題改為序號、`#編號`、分類 pill 與備註文字。
+  - `分帳統計` 與 `結算清單` 拆成獨立 `summary-card`，並在標題 note 加 info icon。
+  - `分帳統計` 成員列與 `結算清單` 成員列支援 LINE 頭貼；沒有頭貼或手動成員使用 `circle-user` 預設 icon。
+- 新增 LINE 頭貼資料欄位：
+  - 新增 `webhook/cloudflare-worker/migrations/0007_add_ledger_member_picture_url.sql`。
+  - remote D1 已套用 migration。
+  - 前後端已保存與讀取 `ledger_members.picture_url`。
+- 調整結算清單邏輯：
+  - 主畫面 `建議付款方式` 改用同幣別淨額簡化，不同幣別不互相抵銷。
+  - 仍保留原始逐筆結算作為核對依據。
+  - `推導依據` 改名為 `相關結算依據（N筆）`。
+  - `相關結算依據` 只顯示該成員本人作為原始應付人的明細，不顯示與該成員無關的消費項目。
+  - 相關依據列新增序號，清單改為內部 scroll，不用 `再顯示 N 筆` 按鈕。
+- 產出參考 mockup：
+  - `generated/mockups/settlement-simplified-mockup.svg`。
+- 已部署 Worker，版本 ID：`6efd1927-1473-4591-b6ad-ad7775205ba8`。
+
+### 今日已驗證
+
+- `node --check webhook/cloudflare-worker/src/index.js` 通過。
+- `node --check webhook/cloudflare-worker/src/accounting-page.js` 通過。
+- `npm run build:data` 通過。
+- `npm run deploy` 成功。
+
+### 下次接續
+
+1. 從 LINE LIFF 重新開啟，實測 `結算清單` 的淨額簡化、待結清/已結清狀態，以及 `相關結算依據` 是否只出現本人相關項目。
+2. 若畫面確認可用，再視需要微調 `相關結算依據` 的 max-height、字級與排列密度。
+3. 第三階段保留：LINE id token 強驗證、離開群組後撤權、行程提醒 workflow restore/save 復測。
+
 ## 2026-06-11
 
 ### 今日完成

@@ -245,3 +245,4 @@ CREATE TABLE settlements (
 | `webhook/cloudflare-worker/migrations/0003_add_ledger_members.sql` | 新增群組帳本成員表。 |
 | `webhook/cloudflare-worker/migrations/0004_add_split_fields.sql` | 新增分帳方式與分攤成員欄位。 |
 | `webhook/cloudflare-worker/migrations/0006_create_settlements.sql` | 新增團體分帳結算狀態表。 |
+| `webhook/cloudflare-worker/migrations/0007_add_ledger_member_picture_url.sql` | 新增群組帳本成員 LINE 頭貼網址。 |

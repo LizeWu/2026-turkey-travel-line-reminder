@@ -79,6 +79,7 @@ npm run deploy
 - `0004_add_split_fields.sql`：分帳方式與分帳成員欄位。
 - `0005_add_group_trip_settings.sql`：群組目前啟用旅程設定。
 - `0006_create_settlements.sql`：團體分帳結算狀態。
+- `0007_add_ledger_member_picture_url.sql`：團體帳本成員 LINE 頭貼網址。
 
 ## LINE LIFF
 
