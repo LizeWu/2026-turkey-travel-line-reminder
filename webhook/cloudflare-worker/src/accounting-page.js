@@ -1343,6 +1343,7 @@ export function accountingPage() {
     }
 
     function formPayload() {
+      syncEditingSplitStateFromDom();
       const amount = Number($("amount").value.trim());
       const currencyCode = $("currency").value;
       const meta = currencyMeta[currencyCode] || currencyMeta.TWD;
@@ -1686,6 +1687,13 @@ export function accountingPage() {
         showError("請輸入有效的合併目標編號。");
         return;
       }
+      if (state.editingId) {
+        if (!confirm("確認先在目前修改中的消費項目，將「" + (sourceName || "來源成員") + "」改為「" + target.displayName + "」？\\n\\n金額會帶到目標成員欄位；需按「儲存修改」才會寫入消費項目。")) return;
+        syncMergedEditingState(sourceUserId, target);
+        renderSplitMembers(null, { preserveSelection: true });
+        showToast("已帶入合併目標：" + target.displayName, "success");
+        return;
+      }
       if (!confirm("確認將「" + (sourceName || "來源成員") + "」的歷史付款與分攤資料合併到「" + target.displayName + "」？\\n\\n合併後來源 ID 會從分帳成員中移除，金額不會重新分攤。")) return;
       try {
         await api("/api/ledger-members/" + encodeURIComponent(sourceUserId) + "/merge", {
@@ -1720,23 +1728,28 @@ export function accountingPage() {
         state.editingSplitMemberIds.delete(sourceUserId);
         state.editingSplitMemberIds.add(target.userId);
       }
+      const historicalSource = state.editingHistoricalSplitMembers.find((member) => memberId(member) === sourceUserId);
       state.editingHistoricalSplitMembers = state.editingHistoricalSplitMembers.filter((member) => memberId(member) !== sourceUserId);
-      if (Object.prototype.hasOwnProperty.call(state.editingCustomSplitAmounts, sourceUserId)) {
-        const sourceValue = state.editingCustomSplitAmounts[sourceUserId];
+      const sourceValue = Object.prototype.hasOwnProperty.call(state.editingCustomSplitAmounts, sourceUserId)
+        ? state.editingCustomSplitAmounts[sourceUserId]
+        : historicalSource?.amount;
+      if (sourceValue !== undefined && sourceValue !== null && sourceValue !== "") {
         const targetValue = state.editingCustomSplitAmounts[target.userId];
         if (targetValue !== undefined && targetValue !== "") {
           state.editingCustomSplitAmounts[target.userId] = roundMoney((Number(targetValue) || 0) + (Number(sourceValue) || 0));
         } else {
           state.editingCustomSplitAmounts[target.userId] = sourceValue;
         }
-        delete state.editingCustomSplitAmounts[sourceUserId];
       }
+      delete state.editingCustomSplitAmounts[sourceUserId];
     }
 
     function syncEditingSplitStateFromDom() {
       if (!state.editingId) return;
       const checkedIds = [...document.querySelectorAll("[data-split-member]:checked")].map((input) => input.dataset.splitMember);
-      const historicalIds = state.editingHistoricalSplitMembers.map(memberId).filter(Boolean);
+      const historicalIds = state.editingHistoricalSplitMembers
+        .map(memberId)
+        .filter((id) => id && Object.prototype.hasOwnProperty.call(state.editingCustomSplitAmounts, id));
       if (document.querySelector("[data-split-member]")) {
         state.editingSplitMemberIds = new Set([...checkedIds, ...historicalIds]);
       }
