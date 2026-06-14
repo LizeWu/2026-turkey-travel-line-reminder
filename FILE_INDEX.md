@@ -9,6 +9,8 @@
 | `PROJECT_HANDOFF.md` | 目前決策、已完成設定、下一步，以及接續開發備忘。 |
 | `LizeNext.md` | 如果開新 Codex 對話或上下文遺失，可貼上的簡短接續提示。 |
 | `WORKLOG.md` | 依日期遞減整理的工作紀錄，包含已完成、已測試、重要設定與下一步。 |
+| `docs/ai-development-sop.md` | AI 與使用者共同遵守的開發 SOP，適合放入 Codex 專案資料。 |
+| `docs/multi-device-continuation.md` | 公司/居家/新 Codex 對話接續開發的同步流程與提醒清單。 |
 
 ## Core Reminder Files
 
@@ -40,6 +42,8 @@
 | `docs/weather-forecast.md` | 天氣預報功能說明：資料來源、行程欄位、顯示格式與限制。 |
 | `docs/accounting-book.md` | 旅行記帳本規格：我要記帳、消費項目、統計、欄位、儲存方式與暫不處理範圍。 |
 | `docs/liff-accounting-setup.md` | LIFF 記帳本的 Cloudflare D1、LINE LIFF 與 Rich Menu 設定步驟。 |
+| `docs/ai-development-sop.md` | 開發前、中、後的檢查規則，包含 secrets、測試、部署與何時暫停詢問。 |
+| `docs/multi-device-continuation.md` | 跨設備接續開發指南，說明 GitHub 作為同步來源，以及 Codex 專案資料可放哪些內容。 |
 | `webhook/cloudflare-worker/src/index.js` | Cloudflare Worker webhook 主程式，處理今日行程、明日行程、旅行記帳本指令。 |
 | `webhook/cloudflare-worker/src/accounting-page.js` | LIFF 記帳本頁面，提供手動記帳、日期選擇、消費項目分組、指定項目修改/刪除與幣別統計。 |
 | `webhook/cloudflare-worker/src/trip-data.js` | 由目前啟用旅程與 Flex Message 產生的 Worker 內嵌資料。 |
@@ -68,6 +72,7 @@
 | File | 用途 |
 | --- | --- |
 | `.gitignore` | 避免本機暫存檔、快取檔與密鑰被提交到 Git。 |
+| `.env.example` | 可提交的環境變數範本，只保留變數名稱與非秘密範例，不放真實 token。 |
 
 ## Required GitHub Secrets
 

@@ -13,6 +13,8 @@ This file is the first handoff point for Codex sessions on any machine.
    - `PROJECT_HANDOFF.md`
    - `WORKLOG.md`
    - `FILE_INDEX.md`
+   - `docs/ai-development-sop.md`
+   - `docs/multi-device-continuation.md`
    - `docs/accounting-book.md`
    - `docs/liff-accounting-setup.md`
 4. If local changes exist, do not overwrite them. Assume they belong to the user or another Codex session.
@@ -79,6 +81,8 @@ git push
 ```
 
 If switching between company MacBook and home Apple Studio, update `LizeNext.md` only with the newest actionable context. Keep long history in `WORKLOG.md`.
+
+Shareable setup belongs in Git, including SOPs, handoff notes, setup checklists, and `.env.example`. Real secret values belong only in GitHub Secrets, Cloudflare Secrets, LINE settings, or local `.env` files.
 
 ## Known Next Focus
 

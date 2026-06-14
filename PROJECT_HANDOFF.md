@@ -3,7 +3,7 @@
 ## Current Status
 
 - GitHub repo: `https://github.com/LizeWu/2026-turkey-travel-line-reminder`
-- Date of latest handoff update: 2026-05-16.
+- Date of latest handoff update: 2026-06-14.
 - The initial project has already been pushed to GitHub.
 - The trip PDF has been converted into structured reminder data.
 - The 12-day LINE message preview has been generated and confirmed by the user.
@@ -26,6 +26,10 @@
 - The LINE Official Account add-friend URL and QR sharing card are ready:
   - Add-friend URL: `https://lin.ee/tqlXqAmN`
   - Sharing card: `generated/share-card/azuma-line-share-card.png`
+- Cross-device continuation is now documented:
+  - `docs/ai-development-sop.md`
+  - `docs/multi-device-continuation.md`
+  - `.env.example`
 
 ## Confirmed Product Decisions
 
@@ -103,6 +107,12 @@ Use a button only when the target is clear enough. Examples already treated as u
   - Shareable card for adding `阿珠媽旅行提醒` as a LINE friend.
 - `WORKLOG.md`
   - Consolidated worklog, sorted by date descending.
+- `docs/ai-development-sop.md`
+  - Shared AI/human development SOP for safe continuation across computers and Codex threads.
+- `docs/multi-device-continuation.md`
+  - Home/office continuation guide, shareable settings rules, and Codex project data guidance.
+- `.env.example`
+  - Safe variable-name template for local setup and platform secrets.
 - `send_line_reminder.py`
   - Builds previews and sends LINE push messages.
   - Supports `--mode itinerary` and `--mode greeting`.
