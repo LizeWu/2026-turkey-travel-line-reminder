@@ -582,6 +582,13 @@ async function listExpenses(env, options = {}) {
   if (expenseScope === "personal" && userId) {
     filters.push("payer_id = ?");
     bindings.push(userId);
+    if (ledger.chat_type === "user") {
+      filters.push("(ledger_id = ? OR ledger_id IS NULL OR ledger_id = '')");
+      bindings.push(ledger.ledger_id);
+    } else {
+      filters.push("ledger_id = ?");
+      bindings.push(ledger.ledger_id);
+    }
   } else if (expenseScope === "group") {
     filters.push("ledger_id = ?");
     bindings.push(ledger.ledger_id);
@@ -990,7 +997,26 @@ function normalizeExpenseScope(value) {
 function resolveLedger(env, options = {}) {
   const expenseScope = normalizeExpenseScope(options.expenseScope);
   const payerId = String(options.payerId || "").trim().slice(0, 80);
+  const groupId = String(options.groupId || "").trim().slice(0, 120);
+  const roomId = String(options.roomId || "").trim().slice(0, 120);
+
   if (expenseScope !== "group") {
+    if (groupId) {
+      return {
+        chat_type: "group",
+        chat_id: groupId,
+        ledger_id: `personal:group:${groupId}:user:${payerId || "unknown"}`,
+      };
+    }
+
+    if (roomId) {
+      return {
+        chat_type: "room",
+        chat_id: roomId,
+        ledger_id: `personal:room:${roomId}:user:${payerId || "unknown"}`,
+      };
+    }
+
     return {
       chat_type: "user",
       chat_id: payerId,
@@ -998,7 +1024,6 @@ function resolveLedger(env, options = {}) {
     };
   }
 
-  const groupId = String(options.groupId || "").trim().slice(0, 120);
   if (groupId) {
     return {
       chat_type: "group",
@@ -1007,7 +1032,6 @@ function resolveLedger(env, options = {}) {
     };
   }
 
-  const roomId = String(options.roomId || "").trim().slice(0, 120);
   if (roomId) {
     return {
       chat_type: "room",

@@ -90,6 +90,7 @@ When creating or updating the Codex sidebar project for this repo, include only 
 
 ## Known Next Focus
 
-- Verify group LIFF accounting after reopening from LINE group context.
-- Verify scheduled reminder workflow restore/save behavior for `.sent-reminders/reminders.json`.
+- Group LIFF accounting, custom split amounts, per-expense settlements, pending/settled toggles, and adjusted accounting layouts were tested OK on 2026-06-14.
+- The previously considered `統計 > 團體消費 > 幣別淨額` block was canceled and should not be treated as pending.
+- Later, verify scheduled reminder workflow restore/save behavior for `.sent-reminders/reminders.json`.
 - Later, after confirmation, rename the project from `2026-turkey-travel-line-reminder` to `azuma-papago`.

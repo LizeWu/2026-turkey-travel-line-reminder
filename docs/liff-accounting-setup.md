@@ -28,9 +28,11 @@
 - 群組呼叫阿珠媽時，記帳本 LIFF 連結會帶上 `trip` 與群組 context，例如 `https://liff.line.me/<line-liff-id>?trip=2026-05-turkey&chatType=group&groupId=<line-group-id>`。
 - LIFF 頁面優先使用 LINE context；若重新開啟時 LINE context 不完整，會 fallback 使用 URL 上的 `groupId` / `roomId`，避免查到空的團體帳本。
 - 團體帳本以 `trip_id + groupId/roomId` 判定，因此同一個 LINE 群組可在不同旅程擁有不同帳本。
+- 群組情境中的 `我的消費` 也依群組或多人聊天室隔離；同一使用者在不同 LINE 群組不會共用 `我的消費`。
 - 團體消費支援平均分攤與指定金額分攤；指定金額會檢查加總需等於消費金額。
 - 團體統計已支援付款、應付、差額、誰欠誰建議與結算狀態；不同幣別分開計算，不做匯率換算。
-- LINE id token 強驗證與離開群組後撤權保留到第三階段。
+- LINE id token 強驗證與離開群組後撤權保留到之後第三階段。
+- `統計 > 團體消費` 另新增 `幣別淨額` 區塊的規劃已取消。
 
 開發測試：
 
