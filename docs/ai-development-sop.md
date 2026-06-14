@@ -2,6 +2,8 @@
 
 This file is the shared operating guide for Lize and AI assistants. Keep it in Git so the same rules are available from home, office, and future Codex threads.
 
+Codex sidebar project data should be a short instruction summary that points back to this file and `AGENTS.md`. Do not treat Codex project data as the only source of truth, because it can drift from the repository.
+
 ## Start Here Every Time
 
 1. Confirm the current repo:
@@ -82,6 +84,8 @@ npm run deploy
 
 Never commit real secrets.
 
+Also never paste real secrets into Codex sidebar project data.
+
 Allowed in Git:
 
 - `README.md`, `PROJECT_HANDOFF.md`, `WORKLOG.md`, `LizeNext.md`
@@ -111,6 +115,7 @@ When moving between home and office:
 - If you changed code and want the other computer to continue, commit and push before stopping.
 - If you changed only Codex chat context, summarize it into `LizeNext.md` or `WORKLOG.md`.
 - If you changed a secret in LINE, GitHub, or Cloudflare, update the matching platform secret immediately.
+- If you created or edited a Codex sidebar project, keep only non-secret SOP text there and keep detailed instructions in this repository.
 
 ## When To Pause And Ask
 
@@ -122,4 +127,3 @@ AI should pause and ask before:
 - Replacing the D1 database.
 - Force-pushing, resetting, or discarding local changes.
 - Moving from D1 to Google Sheet as the main database.
-

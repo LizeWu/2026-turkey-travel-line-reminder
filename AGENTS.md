@@ -1,6 +1,8 @@
 # Codex Agent Guide
 
-This file is the first handoff point for Codex sessions on any machine.
+This file is the first handoff point inside the repository for Codex sessions on any machine.
+
+Codex sidebar project data should contain a short summary of this file, not secret values. The repository files remain the detailed source of truth; Codex project data is the quick instruction layer that tells new chats which files to read first.
 
 ## Start Here
 
@@ -83,6 +85,8 @@ git push
 If switching between company MacBook and home Apple Studio, update `LizeNext.md` only with the newest actionable context. Keep long history in `WORKLOG.md`.
 
 Shareable setup belongs in Git, including SOPs, handoff notes, setup checklists, and `.env.example`. Real secret values belong only in GitHub Secrets, Cloudflare Secrets, LINE settings, or local `.env` files.
+
+When creating or updating the Codex sidebar project for this repo, include only non-secret operating instructions: repo name, start files, sync routine, commit/push reminder, and secret-handling rules.
 
 ## Known Next Focus
 
