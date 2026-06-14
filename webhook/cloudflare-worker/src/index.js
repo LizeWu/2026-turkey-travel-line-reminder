@@ -802,6 +802,16 @@ async function deleteLedgerMember(env, userId, options = {}) {
   )
     .bind(new Date().toISOString(), activeTripId, ledger.ledger_id, normalizedUserId)
     .run();
+  await env.ACCOUNTING_DB.prepare(
+    `UPDATE settlements
+      SET status = 'void', updated_at = ?
+      WHERE trip_id = ?
+        AND ledger_id = ?
+        AND status = 'settled'
+        AND (from_user_id = ? OR to_user_id = ?)`
+  )
+    .bind(new Date().toISOString(), activeTripId, ledger.ledger_id, normalizedUserId, normalizedUserId)
+    .run();
   return existing;
 }
 
@@ -820,8 +830,8 @@ async function mergeLedgerMember(env, sourceUserId, payload = {}) {
   });
   const source = await getLedgerMember(env, activeTripId, ledger.ledger_id, sourceId);
   const target = await getLedgerMember(env, activeTripId, ledger.ledger_id, targetId);
-  if (!source || source.status !== "active") {
-    throw new Error("找不到要合併的來源成員，可能已經刪除。");
+  if (!source) {
+    throw new Error("找不到要合併的來源成員。");
   }
   if (!target || target.status !== "active") {
     throw new Error("找不到合併目標成員。");

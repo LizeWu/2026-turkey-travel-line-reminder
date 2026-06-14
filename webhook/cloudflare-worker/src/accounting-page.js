@@ -1172,6 +1172,7 @@ export function accountingPage() {
       currentTab: "add",
       editingId: null,
       editingSplitMemberIds: null,
+      editingHistoricalSplitMembers: [],
       editingPayerId: "",
       editingPayerName: "",
       splitMethod: "equal",
@@ -1199,7 +1200,7 @@ export function accountingPage() {
     const $ = (id) => document.getElementById(id);
     const editIcon = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20h9"></path><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"></path></svg>';
     const deleteIcon = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18"></path><path d="M8 6V4h8v2"></path><path d="M19 6l-1 14H6L5 6"></path><path d="M10 11v5"></path><path d="M14 11v5"></path></svg>';
-    const mergeIcon = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 7h8a4 4 0 0 1 0 8h-1"></path><path d="M7 7l-4 4 4 4"></path><path d="M16 17H8a4 4 0 0 1 0-8h1"></path><path d="M17 17l4-4-4-4"></path></svg>';
+    const mergeIcon = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 18H5a3 3 0 0 1-3-3v-1"></path><path d="M14 2a2 2 0 0 1 2 2v4"></path><path d="M17 18h2a3 3 0 0 0 3-3v-1"></path><path d="M10 2a2 2 0 0 0-2 2v4"></path><path d="M7 21h10"></path><path d="M12 18v3"></path><path d="m7 8 5 5 5-5"></path></svg>';
     const infoIcon = '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><path d="M12 16v-4"></path><path d="M12 8h.01"></path></svg>';
     const circleUserIcon = '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="10" r="3"></circle><path d="M7 20.662V19a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v1.662"></path></svg>';
 
@@ -1445,6 +1446,7 @@ export function accountingPage() {
       const splitMembers = parseSplitMembers(item);
       state.editingId = id;
       state.editingSplitMemberIds = new Set(splitMembers.map(memberId).filter(Boolean));
+      state.editingHistoricalSplitMembers = splitMembers;
       state.editingPayerId = item.payer_id || "";
       state.editingPayerName = item.payer_name || "";
       state.splitMethod = item.split_method === "custom" ? "custom" : "equal";
@@ -1488,6 +1490,9 @@ export function accountingPage() {
         return;
       }
       await loadExpenses(state.itemScope);
+      if (state.itemScope === "group") {
+        await loadLedgerMembers();
+      }
       const root = $("items");
       if (!state.expenses.length) {
         root.innerHTML = '<div class="empty">目前沒有' + (state.itemScope === "group" ? "團體" : "我的") + '消費。</div>';
@@ -1664,7 +1669,7 @@ export function accountingPage() {
 
     async function mergeLedgerMember(sourceUserId, sourceName) {
       if (!sourceUserId) return;
-      const members = normalizedLedgerMembers().filter((member) => member.userId !== sourceUserId);
+      const members = activeLedgerMembers().filter((member) => member.userId !== sourceUserId);
       if (!members.length) {
         showError("目前沒有可合併的目標成員。");
         return;
@@ -1688,12 +1693,37 @@ export function accountingPage() {
             ...ledgerContextPayload(),
           },
         });
+        syncMergedEditingState(sourceUserId, target);
         await loadLedgerMembers();
         await refreshItems();
         await refreshStats();
+        if (state.editingId) renderSplitMembers(null, { preserveSelection: true });
         showToast("已合併成員到：" + target.displayName, "success");
       } catch (error) {
         showError(error.message);
+      }
+    }
+
+    function syncMergedEditingState(sourceUserId, target) {
+      if (!state.editingId || !sourceUserId || !target?.userId) return;
+      if (state.editingPayerId === sourceUserId) {
+        state.editingPayerId = target.userId;
+        state.editingPayerName = target.displayName;
+      }
+      if (state.editingSplitMemberIds?.has(sourceUserId)) {
+        state.editingSplitMemberIds.delete(sourceUserId);
+        state.editingSplitMemberIds.add(target.userId);
+      }
+      state.editingHistoricalSplitMembers = state.editingHistoricalSplitMembers.filter((member) => memberId(member) !== sourceUserId);
+      if (Object.prototype.hasOwnProperty.call(state.editingCustomSplitAmounts, sourceUserId)) {
+        const sourceValue = state.editingCustomSplitAmounts[sourceUserId];
+        const targetValue = state.editingCustomSplitAmounts[target.userId];
+        if (targetValue !== undefined && targetValue !== "") {
+          state.editingCustomSplitAmounts[target.userId] = roundMoney((Number(targetValue) || 0) + (Number(sourceValue) || 0));
+        } else {
+          state.editingCustomSplitAmounts[target.userId] = sourceValue;
+        }
+        delete state.editingCustomSplitAmounts[sourceUserId];
       }
     }
 
@@ -1794,7 +1824,7 @@ export function accountingPage() {
         return "";
       }
       const payer = item.payer_name || "未命名付款人";
-      const members = parseSplitMembers(item).map((member) => member.displayName || "未命名成員");
+      const members = activeSplitMembers(item).map((member) => member.displayName || "未命名成員");
       const memberText = members.length ? members.join("、") : "未選擇";
       return '<div class="expense-meta">' +
         '<div class="meta-line">付款人：' + escapeHtml(payer) + '</div>' +
@@ -1805,6 +1835,7 @@ export function accountingPage() {
     function resetForm() {
       state.editingId = null;
       state.editingSplitMemberIds = null;
+      state.editingHistoricalSplitMembers = [];
       state.editingPayerId = "";
       state.editingPayerName = "";
       state.splitMethod = "equal";
@@ -1995,34 +2026,67 @@ export function accountingPage() {
       if (!$("split-members")) return;
       syncSplitMethodButtons();
       const selectedIds = selectedMemberIds(selectedMembers);
-      const members = normalizedLedgerMembers();
-      renderPayerOptions(members);
+      const activeMembers = activeLedgerMembers();
+      const members = formLedgerMembers(selectedMembers);
+      renderPayerOptions(activeMembers);
       if (!options.preserveSelection && !selectedMembers && !state.editingId) {
-        members.forEach((member) => selectedIds.add(member.userId));
+        activeMembers.forEach((member) => selectedIds.add(member.userId));
       }
       $("split-members").innerHTML = members.length
         ? members.map((member) =>
             '<div class="member-option' + (state.splitMethod === "custom" ? "" : " equal-mode") + '"><label class="member-check"><input type="checkbox" data-split-member="' + escapeHtml(member.userId) + '"' +
-            (selectedIds.has(member.userId) ? " checked" : "") + '> <span>' + escapeHtml(member.displayName || "未命名成員") + '</span></label>' +
+            (selectedIds.has(member.userId) && !member.historical ? " checked" : "") + (member.historical ? " disabled" : "") + '> <span>' + escapeHtml(member.displayName || "未命名成員") + (member.historical ? "（已刪除）" : "") + '</span></label>' +
             (state.splitMethod === "custom"
-              ? '<input class="split-amount" data-split-amount="' + escapeHtml(member.userId) + '" inputmode="decimal" placeholder="金額" value="' + escapeHtml(splitAmountValue(member.userId)) + '"' + (selectedIds.has(member.userId) ? "" : " disabled") + '>'
+              ? '<input class="split-amount" data-split-amount="' + escapeHtml(member.userId) + '" inputmode="decimal" placeholder="金額" value="' + escapeHtml(splitAmountValue(member.userId)) + '"' + (selectedIds.has(member.userId) && !member.historical ? "" : " disabled") + '>'
               : "") +
             (member.userId === currentUserId()
               ? '<span></span>'
               : '<span class="member-actions"><button class="icon-button" type="button" data-member-merge="' + escapeHtml(member.userId) + '" data-member-name="' + escapeHtml(member.displayName || "未命名成員") + '" aria-label="ID合併" title="ID合併">' + mergeIcon + '</button>' +
-                '<button class="icon-button danger" type="button" data-member-delete="' + escapeHtml(member.userId) + '" data-member-name="' + escapeHtml(member.displayName || "未命名成員") + '" aria-label="刪除成員" title="刪除成員">' + deleteIcon + '</button></span>') +
+                (member.historical ? "" : '<button class="icon-button danger" type="button" data-member-delete="' + escapeHtml(member.userId) + '" data-member-name="' + escapeHtml(member.displayName || "未命名成員") + '" aria-label="刪除成員" title="刪除成員">' + deleteIcon + '</button>') + '</span>') +
             '</div>'
           ).join("")
         : '<div class="meta">群組成員開啟記帳本後，會出現在這裡。</div>';
     }
 
     function normalizedLedgerMembers() {
-      const members = [...state.ledgerMembers];
-      if (currentUserId() && !members.some((member) => member.user_id === currentUserId())) {
-        members.push({ user_id: currentUserId(), display_name: currentUserName(), picture_url: currentUserPictureUrl() });
-      }
+      const members = activeLedgerMembers().map((member) => ({
+        user_id: member.userId,
+        display_name: member.displayName,
+        picture_url: member.pictureUrl,
+      }));
       if (state.editingPayerId && !members.some((member) => (member.user_id || member.userId) === state.editingPayerId)) {
         members.push({ user_id: state.editingPayerId, display_name: state.editingPayerName || "原付款人" });
+      }
+      const unique = new Map();
+      for (const member of members.map((member) => ({
+        userId: member.user_id || member.userId,
+        displayName: member.display_name || member.displayName || "未命名成員",
+        pictureUrl: member.picture_url || member.pictureUrl || "",
+      })).filter((member) => member.userId)) {
+        unique.set(member.userId, member);
+      }
+      return [...unique.values()];
+    }
+
+    function formLedgerMembers(selectedMembers = null) {
+      const active = activeLedgerMembers();
+      const activeIds = new Set(active.map((member) => member.userId));
+      const historySource = selectedMembers || (state.editingId ? state.editingHistoricalSplitMembers : []);
+      const historical = historySource
+        .map((member) => ({
+          userId: memberId(member),
+          displayName: member.displayName || member.display_name || "未命名成員",
+          amount: member.amount,
+          historical: true,
+        }))
+        .filter((member) => member.userId && !activeIds.has(member.userId));
+      return [...active, ...historical];
+    }
+
+    function activeLedgerMembers() {
+      const members = [...state.ledgerMembers];
+      if (currentUserId() && !members.some((member) => (member.user_id || member.userId) === currentUserId())) {
+        members.push({ user_id: currentUserId(), display_name: currentUserName(), picture_url: currentUserPictureUrl() });
       }
       const unique = new Map();
       for (const member of members.map((member) => ({
@@ -2091,7 +2155,7 @@ export function accountingPage() {
 
     function selectedSplitMembers() {
       if (state.addScope !== "group") return [];
-      const members = normalizedLedgerMembers();
+      const members = activeLedgerMembers();
       const inputs = [...document.querySelectorAll("[data-split-member]")];
       const checked = inputs.filter((input) => input.checked).map((input) => input.dataset.splitMember);
       const selectedIds = new Set(inputs.length ? checked : members.map((member) => member.userId));
@@ -2128,9 +2192,13 @@ export function accountingPage() {
     }
 
     function splitText(item) {
-      const members = parseSplitMembers(item);
+      const members = activeSplitMembers(item);
       if (!isGroupExpense(item) || !members.length) return "";
       return '｜分攤：' + members.length + '人' + (item.split_method === "custom" ? "｜指定金額" : "");
+    }
+
+    function activeSplitMembers(item) {
+      return parseSplitMembers(item).filter((member) => isActiveLedgerMember(member.userId));
     }
 
     function renderSplitSummary() {
@@ -2172,7 +2240,7 @@ export function accountingPage() {
     function memberPictureUrl(userId) {
       const id = String(userId || "");
       if (!id || id.startsWith("manual:")) return "";
-      const member = normalizedLedgerMembers().find((item) => item.userId === id);
+      const member = activeLedgerMembers().find((item) => item.userId === id);
       return member?.pictureUrl || "";
     }
 
@@ -2217,7 +2285,7 @@ export function accountingPage() {
     }
 
     function splitAllocations(expense) {
-      const members = parseSplitMembers(expense).filter((member) => isActiveLedgerMember(member.userId));
+      const members = activeSplitMembers(expense);
       if (!members.length) return [];
       if (expense.split_method === "custom") {
         return members.map((member) => ({
@@ -2465,7 +2533,7 @@ export function accountingPage() {
     function isActiveLedgerMember(userId) {
       const id = String(userId || "");
       if (!id) return false;
-      return normalizedLedgerMembers().some((member) => member.userId === id);
+      return activeLedgerMembers().some((member) => member.userId === id);
     }
 
     async function toggleSettlement(button) {
