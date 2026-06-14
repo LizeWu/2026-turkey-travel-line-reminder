@@ -7,6 +7,8 @@ const COMMANDS = {
   accounting: new Set(["阿珠", "阿珠媽", "珠珠", "豬豬", "記帳本", "記帳", "旅行記帳本", "accounting"]),
 };
 
+const LEGACY_PERSONAL_MIGRATION_MEMBER_NAMES = ["俊榜", "Jessie Chou", "Miley Ho", "Lize Wu"];
+
 const WEATHER_CODES = {
   0: "晴朗",
   1: "大致晴朗",
@@ -580,6 +582,11 @@ async function listExpenses(env, options = {}) {
     bindings.push(accountingDate());
   }
   if (expenseScope === "personal" && userId) {
+    await migrateLegacyPersonalExpensesForTargetLedger(env, {
+      activeTripId,
+      userId,
+      ledger,
+    });
     filters.push("payer_id = ?");
     bindings.push(userId);
     if (ledger.chat_type === "user") {
@@ -612,6 +619,47 @@ async function listExpenses(env, options = {}) {
   );
   const result = await statement.bind(...bindings).all();
   return result.results || [];
+}
+
+async function migrateLegacyPersonalExpensesForTargetLedger(env, options = {}) {
+  const activeTripId = options.activeTripId;
+  const userId = String(options.userId || "").trim().slice(0, 80);
+  const ledger = options.ledger || {};
+  if (!activeTripId || !userId || !["group", "room"].includes(ledger.chat_type) || !ledger.chat_id) return;
+
+  const sourceLedgerId = ledger.chat_type === "group" ? `group:${ledger.chat_id}` : `room:${ledger.chat_id}`;
+  const memberNames = LEGACY_PERSONAL_MIGRATION_MEMBER_NAMES.map((name) => name.toLowerCase());
+  const matched = await env.ACCOUNTING_DB.prepare(
+    `SELECT COUNT(DISTINCT LOWER(display_name)) AS matched_count
+      FROM ledger_members
+      WHERE trip_id = ?
+        AND ledger_id = ?
+        AND status = 'active'
+        AND LOWER(display_name) IN (${memberNames.map(() => "?").join(", ")})`
+  )
+    .bind(activeTripId, sourceLedgerId, ...memberNames)
+    .first();
+  if (Number(matched?.matched_count || 0) < memberNames.length) return;
+
+  await env.ACCOUNTING_DB.prepare(
+    `UPDATE expenses
+      SET chat_type = ?, chat_id = ?, ledger_id = ?, updated_at = ?
+      WHERE trip_id = ?
+        AND deleted_at IS NULL
+        AND COALESCE(expense_scope, 'personal') = 'personal'
+        AND payer_id = ?
+        AND (ledger_id = ? OR ledger_id IS NULL OR ledger_id = '')`
+  )
+    .bind(
+      ledger.chat_type,
+      ledger.chat_id,
+      ledger.ledger_id,
+      new Date().toISOString(),
+      activeTripId,
+      userId,
+      `personal:${userId}`
+    )
+    .run();
 }
 
 async function expenseStats(env, options = {}) {

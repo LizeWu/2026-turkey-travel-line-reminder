@@ -230,6 +230,7 @@ CREATE TABLE settlements (
 - 從 LINE 多人聊天室開啟時，`我的消費` 使用 `personal:room:<roomId>:user:<userId>`。
 - 一對一個人使用時，`我的消費` 才使用 `personal:<userId>`。
 - 因此同一使用者在 A/B/C 不同 LINE 群組中的 `我的消費` 不會互相顯示。
+- 若目標群組的分攤成員同時包含 `俊榜`、`Jessie Chou`、`Miley Ho`、`Lize Wu`，從該群組查看 `我的消費` 時，系統會把該使用者舊的全域 personal 消費搬到該群組 personal ledger。
 
 ## 不在第一版處理
 
