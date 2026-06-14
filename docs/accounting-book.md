@@ -52,7 +52,7 @@ LINE Rich Menu → 旅行記帳本 → 開啟 LIFF 頁面
 | `category` | 分類，例如餐食、交通、購物、門票、其他。 |
 | `note` | 備註，例如烤肉、計程車、紀念品。 |
 | `expense_scope` | 消費形式：`personal` 或 `group`。 |
-| `ledger_id` | 帳本範圍。個人消費為 `personal:<userId>`；團體消費為 `group:<groupId>` 或 `room:<roomId>`，並與 `trip_id` 一起決定實際帳本。 |
+| `ledger_id` | 帳本範圍。一對一個人消費為 `personal:<userId>`；群組中的個人消費為 `personal:group:<groupId>:user:<userId>`；多人聊天室中的個人消費為 `personal:room:<roomId>:user:<userId>`；團體消費為 `group:<groupId>` 或 `room:<roomId>`，並與 `trip_id` 一起決定實際帳本。 |
 | `payer_id` | 實際付款人 ID，團體消費可從分帳成員中選擇。 |
 | `payer_name` | 實際付款人顯示名稱。 |
 | `created_by_id` | 建立或修改這筆紀錄的 LIFF 使用者 ID。 |
@@ -230,7 +230,7 @@ CREATE TABLE settlements (
 - 從 LINE 多人聊天室開啟時，`我的消費` 使用 `personal:room:<roomId>:user:<userId>`。
 - 一對一個人使用時，`我的消費` 才使用 `personal:<userId>`。
 - 因此同一使用者在 A/B/C 不同 LINE 群組中的 `我的消費` 不會互相顯示。
-- 若目標群組的分攤成員同時包含 `俊榜`、`Jessie Chou`、`Miley Ho`、`Lize Wu`，從該群組查看 `我的消費` 時，系統會把該使用者舊的全域 personal 消費搬到該群組 personal ledger。
+- 針對舊資料相容，系統明確鎖定 `dev-sandbox` 的 LINE 群組 `C87ffe42ff346bc573d7eb45a9cbec853`；從該群組查看 `我的消費` 時，會把該使用者舊的全域 personal 消費搬到該群組 personal ledger。
 
 ## 不在第一版處理
 

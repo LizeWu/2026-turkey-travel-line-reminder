@@ -16,7 +16,7 @@
   - 調整後，從 LINE 群組開啟時會使用 `personal:group:<groupId>:user:<userId>`；從多人聊天室開啟時會使用 `personal:room:<roomId>:user:<userId>`。
   - 一對一個人使用仍維持原本 `personal:<userId>`。
   - `我的消費` 查詢也會同時篩選 `payer_id` 與 `ledger_id`，避免跨群混用。
-  - 新增一次性相容搬移：若群組分攤成員同時包含 `俊榜`、`Jessie Chou`、`Miley Ho`、`Lize Wu`，使用者從該群組查看 `我的消費` 時，會把該使用者舊的 `personal:<userId>` 或空 ledger 個人消費搬到該群組的 personal ledger。
+  - 新增一次性相容搬移：明確鎖定 `dev-sandbox` 的 LINE 群組 `C87ffe42ff346bc573d7eb45a9cbec853`，使用者從該群組查看 `我的消費` 時，會把該使用者舊的 `personal:<userId>`、空 ledger，或先前誤搬到其他群組 personal ledger 的舊個人消費搬到該群組 personal ledger。
 
 ### 後續保留
 
