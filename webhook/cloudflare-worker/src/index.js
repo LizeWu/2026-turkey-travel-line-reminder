@@ -387,6 +387,13 @@ async function handleApi(request, env, url) {
     }
 
     const ledgerMemberMatch = url.pathname.match(/^\/api\/ledger-members\/(.+)$/);
+    const ledgerMemberMergeMatch = url.pathname.match(/^\/api\/ledger-members\/(.+)\/merge$/);
+    if (ledgerMemberMergeMatch && request.method === "POST") {
+      const payload = await request.json();
+      const result = await mergeLedgerMember(env, decodeURIComponent(ledgerMemberMergeMatch[1]), payload);
+      return jsonResponse(result);
+    }
+
     if (ledgerMemberMatch && request.method === "DELETE") {
       const member = await deleteLedgerMember(env, decodeURIComponent(ledgerMemberMatch[1]), {
         tripId: url.searchParams.get("trip") || url.searchParams.get("tripId") || "",
@@ -796,6 +803,121 @@ async function deleteLedgerMember(env, userId, options = {}) {
     .bind(new Date().toISOString(), activeTripId, ledger.ledger_id, normalizedUserId)
     .run();
   return existing;
+}
+
+async function mergeLedgerMember(env, sourceUserId, payload = {}) {
+  const activeTripId = tripId(env, payload.tripId || payload.trip);
+  const sourceId = String(sourceUserId || "").trim().slice(0, 120);
+  const targetId = String(payload.targetUserId || "").trim().slice(0, 120);
+  if (!sourceId || !targetId || sourceId === targetId) {
+    throw new Error("請選擇不同的來源成員與目標成員。");
+  }
+  const ledger = resolveLedger(env, {
+    expenseScope: "group",
+    chatType: payload.chatType,
+    groupId: payload.groupId,
+    roomId: payload.roomId,
+  });
+  const source = await getLedgerMember(env, activeTripId, ledger.ledger_id, sourceId);
+  const target = await getLedgerMember(env, activeTripId, ledger.ledger_id, targetId);
+  if (!source || source.status !== "active") {
+    throw new Error("找不到要合併的來源成員，可能已經刪除。");
+  }
+  if (!target || target.status !== "active") {
+    throw new Error("找不到合併目標成員。");
+  }
+
+  const expenses = await env.ACCOUNTING_DB.prepare(
+    `SELECT id, payer_id, split_members
+      FROM expenses
+      WHERE trip_id = ?
+        AND ledger_id = ?
+        AND deleted_at IS NULL
+        AND COALESCE(expense_scope, 'personal') = 'group'
+        AND (payer_id = ? OR split_members LIKE ?)`
+  )
+    .bind(activeTripId, ledger.ledger_id, sourceId, `%"${sourceId}"%`)
+    .all();
+
+  const now = new Date().toISOString();
+  for (const expense of expenses.results || []) {
+    const splitMembers = mergeSplitMembersJson(expense.split_members, source, target);
+    const payerId = expense.payer_id === sourceId ? target.user_id : expense.payer_id;
+    const payerName = expense.payer_id === sourceId ? target.display_name : null;
+    await env.ACCOUNTING_DB.prepare(
+      `UPDATE expenses
+        SET payer_id = ?,
+            payer_name = COALESCE(?, payer_name),
+            split_members = ?,
+            updated_at = ?
+        WHERE id = ?`
+    )
+      .bind(payerId, payerName, splitMembers, now, expense.id)
+      .run();
+  }
+
+  await env.ACCOUNTING_DB.prepare(
+    `UPDATE ledger_members
+      SET status = 'inactive', last_seen_at = ?
+      WHERE trip_id = ? AND ledger_id = ? AND user_id = ?`
+  )
+    .bind(now, activeTripId, ledger.ledger_id, sourceId)
+    .run();
+
+  await env.ACCOUNTING_DB.prepare(
+    `UPDATE settlements
+      SET status = 'void', updated_at = ?
+      WHERE trip_id = ?
+        AND ledger_id = ?
+        AND status = 'settled'
+        AND (from_user_id IN (?, ?) OR to_user_id IN (?, ?))`
+  )
+    .bind(now, activeTripId, ledger.ledger_id, sourceId, targetId, sourceId, targetId)
+    .run();
+
+  return {
+    source,
+    target,
+    updatedExpenses: (expenses.results || []).length,
+  };
+}
+
+async function getLedgerMember(env, activeTripId, ledgerId, userId) {
+  return env.ACCOUNTING_DB.prepare(
+    `SELECT user_id, display_name, picture_url, role, status
+      FROM ledger_members
+      WHERE trip_id = ? AND ledger_id = ? AND user_id = ?
+      LIMIT 1`
+  )
+    .bind(activeTripId, ledgerId, userId)
+    .first();
+}
+
+function mergeSplitMembersJson(value, source, target) {
+  let members = [];
+  try {
+    const parsed = JSON.parse(value || "[]");
+    members = Array.isArray(parsed) ? parsed : [];
+  } catch {
+    members = [];
+  }
+  const merged = new Map();
+  for (const raw of members) {
+    const originalId = String(raw.userId || raw.user_id || "").trim();
+    if (!originalId) continue;
+    const userId = originalId === source.user_id ? target.user_id : originalId;
+    const displayName = originalId === source.user_id ? target.display_name : (raw.displayName || raw.display_name || "未命名成員");
+    const previous = merged.get(userId);
+    if (previous && raw.amount != null) {
+      previous.amount = roundMoney((Number(previous.amount) || 0) + (Number(raw.amount) || 0));
+      continue;
+    }
+    if (previous) continue;
+    const item = { userId, displayName };
+    if (raw.amount != null) item.amount = roundMoney(Number(raw.amount));
+    merged.set(userId, item);
+  }
+  return JSON.stringify([...merged.values()]);
 }
 
 async function listSettlements(env, options = {}) {

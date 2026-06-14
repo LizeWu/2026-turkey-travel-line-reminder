@@ -374,7 +374,7 @@ export function accountingPage() {
     }
     .member-option {
       display: grid;
-      grid-template-columns: minmax(0, 1fr) minmax(92px, 120px) 36px;
+      grid-template-columns: minmax(0, 1fr) minmax(92px, 120px) auto;
       align-items: center;
       gap: 8px;
       margin: 0;
@@ -404,7 +404,7 @@ export function accountingPage() {
       font-size: .9rem;
     }
     .member-option.equal-mode {
-      grid-template-columns: minmax(0, 1fr) 36px;
+      grid-template-columns: minmax(0, 1fr) auto;
     }
     .member-check span {
       min-width: 0;
@@ -416,6 +416,12 @@ export function accountingPage() {
       min-height: 36px;
       border-color: transparent;
       background: transparent;
+    }
+    .member-actions {
+      display: inline-flex;
+      justify-content: flex-end;
+      gap: 4px;
+      min-width: 76px;
     }
     .date-group {
       background: var(--panel);
@@ -1193,6 +1199,7 @@ export function accountingPage() {
     const $ = (id) => document.getElementById(id);
     const editIcon = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20h9"></path><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"></path></svg>';
     const deleteIcon = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18"></path><path d="M8 6V4h8v2"></path><path d="M19 6l-1 14H6L5 6"></path><path d="M10 11v5"></path><path d="M14 11v5"></path></svg>';
+    const mergeIcon = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 7h8a4 4 0 0 1 0 8h-1"></path><path d="M7 7l-4 4 4 4"></path><path d="M16 17H8a4 4 0 0 1 0-8h1"></path><path d="M17 17l4-4-4-4"></path></svg>';
     const infoIcon = '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><path d="M12 16v-4"></path><path d="M12 8h.01"></path></svg>';
     const circleUserIcon = '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="10" r="3"></circle><path d="M7 20.662V19a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v1.662"></path></svg>';
 
@@ -1608,6 +1615,13 @@ export function accountingPage() {
     }
 
     function handleMemberAction(event) {
+      const mergeButton = event.target.closest("button[data-member-merge]");
+      if (mergeButton) {
+        event.preventDefault();
+        event.stopPropagation();
+        mergeLedgerMember(mergeButton.dataset.memberMerge, mergeButton.dataset.memberName || "");
+        return;
+      }
       const button = event.target.closest("button[data-member-delete]");
       if (!button) return;
       event.preventDefault();
@@ -1632,7 +1646,7 @@ export function accountingPage() {
         return;
       }
       const name = displayName || "這位成員";
-      if (!confirm("確定刪除分帳成員「" + name + "」？")) return;
+      if (!confirm("確定刪除分帳成員「" + name + "」？\\n\\n若這位成員其實是另一個 LINE 成員，請改用 ID 合併。刪除後統計與結算將不再納入此成員。")) return;
       try {
         const params = new URLSearchParams({
           tripId: state.tripId,
@@ -1643,6 +1657,41 @@ export function accountingPage() {
         if (state.editingSplitMemberIds) state.editingSplitMemberIds.delete(userId);
         renderSplitMembers(null, { preserveSelection: true });
         showToast("已刪除分帳成員：" + name, "success");
+      } catch (error) {
+        showError(error.message);
+      }
+    }
+
+    async function mergeLedgerMember(sourceUserId, sourceName) {
+      if (!sourceUserId) return;
+      const members = normalizedLedgerMembers().filter((member) => member.userId !== sourceUserId);
+      if (!members.length) {
+        showError("目前沒有可合併的目標成員。");
+        return;
+      }
+      const choices = members.map((member, index) => (index + 1) + ". " + member.displayName).join("\\n");
+      const answer = prompt("將「" + (sourceName || "這位成員") + "」合併到哪一位成員？\\n\\n" + choices + "\\n\\n請輸入編號：");
+      if (answer == null) return;
+      const index = Number(answer.trim()) - 1;
+      const target = members[index];
+      if (!target) {
+        showError("請輸入有效的合併目標編號。");
+        return;
+      }
+      if (!confirm("確認將「" + (sourceName || "來源成員") + "」的歷史付款與分攤資料合併到「" + target.displayName + "」？\\n\\n合併後來源 ID 會從分帳成員中移除，金額不會重新分攤。")) return;
+      try {
+        await api("/api/ledger-members/" + encodeURIComponent(sourceUserId) + "/merge", {
+          method: "POST",
+          body: {
+            tripId: state.tripId,
+            targetUserId: target.userId,
+            ...ledgerContextPayload(),
+          },
+        });
+        await loadLedgerMembers();
+        await refreshItems();
+        await refreshStats();
+        showToast("已合併成員到：" + target.displayName, "success");
       } catch (error) {
         showError(error.message);
       }
@@ -1960,7 +2009,8 @@ export function accountingPage() {
               : "") +
             (member.userId === currentUserId()
               ? '<span></span>'
-              : '<button class="icon-button danger" type="button" data-member-delete="' + escapeHtml(member.userId) + '" data-member-name="' + escapeHtml(member.displayName || "未命名成員") + '" aria-label="刪除成員" title="刪除成員">' + deleteIcon + '</button>') +
+              : '<span class="member-actions"><button class="icon-button" type="button" data-member-merge="' + escapeHtml(member.userId) + '" data-member-name="' + escapeHtml(member.displayName || "未命名成員") + '" aria-label="ID合併" title="ID合併">' + mergeIcon + '</button>' +
+                '<button class="icon-button danger" type="button" data-member-delete="' + escapeHtml(member.userId) + '" data-member-name="' + escapeHtml(member.displayName || "未命名成員") + '" aria-label="刪除成員" title="刪除成員">' + deleteIcon + '</button></span>') +
             '</div>'
           ).join("")
         : '<div class="meta">群組成員開啟記帳本後，會出現在這裡。</div>';
@@ -2136,6 +2186,7 @@ export function accountingPage() {
     function splitSummaries() {
       const people = new Map();
       for (const expense of state.expenses.filter(isGroupExpense)) {
+        if (!isActiveLedgerMember(expense.payer_id)) continue;
         const code = expense.currency_code;
         const symbol = expense.currency_symbol || "";
         const amount = Number(expense.amount) || 0;
@@ -2166,7 +2217,7 @@ export function accountingPage() {
     }
 
     function splitAllocations(expense) {
-      const members = parseSplitMembers(expense);
+      const members = parseSplitMembers(expense).filter((member) => isActiveLedgerMember(member.userId));
       if (!members.length) return [];
       if (expense.split_method === "custom") {
         return members.map((member) => ({
@@ -2221,6 +2272,7 @@ export function accountingPage() {
       const groups = new Map();
       for (const expense of state.expenses.filter(isGroupExpense)) {
         const payerId = expense.payer_id || "";
+        if (!isActiveLedgerMember(payerId)) continue;
         const payerName = expense.payer_name || "未命名付款人";
         for (const allocation of splitAllocations(expense)) {
           if (!allocation.userId || allocation.userId === payerId || allocation.amount <= 0) continue;
@@ -2408,6 +2460,12 @@ export function accountingPage() {
         const symbol = detail.symbol || item.currencySymbol || "";
         return note + " " + moneyText(symbol, detail.amount);
       }).join(" + ");
+    }
+
+    function isActiveLedgerMember(userId) {
+      const id = String(userId || "");
+      if (!id) return false;
+      return normalizedLedgerMembers().some((member) => member.userId === id);
     }
 
     async function toggleSettlement(button) {
