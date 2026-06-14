@@ -414,14 +414,15 @@ export function accountingPage() {
       width: 36px;
       height: 36px;
       min-height: 36px;
-      border-color: transparent;
-      background: transparent;
     }
     .member-actions {
       display: inline-flex;
       justify-content: flex-end;
       gap: 4px;
       min-width: 76px;
+    }
+    .member-actions button {
+      border-radius: 333px;
     }
     .date-group {
       background: var(--panel);
@@ -1200,7 +1201,7 @@ export function accountingPage() {
     const $ = (id) => document.getElementById(id);
     const editIcon = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20h9"></path><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"></path></svg>';
     const deleteIcon = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18"></path><path d="M8 6V4h8v2"></path><path d="M19 6l-1 14H6L5 6"></path><path d="M10 11v5"></path><path d="M14 11v5"></path></svg>';
-    const mergeIcon = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 18H5a3 3 0 0 1-3-3v-1"></path><path d="M14 2a2 2 0 0 1 2 2v4"></path><path d="M17 18h2a3 3 0 0 0 3-3v-1"></path><path d="M10 2a2 2 0 0 0-2 2v4"></path><path d="M7 21h10"></path><path d="M12 18v3"></path><path d="m7 8 5 5 5-5"></path></svg>';
+    const mergeIcon = '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="18" cy="18" r="3"></circle><circle cx="6" cy="6" r="3"></circle><path d="M6 21V9a9 9 0 0 0 9 9"></path></svg>';
     const infoIcon = '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><path d="M12 16v-4"></path><path d="M12 8h.01"></path></svg>';
     const circleUserIcon = '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="10" r="3"></circle><path d="M7 20.662V19a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v1.662"></path></svg>';
 
@@ -1602,6 +1603,7 @@ export function accountingPage() {
         return;
       }
       try {
+        syncEditingSplitStateFromDom();
         await api("/api/ledger-members", {
           method: "POST",
           body: {
@@ -1669,6 +1671,7 @@ export function accountingPage() {
 
     async function mergeLedgerMember(sourceUserId, sourceName) {
       if (!sourceUserId) return;
+      syncEditingSplitStateFromDom();
       const members = activeLedgerMembers().filter((member) => member.userId !== sourceUserId);
       if (!members.length) {
         showError("目前沒有可合併的目標成員。");
@@ -1706,11 +1709,14 @@ export function accountingPage() {
 
     function syncMergedEditingState(sourceUserId, target) {
       if (!state.editingId || !sourceUserId || !target?.userId) return;
+      const hasSourceAmount = Object.prototype.hasOwnProperty.call(state.editingCustomSplitAmounts, sourceUserId);
+      const hasHistoricalSource = state.editingHistoricalSplitMembers.some((member) => memberId(member) === sourceUserId);
       if (state.editingPayerId === sourceUserId) {
         state.editingPayerId = target.userId;
         state.editingPayerName = target.displayName;
       }
-      if (state.editingSplitMemberIds?.has(sourceUserId)) {
+      if (state.editingSplitMemberIds?.has(sourceUserId) || hasSourceAmount || hasHistoricalSource) {
+        if (!state.editingSplitMemberIds) state.editingSplitMemberIds = new Set();
         state.editingSplitMemberIds.delete(sourceUserId);
         state.editingSplitMemberIds.add(target.userId);
       }
@@ -1724,6 +1730,18 @@ export function accountingPage() {
           state.editingCustomSplitAmounts[target.userId] = sourceValue;
         }
         delete state.editingCustomSplitAmounts[sourceUserId];
+      }
+    }
+
+    function syncEditingSplitStateFromDom() {
+      if (!state.editingId) return;
+      const checkedIds = [...document.querySelectorAll("[data-split-member]:checked")].map((input) => input.dataset.splitMember);
+      const historicalIds = state.editingHistoricalSplitMembers.map(memberId).filter(Boolean);
+      if (document.querySelector("[data-split-member]")) {
+        state.editingSplitMemberIds = new Set([...checkedIds, ...historicalIds]);
+      }
+      for (const input of document.querySelectorAll("[data-split-amount]")) {
+        state.editingCustomSplitAmounts[input.dataset.splitAmount] = input.value;
       }
     }
 
