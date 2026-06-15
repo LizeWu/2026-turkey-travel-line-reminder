@@ -701,6 +701,116 @@ export function accountingPage() {
       line-height: 2;
       overflow-wrap: anywhere;
     }
+    .split-currency-block {
+      display: grid;
+      gap: 8px;
+      padding: 10px 0;
+      border-top: 1px solid var(--line);
+    }
+    .split-currency-block:first-child {
+      border-top: 0;
+      padding-top: 0;
+    }
+    .split-currency-title {
+      color: var(--green);
+      font-size: 1rem;
+      font-weight: 900;
+      line-height: 1.5;
+    }
+    .split-calc-details {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #f8faf8;
+      overflow: hidden;
+    }
+    .split-calc-details summary {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 40px;
+      align-items: center;
+      gap: 8px;
+      min-height: 42px;
+      padding: 0 0 0 10px;
+      color: var(--green);
+      font-size: .92rem;
+      font-weight: 900;
+      cursor: pointer;
+      list-style: none;
+    }
+    .split-calc-details summary::-webkit-details-marker {
+      display: none;
+    }
+    .split-calc-details[open] .split-calc-toggle svg {
+      transform: rotate(180deg);
+    }
+    .split-calc-toggle {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 40px;
+      height: 40px;
+      color: var(--green);
+    }
+    .split-calc-toggle svg {
+      width: 18px;
+      height: 18px;
+      stroke: currentColor;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      fill: none;
+      transition: transform .16s ease;
+    }
+    .split-calc-body {
+      display: grid;
+      gap: 8px;
+      padding: 0 10px 10px;
+    }
+    .split-calc-list {
+      display: grid;
+      gap: 8px;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+    .split-calc-item,
+    .split-net-person {
+      display: grid;
+      gap: 5px;
+      padding: 8px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+      color: var(--muted);
+      font-size: .84rem;
+      font-weight: 700;
+      line-height: 1.5;
+      overflow-wrap: anywhere;
+    }
+    .split-calc-item-title,
+    .split-net-person-name {
+      color: var(--ink);
+      font-size: .9rem;
+      font-weight: 900;
+    }
+    .split-calc-sublist {
+      display: grid;
+      gap: 3px;
+      margin: 0;
+      padding-left: 1rem;
+    }
+    .member-pill {
+      background: #fff;
+      padding: 4px 8px;
+      border-radius: 12px;
+      font-weight: normal;
+      box-shadow: rgba(0, 0, 0, 0.05) 0px 6px 24px 0px, rgba(0, 0, 0, 0.08) 0px 0px 0px 1px;
+      margin: 0 2px;
+      white-space: nowrap;
+    }
+    .amount-emphasis {
+      color: #009688;
+      white-space: nowrap;
+    }
     .member-avatar {
       display: inline-flex;
       align-items: center;
@@ -812,12 +922,12 @@ export function accountingPage() {
     .settlement-main-box {
       display: flex;
       flex-direction: column;
-      gap: 4px;
+      gap: 6px;
       min-width: 0;
       border: 1px solid var(--line);
       border-left: none;
       border-right: none;
-      padding: 6px 0;
+      padding: 10px 0;
     }
     .settlement-main {
       display: grid;
@@ -859,19 +969,6 @@ export function accountingPage() {
       font-size: .92rem;
       font-weight: 700;
       overflow-wrap: anywhere;
-    }
-    .settlement-to div b {
-      background: #fff;
-      padding: 4px 8px;
-      border-radius: 12px;
-      font-weight: normal;
-      box-shadow: rgba(0, 0, 0, 0.05) 0px 6px 24px 0px, rgba(0, 0, 0, 0.08) 0px 0px 0px 1px;
-      margin: 0 2px;
-      white-space: nowrap;
-    }
-    .settlement-to div span {
-      color: #009688;
-      white-space: nowrap;
     }
     .settlement-source {
       min-width: 0;
@@ -2202,21 +2299,20 @@ export function accountingPage() {
             '<span class="summary-title-main">分帳統計</span>' +
             '<span class="summary-title-note">' + infoIcon + '每個人的支付與分攤總覽</span>' +
           '</div>' +
-          '<div class="split-summary">' + summaries.map(renderSplitPersonSummary).join("") + '</div>' +
+          '<div class="split-summary">' + renderSplitCurrencySections(summaries) + '</div>' +
         '</section>'
         : "";
       return splitCard + renderSettlementSuggestions(suggestions, simplifiedSuggestions);
     }
 
-    function renderSplitPersonSummary(item) {
-      return '<div class="split-person">' +
-        '<div class="split-person-name">' + renderMemberAvatar(item.id, item.name) + '<span class="member-name">' + escapeHtml(item.name) + '</span></div>' +
-        '<div class="split-metrics">' +
-          renderSplitMetric("已支付", item.paidText) +
-          renderSplitMetric("應收款項", item.receivableText) +
-          renderSplitMetric("應付款項", item.payableText) +
-        '</div>' +
-      '</div>';
+    function renderSplitCurrencySections(summaries) {
+      return splitCurrencySections(summaries).map((section) =>
+        '<section class="split-currency-block">' +
+          '<div class="split-currency-title">' + escapeHtml(section.label) + '</div>' +
+          renderSplitCalculationDetails(section) +
+          renderSplitNetDetails(section) +
+        '</section>'
+      ).join("");
     }
 
     function renderMemberAvatar(userId, name) {
@@ -2239,6 +2335,68 @@ export function accountingPage() {
         '<div class="split-metric-label">' + escapeHtml(label) + '</div>' +
         '<div class="split-metric-value">' + escapeHtml(value) + '</div>' +
       '</div>';
+    }
+
+    function renderSplitCalculationDetails(section) {
+      const body = section.expenses.length
+        ? '<ol class="split-calc-list">' + section.expenses.map(renderSplitCalculationItem).join("") + '</ol>'
+        : '<div class="settlement-text">目前沒有可顯示的消費計算。</div>';
+      return renderCalcDetails("計算過程", body);
+    }
+
+    function renderSplitCalculationItem(item, index) {
+      const title = escapeHtml((index + 1) + ". " + item.category + (item.note ? "/" + item.note : "") + " ") + amountEmphasis(moneyText(item.symbol, item.amount));
+      const splitLine = item.method === "custom"
+        ? '<div>個別分攤：</div><ul class="split-calc-sublist">' + item.allocations.map((allocation) =>
+            '<li>' + escapeHtml(allocation.displayName) + ' ' + amountEmphasis(moneyText(item.symbol, allocation.amount)) + '</li>'
+          ).join("") + '</ul>'
+        : '<div>每人分攤：' + escapeHtml(moneyText(item.symbol, item.amount)) + ' ÷ ' + escapeHtml(String(item.allocations.length)) + ' = ' + amountEmphasis(moneyText(item.symbol, item.allocations[0]?.amount || 0)) + '</div>';
+      return '<li class="split-calc-item">' +
+        '<div class="split-calc-item-title">' + title + '</div>' +
+        '<div>付款人：' + memberPill(item.payerName) + '</div>' +
+        '<div>分攤成員：' + escapeHtml(item.allocations.map((allocation) => allocation.displayName).join("、")) + '</div>' +
+        splitLine +
+      '</li>';
+    }
+
+    function renderSplitNetDetails(section) {
+      const body = section.people.length
+        ? '<div class="split-calc-list">' + section.people.map((person) => renderSplitNetPerson(person, section)).join("") + '</div>'
+        : '<div class="settlement-text">目前沒有可顯示的每人淨額。</div>';
+      return renderCalcDetails("每人淨額", body);
+    }
+
+    function renderSplitNetPerson(person, section) {
+      const paidText = moneyText(section.symbol, person.paid);
+      const shareText = person.shares.length
+        ? person.shares.map((item) => item.label + " " + moneyText(section.symbol, item.amount)).join(" + ") + " = " + moneyText(section.symbol, person.share)
+        : moneyText(section.symbol, 0);
+      const balanceText = person.balance > 0.01
+        ? "應收 " + moneyText(section.symbol, person.balance)
+        : person.balance < -0.01
+          ? "應付 " + moneyText(section.symbol, Math.abs(person.balance))
+          : "已平衡";
+      return '<div class="split-net-person">' +
+        '<div class="split-net-person-name">' + memberPill(person.name) + '</div>' +
+        '<div>已支付：' + escapeHtml(paidText) + '</div>' +
+        '<div>應分攤：' + escapeHtml(shareText) + '</div>' +
+        '<div>淨額：' + escapeHtml(paidText) + ' - ' + escapeHtml(moneyText(section.symbol, person.share)) + ' = ' + amountEmphasis(balanceText) + '</div>' +
+      '</div>';
+    }
+
+    function renderCalcDetails(title, body) {
+      return '<details class="split-calc-details">' +
+        '<summary><span>' + escapeHtml(title) + '</span><span class="split-calc-toggle" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"></path></svg></span></summary>' +
+        '<div class="split-calc-body">' + body + '</div>' +
+      '</details>';
+    }
+
+    function memberPill(name) {
+      return '<span class="member-pill">' + escapeHtml(name || "未命名成員") + '</span>';
+    }
+
+    function amountEmphasis(value) {
+      return '<b class="amount-emphasis">' + escapeHtml(value) + '</b>';
     }
 
     function splitSummaries() {
@@ -2272,6 +2430,73 @@ export function accountingPage() {
         receivableText: balanceDirectionText(person.paid, person.share, person.symbols, "receivable"),
         payableText: balanceDirectionText(person.paid, person.share, person.symbols, "payable"),
       }));
+    }
+
+    function splitCurrencySections(summaries) {
+      const sections = new Map();
+      const shareDetails = new Map();
+      const ensureSection = (code, label, symbol) => {
+        if (!sections.has(code)) {
+          sections.set(code, {
+            code,
+            label: label || code,
+            symbol: symbol || "",
+            expenses: [],
+            people: [],
+          });
+        }
+        return sections.get(code);
+      };
+      const shareKey = (code, userId) => code + "|" + userId;
+      for (const expense of state.expenses.filter(isGroupExpense)) {
+        if (!isActiveLedgerMember(expense.payer_id)) continue;
+        const code = expense.currency_code;
+        const symbol = expense.currency_symbol || "";
+        const section = ensureSection(code, expense.currency_label, symbol);
+        const allocations = splitAllocations(expense);
+        if (!allocations.length) continue;
+        const label = expense.note || expense.category || "無備註";
+        section.expenses.push({
+          id: expense.id,
+          category: expense.category || "其他",
+          note: expense.note || "",
+          amount: Number(expense.amount) || 0,
+          symbol,
+          method: expense.split_method === "custom" ? "custom" : "equal",
+          payerName: expense.payer_name || "未命名付款人",
+          allocations,
+        });
+        for (const allocation of allocations) {
+          const key = shareKey(code, allocation.userId);
+          if (!shareDetails.has(key)) shareDetails.set(key, []);
+          shareDetails.get(key).push({
+            label,
+            amount: allocation.amount,
+          });
+        }
+      }
+      for (const person of summaries) {
+        const codes = new Set([...Object.keys(person.paid), ...Object.keys(person.share)]);
+        for (const code of codes) {
+          const section = ensureSection(code, person.labels[code] || code, person.symbols[code] || "");
+          const paid = Number(person.paid[code]) || 0;
+          const share = Number(person.share[code]) || 0;
+          section.people.push({
+            id: person.id,
+            name: person.name,
+            paid: roundMoney(paid),
+            share: roundMoney(share),
+            balance: roundMoney(paid - share),
+            shares: shareDetails.get(shareKey(code, person.id)) || [],
+          });
+        }
+      }
+      return [...sections.values()]
+        .map((section) => ({
+          ...section,
+          people: section.people.sort((a, b) => String(a.name).localeCompare(String(b.name), "zh-Hant")),
+        }))
+        .sort((a, b) => currencyRank(a.code) - currencyRank(b.code));
     }
 
     function splitAllocations(expense) {
@@ -2447,10 +2672,9 @@ export function accountingPage() {
         '<div class="settlement-row">' +
           '<div class="settlement-from">' + renderMemberAvatar(group.fromUserId, group.fromName) + '<span class="member-name">' + escapeHtml(group.fromName) + '</span></div>' +
           '<div class="settlement-main-wrap">' +
-            '<div class="settlement-section-label"></div>' +
+            '<div class="settlement-section-label">建議付款方式</div>' +
             '<div class="settlement-net-note">已依同幣別淨額簡化付款對象。</div>' +
             '<div class="settlement-main-box">' + group.items.map(renderSettlementMain).join("") + '</div>' +
-            renderSettlementSources(group, suggestions) +
           '</div>' +
         '</div>'
       ).join("") + '</div></section>';
@@ -2460,7 +2684,7 @@ export function accountingPage() {
       const detail = settlementDetailText(item);
       return '<div class="settlement-main">' +
         '<div class="settlement-to">' +
-          '<div>付給 <b>' + escapeHtml(item.toName) + '</b> <span>' + escapeHtml(moneyText(item.currencySymbol, item.amount)) + '</span></div>' +
+          '<div>付給 ' + memberPill(item.toName) + ' ' + amountEmphasis(moneyText(item.currencySymbol, item.amount)) + '</div>' +
           (detail ? '<div class="settlement-detail">' + escapeHtml(detail) + '</div>' : '') +
         '</div>' +
       '</div>';

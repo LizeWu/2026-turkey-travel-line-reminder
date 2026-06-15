@@ -15,8 +15,13 @@
 - 更新 `docs/accounting-book.md`，記錄目前不提供成員 ID 合併功能。
 - 調整 `統計 > 團體消費 > 結算清單`：
   - 移除 `待結清` / `已結清` 按鈕與前端結清切換功能。
-  - 結算建議 DOM 改為 `settlement-section-label`、`settlement-net-note`、`settlement-main-box`、`settlement-source`。
+  - 結算建議 DOM 改為 `settlement-section-label`、`settlement-net-note`、`settlement-main-box`。
   - `settlement-main-box` 改為直向排列並加上下邊線，付款建議列改以項目符號呈現。
+- 調整 `統計 > 團體消費 > 分帳統計`：
+  - 依幣別顯示 `計算過程` 與 `每人淨額`，兩個區塊皆可展開/收合。
+  - `計算過程` 依分攤類型顯示平均分攤或指定金額明細。
+  - `每人淨額` 顯示每位成員 `已支付 - 應分攤 = 應收 / 應付`，讓結算清單的付款建議可回推。
+  - `settlement-main-box` 改為 `gap: 6px`、`padding: 10px 0`，成員與金額改用 pill / emphasis 樣式。
 
 ### 今日已驗證
 
