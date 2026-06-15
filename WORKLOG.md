@@ -13,6 +13,10 @@
   - 分攤成員下方會即時顯示尚差、超出或已符合消費金額。
   - 使用者可新增/選取新旅伴，手動輸入金額後再儲存修改。
 - 更新 `docs/accounting-book.md`，記錄目前不提供成員 ID 合併功能。
+- 調整 `統計 > 團體消費 > 結算清單`：
+  - 移除 `待結清` / `已結清` 按鈕與前端結清切換功能。
+  - 結算建議 DOM 改為 `settlement-section-label`、`settlement-net-note`、`settlement-main-box`、`settlement-source`。
+  - `settlement-main-box` 改為直向排列並加上下邊線，付款建議列改以項目符號呈現。
 
 ### 今日已驗證
 

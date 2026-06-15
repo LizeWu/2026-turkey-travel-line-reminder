@@ -165,7 +165,7 @@ Manual production checks completed:
 - Cloudflare Worker `/accounting` opens the accounting page.
 - LIFF accounting page can create, list, edit, and delete expenses.
 - LINE group LIFF accounting flow has been tested and confirmed OK.
-- Custom split amounts, per-expense settlements, pending/settled toggles, and the adjusted expense/split/settlement layouts have been tested and confirmed OK.
+- Custom split amounts, per-expense settlements, and the adjusted expense/split/settlement layouts have been tested and confirmed OK. The settlement list no longer provides pending/settled toggle buttons.
 - Personal expenses opened from LINE groups are scoped per group or room, so A/B/C groups do not share `我的消費`; one-on-one personal use still uses the user personal ledger.
 - The accounting page groups expenses by date or currency.
 - Currency statistics render as expandable cards.
@@ -303,7 +303,7 @@ If continuing in a new Codex conversation, paste this:
 GitHub repo: https://github.com/LizeWu/2026-turkey-travel-line-reminder
 請先讀取 PROJECT_HANDOFF.md、FILE_INDEX.md、WORKLOG.md、docs/accounting-book.md、docs/liff-accounting-setup.md。
 已完成：旅行資料 JSON、LINE Flex Message、12 天預覽、GitHub Actions、LINE Official Account、Cloudflare Worker webhook、Rich Menu、Open-Meteo 天氣、Cloudflare D1、LINE Login channel、LIFF 記帳本。
-目前已測試成功：GitHub Actions Day 3 推播含天氣、Rich Menu 今日/明日行程、LIFF 記帳本頁面開啟、手動記帳、消費項目分組、修改/刪除 icon、幣別統計卡片、LINE 加好友 QR 小卡、LINE 群組 LIFF 記帳流程、指定金額分攤、逐筆結算、待結清/已結清切換與調整後的記帳統計排版。
+目前已測試成功：GitHub Actions Day 3 推播含天氣、Rich Menu 今日/明日行程、LIFF 記帳本頁面開啟、手動記帳、消費項目分組、修改/刪除 icon、幣別統計卡片、LINE 加好友 QR 小卡、LINE 群組 LIFF 記帳流程、指定金額分攤、逐筆結算與調整後的記帳統計排版。結算清單目前不提供待結清/已結清切換。
 目前決策：原規劃新增的 `統計 > 團體消費 > 幣別淨額` 區塊已取消，不再作為待辦。
 下一步：第三階段再處理 LINE id token 強驗證、離開群組後撤權、行程提醒 workflow restore/save 復測；repo rename 暫緩，之後確認時再改為 `azuma-papago`。
 請用簡明步驟帶我操作。

@@ -809,16 +809,28 @@ export function accountingPage() {
       gap: 8px;
       min-width: 0;
     }
+    .settlement-main-box {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      min-width: 0;
+      border: 1px solid var(--line);
+      border-left: none;
+      border-right: none;
+      padding: 6px 0;
+    }
     .settlement-main {
       display: grid;
-      grid-template-columns: minmax(0, 1fr) auto;
-      align-items: center;
+      grid-template-columns: auto minmax(0, 1fr);
+      align-items: start;
       gap: 8px;
       min-width: 0;
     }
-    .settlement-main + .settlement-main {
-      padding-top: 8px;
-      border-top: 1px solid var(--line);
+    .settlement-main::before {
+      content: "•";
+      color: var(--green);
+      font-weight: 900;
+      line-height: 1.45;
     }
     .settlement-section-label {
       color: var(--green);
@@ -861,22 +873,8 @@ export function accountingPage() {
       color: #009688;
       white-space: nowrap;
     }
-    .settlement-action {
-      min-height: 34px;
-      padding: 0 10px;
-      border-radius: 999px;
-      color: var(--green);
-      font-size: .86rem;
-      white-space: nowrap;
-    }
-    .settlement-action.settled {
-      border-color: var(--green);
-      background: var(--green-soft);
-    }
     .settlement-source {
       min-width: 0;
-      border-top: 1px solid var(--line);
-      padding-top: 8px;
     }
     .settlement-source summary {
       cursor: pointer;
@@ -1036,7 +1034,7 @@ export function accountingPage() {
         line-height: 2;
       }
       .settlement-main {
-        grid-template-columns: 1fr;
+        grid-template-columns: auto minmax(0, 1fr);
       }
       .icon-actions {
         justify-content: flex-end;
@@ -1203,7 +1201,6 @@ export function accountingPage() {
       itemScope: "personal",
       statsScope: "personal",
       ledgerMembers: [],
-      settlements: [],
       expandedCurrencies: new Set(),
     };
     const currencyMeta = {
@@ -1530,9 +1527,6 @@ export function accountingPage() {
       await loadExpenses(state.statsScope);
       if (state.statsScope === "group") {
         await loadLedgerMembers();
-        await loadSettlements();
-      } else {
-        state.settlements = [];
       }
       const root = $("stats");
       if (!state.expenses.length) {
@@ -1547,11 +1541,6 @@ export function accountingPage() {
     }
 
     function handleStatsAction(event) {
-      const settlementButton = event.target.closest("button[data-settlement-action]");
-      if (settlementButton) {
-        toggleSettlement(settlementButton);
-        return;
-      }
       const button = event.target.closest("button[data-currency]");
       if (!button) return;
       const code = button.dataset.currency;
@@ -1575,16 +1564,6 @@ export function accountingPage() {
       });
       const data = await api("/api/expenses?" + params.toString());
       state.expenses = data.expenses || [];
-    }
-
-    async function loadSettlements() {
-      if (!hasGroupLedgerContext()) return;
-      const params = new URLSearchParams({
-        tripId: state.tripId,
-        ...ledgerContextPayload(),
-      });
-      const data = await api("/api/settlements?" + params.toString());
-      state.settlements = data.settlements || [];
     }
 
     async function loadLedgerMembers() {
@@ -2450,15 +2429,12 @@ export function accountingPage() {
       if (!simplifiedSuggestions.length) {
         return '<section class="summary-card">' + title + '<div class="settlement-list"><div class="settlement-text">目前沒有需要結算的差額。</div></div></section>';
       }
-      const settled = new Set(state.settlements.map((item) => item.settlement_key));
       const sorted = [...simplifiedSuggestions].sort((a, b) => {
         const from = String(a.fromName).localeCompare(String(b.fromName), "zh-Hant");
         if (from) return from;
         const to = String(a.toName).localeCompare(String(b.toName), "zh-Hant");
         if (to) return to;
-        const currency = currencyRank(a.currencyCode) - currencyRank(b.currencyCode);
-        if (currency) return currency;
-        return Number(settled.has(a.key)) - Number(settled.has(b.key));
+        return currencyRank(a.currencyCode) - currencyRank(b.currencyCode);
       });
       const groups = new Map();
       for (const item of sorted) {
@@ -2471,32 +2447,22 @@ export function accountingPage() {
         '<div class="settlement-row">' +
           '<div class="settlement-from">' + renderMemberAvatar(group.fromUserId, group.fromName) + '<span class="member-name">' + escapeHtml(group.fromName) + '</span></div>' +
           '<div class="settlement-main-wrap">' +
-            '<div class="settlement-section-label">建議付款方式</div>' +
-            group.items.map((item) => renderSettlementMain(item, settled.has(item.key))).join("") +
+            '<div class="settlement-section-label"></div>' +
             '<div class="settlement-net-note">已依同幣別淨額簡化付款對象。</div>' +
+            '<div class="settlement-main-box">' + group.items.map(renderSettlementMain).join("") + '</div>' +
             renderSettlementSources(group, suggestions) +
           '</div>' +
         '</div>'
       ).join("") + '</div></section>';
     }
 
-    function renderSettlementMain(item, isSettled) {
+    function renderSettlementMain(item) {
       const detail = settlementDetailText(item);
       return '<div class="settlement-main">' +
         '<div class="settlement-to">' +
           '<div>付給 <b>' + escapeHtml(item.toName) + '</b> <span>' + escapeHtml(moneyText(item.currencySymbol, item.amount)) + '</span></div>' +
           (detail ? '<div class="settlement-detail">' + escapeHtml(detail) + '</div>' : '') +
         '</div>' +
-        '<button class="settlement-action' + (isSettled ? " settled" : "") + '" type="button" data-settlement-action="' + (isSettled ? "unset" : "settle") + '"' +
-          ' data-settlement-key="' + escapeHtml(item.key) + '"' +
-          ' data-currency-code="' + escapeHtml(item.currencyCode) + '"' +
-          ' data-currency-label="' + escapeHtml(item.currencyLabel) + '"' +
-          ' data-currency-symbol="' + escapeHtml(item.currencySymbol) + '"' +
-          ' data-from-user-id="' + escapeHtml(item.fromUserId) + '"' +
-          ' data-from-name="' + escapeHtml(item.fromName) + '"' +
-          ' data-to-user-id="' + escapeHtml(item.toUserId) + '"' +
-          ' data-to-name="' + escapeHtml(item.toName) + '"' +
-          ' data-amount="' + escapeHtml(String(item.amount)) + '">' + (isSettled ? "已結清" : "待結清") + '</button>' +
       '</div>';
     }
 
@@ -2545,47 +2511,6 @@ export function accountingPage() {
       const id = String(userId || "");
       if (!id) return false;
       return activeLedgerMembers().some((member) => member.userId === id);
-    }
-
-    async function toggleSettlement(button) {
-      const action = button.dataset.settlementAction;
-      const key = button.dataset.settlementKey;
-      if (!key) return;
-      button.disabled = true;
-      try {
-        if (action === "settle") {
-          await api("/api/settlements", {
-            method: "POST",
-            body: {
-              tripId: state.tripId,
-              currencyCode: button.dataset.currencyCode,
-              currencyLabel: button.dataset.currencyLabel,
-              currencySymbol: button.dataset.currencySymbol,
-              fromUserId: button.dataset.fromUserId,
-              fromName: button.dataset.fromName,
-              toUserId: button.dataset.toUserId,
-              toName: button.dataset.toName,
-              amount: Number(button.dataset.amount),
-              settledById: currentUserId(),
-              settledByName: currentUserName(),
-              ...ledgerContextPayload(),
-            },
-          });
-          showToast("已標記結清", "success");
-        } else {
-          const params = new URLSearchParams({
-            tripId: state.tripId,
-            ...ledgerContextPayload(),
-          });
-          await api("/api/settlements/" + encodeURIComponent(key) + "?" + params.toString(), { method: "DELETE" });
-          showToast("已取消結清", "success");
-        }
-        await refreshStats();
-      } catch (error) {
-        showError(error.message);
-      } finally {
-        button.disabled = false;
-      }
     }
 
     function formatAmount(item) {
