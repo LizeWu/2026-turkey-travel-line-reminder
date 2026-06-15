@@ -462,7 +462,6 @@ export function accountingPage() {
       color: var(--green);
       font-size: 1.125rem;
       font-weight: 800;
-      text-align: right;
       padding: 0 16px 0 0;
       line-height: 2;
     }
@@ -704,18 +703,25 @@ export function accountingPage() {
     .split-currency-block {
       display: grid;
       gap: 8px;
-      padding: 10px 0;
-      border-top: 1px solid var(--line);
-    }
-    .split-currency-block:first-child {
-      border-top: 0;
-      padding-top: 0;
     }
     .split-currency-title {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
       color: var(--green);
       font-size: 1rem;
       font-weight: 900;
       line-height: 1.5;
+    }
+    .split-currency-title svg {
+      width: 18px;
+      height: 18px;
+      flex: 0 0 auto;
+      stroke: currentColor;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      fill: none;
     }
     .split-calc-details {
       border: 1px solid var(--line);
@@ -1120,10 +1126,6 @@ export function accountingPage() {
       .settlement-from {
         justify-content: flex-end;
       }
-      .settlement-from {
-        font-size: inherit;
-        line-height: 2;
-      }
       .settlement-main {
         grid-template-columns: auto minmax(0, 1fr);
       }
@@ -1303,6 +1305,7 @@ export function accountingPage() {
     const editIcon = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20h9"></path><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"></path></svg>';
     const deleteIcon = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18"></path><path d="M8 6V4h8v2"></path><path d="M19 6l-1 14H6L5 6"></path><path d="M10 11v5"></path><path d="M14 11v5"></path></svg>';
     const infoIcon = '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><path d="M12 16v-4"></path><path d="M12 8h.01"></path></svg>';
+    const circleDollarIcon = '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"></path><path d="M12 18V6"></path></svg>';
     const circleUserIcon = '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="10" r="3"></circle><path d="M7 20.662V19a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v1.662"></path></svg>';
 
     async function init() {
@@ -1624,10 +1627,11 @@ export function accountingPage() {
         root.innerHTML = '<div class="empty">目前沒有' + (state.statsScope === "group" ? "團體" : "我的") + '消費統計。</div>';
         return;
       }
-      const totals = currencyTotals();
-      root.innerHTML = totals.map(renderCurrencySummary).join("");
       if (state.statsScope === "group") {
-        root.innerHTML = renderSplitSummary() + root.innerHTML;
+        root.innerHTML = renderSplitSummary();
+      } else {
+        const totals = currencyTotals();
+        root.innerHTML = totals.map(renderCurrencySummary).join("");
       }
     }
 
@@ -2302,7 +2306,7 @@ export function accountingPage() {
     function renderSplitCurrencySections(summaries) {
       return splitCurrencySections(summaries).map((section) =>
         '<section class="split-currency-block">' +
-          '<div class="split-currency-title">' + escapeHtml(section.label) + '</div>' +
+          '<div class="split-currency-title">' + circleDollarIcon + '<span>' + escapeHtml(section.label) + '</span></div>' +
           renderSplitCalculationDetails(section) +
           renderSplitNetDetails(section) +
         '</section>'
