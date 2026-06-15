@@ -2291,7 +2291,7 @@ export function accountingPage() {
         ? '<section class="summary-card">' +
           '<div class="summary-title">' +
             '<span class="summary-title-main">分帳統計</span>' +
-            '<span class="summary-title-note">' + infoIcon + '成員間的付款建議與結算依據，已依同幣別淨額簡化付款對象。</span>' +
+            '<span class="summary-title-note">' + infoIcon + '每個人的支付與分攤總覽。</span>' +
           '</div>' +
           '<div class="split-summary">' + renderSplitCurrencySections(summaries) + '</div>' +
         '</section>'
@@ -2643,7 +2643,7 @@ export function accountingPage() {
     function renderSettlementSuggestions(suggestions, simplifiedSuggestions) {
       const title = '<div class="settlement-title">' +
         '<span class="summary-title-main">結算清單</span>' +
-        '<span class="summary-title-note">' + infoIcon + '成員間的付款建議與結算依據</span>' +
+        '<span class="summary-title-note">' + infoIcon + '成員間的付款建議與結算依據，已依同幣別淨額簡化付款對象。</span>' +
       '</div>';
       if (!simplifiedSuggestions.length) {
         return '<section class="summary-card">' + title + '<div class="settlement-list"><div class="settlement-text">目前沒有需要結算的差額。</div></div></section>';
