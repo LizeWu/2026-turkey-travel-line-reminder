@@ -1,5 +1,24 @@
 # Worklog
 
+## 2026-06-15
+
+### 今日修正
+
+- 依使用者決策移除分帳成員 `ID合併` 功能：
+  - `平均分攤` 與 `指定金額` 的分攤成員列都不再顯示合併按鈕。
+  - Worker 移除 `/api/ledger-members/:id/merge` 合併 API 與相關後端合併 helper。
+  - 刪除成員提示不再建議改用 ID 合併。
+- 保留刪除成員與手動重填流程：
+  - 在 `指定金額` 編輯情境刪除成員時，該 ID 與目前表單中的指定金額會一併移除。
+  - 分攤成員下方會即時顯示尚差、超出或已符合消費金額。
+  - 使用者可新增/選取新旅伴，手動輸入金額後再儲存修改。
+- 更新 `docs/accounting-book.md`，記錄目前不提供成員 ID 合併功能。
+
+### 今日已驗證
+
+- `node --check webhook/cloudflare-worker/src/index.js` 通過。
+- `node --check webhook/cloudflare-worker/src/accounting-page.js` 通過。
+
 ## 2026-06-14
 
 ### 今日確認

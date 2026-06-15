@@ -353,6 +353,18 @@ export function accountingPage() {
       display: grid;
       gap: 8px;
     }
+    .split-balance {
+      margin: 8px 0 0;
+      color: var(--muted);
+      font-size: .86rem;
+      font-weight: 700;
+    }
+    .split-balance.warning {
+      color: #a45b00;
+    }
+    .split-balance.ok {
+      color: var(--green);
+    }
     .manual-member {
       display: grid;
       grid-template-columns: minmax(0, 1fr) auto;
@@ -1099,6 +1111,7 @@ export function accountingPage() {
             </div>
             <p class="split-title">分攤成員</p>
             <div id="split-members" class="member-list"></div>
+            <p id="split-balance" class="split-balance"></p>
             <div class="manual-member">
               <input id="manual-member-name" placeholder="新增旅伴名稱">
               <button id="add-manual-member" type="button">加入</button>
@@ -1201,7 +1214,6 @@ export function accountingPage() {
     const $ = (id) => document.getElementById(id);
     const editIcon = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20h9"></path><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"></path></svg>';
     const deleteIcon = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18"></path><path d="M8 6V4h8v2"></path><path d="M19 6l-1 14H6L5 6"></path><path d="M10 11v5"></path><path d="M14 11v5"></path></svg>';
-    const mergeIcon = '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="18" cy="18" r="3"></circle><circle cx="6" cy="6" r="3"></circle><path d="M6 21V9a9 9 0 0 0 9 9"></path></svg>';
     const infoIcon = '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><path d="M12 16v-4"></path><path d="M12 8h.01"></path></svg>';
     const circleUserIcon = '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="10" r="3"></circle><path d="M7 20.662V19a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v1.662"></path></svg>';
 
@@ -1258,6 +1270,7 @@ export function accountingPage() {
       $("date-dialog").addEventListener("click", (event) => {
         if (event.target === $("date-dialog")) closeCalendar();
       });
+      $("amount").addEventListener("input", updateSplitBalanceNotice);
       $("calendar-grid").addEventListener("click", handleCalendarDay);
       $("add-manual-member").addEventListener("click", addManualMember);
       $("split-members").addEventListener("click", handleMemberAction);
@@ -1623,13 +1636,6 @@ export function accountingPage() {
     }
 
     function handleMemberAction(event) {
-      const mergeButton = event.target.closest("button[data-member-merge]");
-      if (mergeButton) {
-        event.preventDefault();
-        event.stopPropagation();
-        mergeLedgerMember(mergeButton.dataset.memberMerge, mergeButton.dataset.memberName || "");
-        return;
-      }
       const button = event.target.closest("button[data-member-delete]");
       if (!button) return;
       event.preventDefault();
@@ -1641,10 +1647,12 @@ export function accountingPage() {
       if (!event.target.matches("[data-split-member]")) return;
       const amountInput = splitAmountInput(event.target.dataset.splitMember);
       if (amountInput) amountInput.disabled = !event.target.checked;
-      if (!state.editingId) return;
-      state.editingSplitMemberIds = new Set(
-        [...document.querySelectorAll("[data-split-member]:checked")].map((input) => input.dataset.splitMember)
-      );
+      if (state.editingId) {
+        state.editingSplitMemberIds = new Set(
+          [...document.querySelectorAll("[data-split-member]:checked")].map((input) => input.dataset.splitMember)
+        );
+      }
+      updateSplitBalanceNotice();
     }
 
     async function deleteLedgerMember(userId, displayName) {
@@ -1654,7 +1662,10 @@ export function accountingPage() {
         return;
       }
       const name = displayName || "這位成員";
-      if (!confirm("確定刪除分帳成員「" + name + "」？\\n\\n若這位成員其實是另一個 LINE 成員，請改用 ID 合併。刪除後統計與結算將不再納入此成員。")) return;
+      const hint = state.splitMethod === "custom"
+        ? "刪除後，這位成員在目前修改中的指定金額也會一併移除。"
+        : "刪除後，這位成員將從目前帳本移除。";
+      if (!confirm("確定刪除分帳成員「" + name + "」？\\n\\n" + hint + "刪除後統計與結算將不再納入此成員。")) return;
       try {
         const params = new URLSearchParams({
           tripId: state.tripId,
@@ -1663,85 +1674,13 @@ export function accountingPage() {
         await api("/api/ledger-members/" + encodeURIComponent(userId) + "?" + params.toString(), { method: "DELETE" });
         state.ledgerMembers = state.ledgerMembers.filter((member) => (member.user_id || member.userId) !== userId);
         if (state.editingSplitMemberIds) state.editingSplitMemberIds.delete(userId);
+        state.editingHistoricalSplitMembers = state.editingHistoricalSplitMembers.filter((member) => memberId(member) !== userId);
+        delete state.editingCustomSplitAmounts[userId];
         renderSplitMembers(null, { preserveSelection: true });
         showToast("已刪除分帳成員：" + name, "success");
       } catch (error) {
         showError(error.message);
       }
-    }
-
-    async function mergeLedgerMember(sourceUserId, sourceName) {
-      if (!sourceUserId) return;
-      syncEditingSplitStateFromDom();
-      const members = activeLedgerMembers().filter((member) => member.userId !== sourceUserId);
-      if (!members.length) {
-        showError("目前沒有可合併的目標成員。");
-        return;
-      }
-      const choices = members.map((member, index) => (index + 1) + ". " + member.displayName).join("\\n");
-      const answer = prompt("將「" + (sourceName || "這位成員") + "」合併到哪一位成員？\\n\\n" + choices + "\\n\\n請輸入編號：");
-      if (answer == null) return;
-      const index = Number(answer.trim()) - 1;
-      const target = members[index];
-      if (!target) {
-        showError("請輸入有效的合併目標編號。");
-        return;
-      }
-      if (state.editingId) {
-        if (!confirm("確認先在目前修改中的消費項目，將「" + (sourceName || "來源成員") + "」改為「" + target.displayName + "」？\\n\\n金額會帶到目標成員欄位；需按「儲存修改」才會寫入消費項目。")) return;
-        syncMergedEditingState(sourceUserId, target);
-        renderSplitMembers(null, { preserveSelection: true });
-        showToast("已帶入合併目標：" + target.displayName, "success");
-        return;
-      }
-      if (!confirm("確認將「" + (sourceName || "來源成員") + "」的歷史付款與分攤資料合併到「" + target.displayName + "」？\\n\\n合併後來源 ID 會從分帳成員中移除，金額不會重新分攤。")) return;
-      try {
-        await api("/api/ledger-members/" + encodeURIComponent(sourceUserId) + "/merge", {
-          method: "POST",
-          body: {
-            tripId: state.tripId,
-            targetUserId: target.userId,
-            ...ledgerContextPayload(),
-          },
-        });
-        syncMergedEditingState(sourceUserId, target);
-        await loadLedgerMembers();
-        await refreshItems();
-        await refreshStats();
-        if (state.editingId) renderSplitMembers(null, { preserveSelection: true });
-        showToast("已合併成員到：" + target.displayName, "success");
-      } catch (error) {
-        showError(error.message);
-      }
-    }
-
-    function syncMergedEditingState(sourceUserId, target) {
-      if (!state.editingId || !sourceUserId || !target?.userId) return;
-      const hasSourceAmount = Object.prototype.hasOwnProperty.call(state.editingCustomSplitAmounts, sourceUserId);
-      const hasHistoricalSource = state.editingHistoricalSplitMembers.some((member) => memberId(member) === sourceUserId);
-      if (state.editingPayerId === sourceUserId) {
-        state.editingPayerId = target.userId;
-        state.editingPayerName = target.displayName;
-      }
-      if (state.editingSplitMemberIds?.has(sourceUserId) || hasSourceAmount || hasHistoricalSource) {
-        if (!state.editingSplitMemberIds) state.editingSplitMemberIds = new Set();
-        state.editingSplitMemberIds.delete(sourceUserId);
-        state.editingSplitMemberIds.add(target.userId);
-      }
-      const historicalSource = state.editingHistoricalSplitMembers.find((member) => memberId(member) === sourceUserId);
-      state.editingHistoricalSplitMembers = state.editingHistoricalSplitMembers.filter((member) => memberId(member) !== sourceUserId);
-      const sourceValue = Object.prototype.hasOwnProperty.call(state.editingCustomSplitAmounts, sourceUserId)
-        ? state.editingCustomSplitAmounts[sourceUserId]
-        : historicalSource?.amount;
-      if (sourceValue !== undefined && sourceValue !== null && sourceValue !== "") {
-        const targetValue = state.editingCustomSplitAmounts[target.userId];
-        if (targetValue !== undefined && targetValue !== "") {
-          state.editingCustomSplitAmounts[target.userId] = roundMoney((Number(targetValue) || 0) + (Number(sourceValue) || 0));
-        } else {
-          state.editingCustomSplitAmounts[target.userId] = sourceValue;
-        }
-      }
-      delete state.editingCustomSplitAmounts[sourceUserId];
     }
 
     function syncEditingSplitStateFromDom() {
@@ -2070,13 +2009,20 @@ export function accountingPage() {
             (state.splitMethod === "custom"
               ? '<input class="split-amount" data-split-amount="' + escapeHtml(member.userId) + '" inputmode="decimal" placeholder="金額" value="' + escapeHtml(splitAmountValue(member.userId)) + '"' + (selectedIds.has(member.userId) && !member.historical ? "" : " disabled") + '>'
               : "") +
-            (member.userId === currentUserId()
-              ? '<span></span>'
-              : '<span class="member-actions"><button class="icon-button" type="button" data-member-merge="' + escapeHtml(member.userId) + '" data-member-name="' + escapeHtml(member.displayName || "未命名成員") + '" aria-label="ID合併" title="ID合併">' + mergeIcon + '</button>' +
-                (member.historical ? "" : '<button class="icon-button danger" type="button" data-member-delete="' + escapeHtml(member.userId) + '" data-member-name="' + escapeHtml(member.displayName || "未命名成員") + '" aria-label="刪除成員" title="刪除成員">' + deleteIcon + '</button>') + '</span>') +
+            renderMemberActions(member) +
             '</div>'
           ).join("")
         : '<div class="meta">群組成員開啟記帳本後，會出現在這裡。</div>';
+      updateSplitBalanceNotice();
+    }
+
+    function renderMemberActions(member) {
+      if (member.userId === currentUserId()) return '<span></span>';
+      const buttons = [];
+      if (!member.historical) {
+        buttons.push('<button class="icon-button danger" type="button" data-member-delete="' + escapeHtml(member.userId) + '" data-member-name="' + escapeHtml(member.displayName || "未命名成員") + '" aria-label="刪除成員" title="刪除成員">' + deleteIcon + '</button>');
+      }
+      return buttons.length ? '<span class="member-actions">' + buttons.join("") + '</span>' : '<span></span>';
     }
 
     function normalizedLedgerMembers() {
@@ -2163,6 +2109,7 @@ export function accountingPage() {
       const input = event.target.closest("[data-split-amount]");
       if (!input) return;
       state.editingCustomSplitAmounts[input.dataset.splitAmount] = input.value;
+      updateSplitBalanceNotice();
     }
 
     function selectedMemberIds(selectedMembers = null) {
@@ -2207,6 +2154,39 @@ export function accountingPage() {
 
     function splitAmountInput(userId) {
       return [...document.querySelectorAll("[data-split-amount]")].find((input) => input.dataset.splitAmount === userId) || null;
+    }
+
+    function updateSplitBalanceNotice() {
+      const root = $("split-balance");
+      if (!root) return;
+      root.className = "split-balance";
+      if (state.addScope !== "group" || state.splitMethod !== "custom") {
+        root.textContent = "";
+        return;
+      }
+      const amount = roundMoney(Number($("amount").value) || 0);
+      const selected = selectedCustomAmountInputs();
+      if (!amount || !selected.length) {
+        root.textContent = "";
+        return;
+      }
+      const total = roundMoney(selected.reduce((sum, input) => sum + (Number(input.value) || 0), 0));
+      const diff = roundMoney(amount - total);
+      if (Math.abs(diff) <= 0.01) {
+        root.textContent = "指定金額加總已符合消費金額。";
+        root.classList.add("ok");
+        return;
+      }
+      root.textContent = diff > 0
+        ? "目前尚差 " + numberText(diff) + " 元未紀錄。"
+        : "目前超出 " + numberText(Math.abs(diff)) + " 元。";
+      root.classList.add("warning");
+    }
+
+    function selectedCustomAmountInputs() {
+      return [...document.querySelectorAll("[data-split-member]:checked")]
+        .map((input) => splitAmountInput(input.dataset.splitMember))
+        .filter((input) => input && !input.disabled);
     }
 
     function parseSplitMembers(item) {

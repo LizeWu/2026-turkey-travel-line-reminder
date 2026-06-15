@@ -1,6 +1,6 @@
 # Lize Next
 
-Updated at: 2026-06-14 23:55 CST
+Updated at: 2026-06-15 00:00 CST
 
 Note: New Codex sessions should read `AGENTS.md` first. It is the cross-machine handoff guide for company MacBook, home Apple Studio, and new Codex app chats. Additional SOP and multi-device notes are in `docs/ai-development-sop.md` and `docs/multi-device-continuation.md`.
 
@@ -15,7 +15,7 @@ GitHub repo: https://github.com/LizeWu/2026-turkey-travel-line-reminder
 5/30 排查：GitHub Actions 在 5/18-5/29 旅行期間有執行，但多數 schedule run 被 GitHub 延遲到程式設定的 2 小時發送時間窗外，因此腳本以 success 結束但沒有推 LINE。
 5/31 修正：第一批行程推播可靠性已調整。`send_line_reminder.py` 不再用固定 2 小時時間窗阻擋推播，改為到達 itinerary/reminder local date 的指定時間後可補送；workflow 透過 `.sent-reminders/reminders.json` 與 `actions/cache` 保存已送紀錄；log 已加強顯示旅程 ID、旅程名稱、判斷時區、當地時間、目標行程日、是否送出與未送原因。也已補上 `trip_id`，並將 LINE 推播文案改為讀取旅程名稱，不再硬寫土耳其，讓此階段先具備基本多旅程相容。第一批修正已 commit 並 push 到 GitHub：`03d2802 Fix scheduled travel reminder reliability`。
 命名決策：專案未來要從 2026-turkey-travel-line-reminder 重新命名為 azuma-papago，以支援未來不同旅程沿用。
-2026-06-14 實測更新：LINE 群組 LIFF 記帳流程已實測 OK；指定金額分攤、逐筆結算、待結清/已結清切換，以及調整後的消費項目/分帳統計/結算排版皆確認可用。原本規劃在 `統計 > 團體消費` 另新增的 `幣別淨額` 區塊已取消，不再作為待辦。LIFF 連結會帶 `trip`、`chatType`、`groupId`/`roomId` 參數，API 會以 `trip_id + groupId/roomId` 判定團體帳本。另已修正群組情境中的 `我的消費` 隔離：同一使用者在不同 LINE 群組會分別使用 `personal:group:<groupId>:user:<userId>`，多人聊天室使用 `personal:room:<roomId>:user:<userId>`，一對一個人使用才維持 `personal:<userId>`；並新增一次性相容搬移，明確鎖定 `dev-sandbox` 的 LINE 群組 `C87ffe42ff346bc573d7eb45a9cbec853`，使用者從該群組查看 `我的消費` 時，會把該使用者舊的 `personal:<userId>`、空 ledger，或先前誤搬到其他群組 personal ledger 的舊個人消費搬到該群組 personal ledger。分帳成員 `刪除` 與 `ID合併` 已拆清楚：不同手動 ID 在合併前視為不同人；消費列表/統計會排除 inactive 成員；舊消費編輯時仍可看到已刪除的歷史 ID 並手動合併，指定金額會移到合併目標且不重新分攤。#64 指定金額合併已修正：編輯既有消費時按 `ID合併` 只在表單預覽，不立即寫 DB；來源金額會立刻顯示在目標 input，按 `儲存修改` 才更新，按 `取消` 不異動原資料。開發測試用旅程已改為 `dev-sandbox` / `開發沙盒旅程`，正式土耳其旅程資料仍保留在 `trips/2026-05-turkey.json`，`config.json` 未切到 dev-sandbox，因此行程提醒資料不受影響。
+2026-06-14 實測更新：LINE 群組 LIFF 記帳流程已實測 OK；指定金額分攤、逐筆結算、待結清/已結清切換，以及調整後的消費項目/分帳統計/結算排版皆確認可用。原本規劃在 `統計 > 團體消費` 另新增的 `幣別淨額` 區塊已取消，不再作為待辦。LIFF 連結會帶 `trip`、`chatType`、`groupId`/`roomId` 參數，API 會以 `trip_id + groupId/roomId` 判定團體帳本。另已修正群組情境中的 `我的消費` 隔離：同一使用者在不同 LINE 群組會分別使用 `personal:group:<groupId>:user:<userId>`，多人聊天室使用 `personal:room:<roomId>:user:<userId>`，一對一個人使用才維持 `personal:<userId>`；並新增一次性相容搬移，明確鎖定 `dev-sandbox` 的 LINE 群組 `C87ffe42ff346bc573d7eb45a9cbec853`，使用者從該群組查看 `我的消費` 時，會把該使用者舊的 `personal:<userId>`、空 ledger，或先前誤搬到其他群組 personal ledger 的舊個人消費搬到該群組 personal ledger。分帳成員目前不提供 `ID合併`；平均分攤與指定金額都只保留刪除成員。消費列表/統計會排除 inactive 成員；指定金額編輯時刪除成員會一併移除該 ID 在目前表單中的金額，並在分攤成員下方即時顯示尚差、超出或已符合消費金額，使用者需新增/選取新旅伴並手動輸入金額後儲存。開發測試用旅程已改為 `dev-sandbox` / `開發沙盒旅程`，正式土耳其旅程資料仍保留在 `trips/2026-05-turkey.json`，`config.json` 未切到 dev-sandbox，因此行程提醒資料不受影響。
 目前未完成：第三階段保留強化 LINE id token 驗證、離開群組後撤權、行程提醒 workflow restore/save 復測。repo rename 仍暫緩，之後確認時再把 repo 從 2026-turkey-travel-line-reminder 重新命名為 azuma-papago，並同步更新本機 git remote、README、LizeNext、文件中的舊名稱。
 部署狀態：已新增 GitHub Actions `deploy-cloudflare-worker.yml`，push Worker 相關檔案到 `main` 會用 GitHub secret `CLOUDFLARE_TOKEN` 自動部署 Cloudflare Worker；也新增 `accounting-maintenance.yml` 可手動清理指定 trip 的 D1 記帳測試資料。若之後新增 migration，仍需先執行 npx wrangler d1 migrations apply lize-tour-accounting --remote，再部署。
 第三階段保留：強化 LINE id token 驗證、離開群組後撤權、行程提醒 workflow restore/save 復測。
