@@ -781,8 +781,8 @@ export function accountingPage() {
       border-radius: 8px;
       background: #fff;
       color: var(--muted);
-      font-size: .84rem;
-      font-weight: 700;
+      font-size: .9rem;
+      font-weight: normal;
       line-height: 1.5;
       overflow-wrap: anywhere;
     }
@@ -791,6 +791,16 @@ export function accountingPage() {
       color: var(--ink);
       font-size: .9rem;
       font-weight: 900;
+    }
+    .split-net-person-name {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .split-net-person-name .member-pill {
+      color: var(--ink);
+      font-size: .92rem;
+      box-shadow: none;
     }
     .split-calc-sublist {
       display: grid;
@@ -924,9 +934,6 @@ export function accountingPage() {
       flex-direction: column;
       gap: 6px;
       min-width: 0;
-      border: 1px solid var(--line);
-      border-left: none;
-      border-right: none;
       padding: 10px 0;
     }
     .settlement-main {
@@ -941,19 +948,6 @@ export function accountingPage() {
       color: var(--green);
       font-weight: 900;
       line-height: 1.45;
-    }
-    .settlement-section-label {
-      color: var(--green);
-      font-size: .9rem;
-      font-weight: 900;
-      line-height: 1.45;
-    }
-    .settlement-net-note {
-      color: var(--muted);
-      font-size: .78rem;
-      font-weight: 700;
-      line-height: 1.45;
-      overflow-wrap: anywhere;
     }
     .settlement-detail {
       margin-top: 3px;
@@ -2297,7 +2291,7 @@ export function accountingPage() {
         ? '<section class="summary-card">' +
           '<div class="summary-title">' +
             '<span class="summary-title-main">分帳統計</span>' +
-            '<span class="summary-title-note">' + infoIcon + '每個人的支付與分攤總覽</span>' +
+            '<span class="summary-title-note">' + infoIcon + '成員間的付款建議與結算依據，已依同幣別淨額簡化付款對象。</span>' +
           '</div>' +
           '<div class="split-summary">' + renderSplitCurrencySections(summaries) + '</div>' +
         '</section>'
@@ -2377,7 +2371,7 @@ export function accountingPage() {
           ? "應付 " + moneyText(section.symbol, Math.abs(person.balance))
           : "已平衡";
       return '<div class="split-net-person">' +
-        '<div class="split-net-person-name">' + memberPill(person.name) + '</div>' +
+        '<div class="split-net-person-name">' + renderMemberAvatar(person.id, person.name) + memberPill(person.name) + '</div>' +
         '<div>已支付：' + escapeHtml(paidText) + '</div>' +
         '<div>應分攤：' + escapeHtml(shareText) + '</div>' +
         '<div>淨額：' + escapeHtml(paidText) + ' - ' + escapeHtml(moneyText(section.symbol, person.share)) + ' = ' + amountEmphasis(balanceText) + '</div>' +
@@ -2672,8 +2666,6 @@ export function accountingPage() {
         '<div class="settlement-row">' +
           '<div class="settlement-from">' + renderMemberAvatar(group.fromUserId, group.fromName) + '<span class="member-name">' + escapeHtml(group.fromName) + '</span></div>' +
           '<div class="settlement-main-wrap">' +
-            '<div class="settlement-section-label">建議付款方式</div>' +
-            '<div class="settlement-net-note">已依同幣別淨額簡化付款對象。</div>' +
             '<div class="settlement-main-box">' + group.items.map(renderSettlementMain).join("") + '</div>' +
           '</div>' +
         '</div>'
