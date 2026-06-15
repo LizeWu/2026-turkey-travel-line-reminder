@@ -167,17 +167,18 @@ def build_flex(day, weather=None, trip_title_text="旅行"):
         )
     body.append(section("拉車時間", driving))
 
-    meals = day["meals"]
-    body.append(
-        section(
-            "餐食",
-            [
-                text_block(f"早餐：{meals['breakfast']}"),
-                text_block(f"午餐：{meals['lunch']}"),
-                text_block(f"晚餐：{meals['dinner']}"),
-            ],
+    meals = day.get("meals")
+    if meals:
+        body.append(
+            section(
+                "餐食",
+                [
+                    text_block(f"早餐：{meals.get('breakfast', 'X')}"),
+                    text_block(f"午餐：{meals.get('lunch', 'X')}"),
+                    text_block(f"晚餐：{meals.get('dinner', 'X')}"),
+                ],
+            )
         )
-    )
 
     hotel = day.get("hotel", {})
     hotel_items = [text_block(hotel.get("name", "無"))]
@@ -233,14 +234,19 @@ def build_preview(day, weather=None, trip_title_text="旅行"):
     else:
         lines.append("無")
 
-    meals = day["meals"]
+    meals = day.get("meals")
+    if meals:
+        lines.extend(
+            [
+                "",
+                "餐食：",
+                f"早餐：{meals.get('breakfast', 'X')}",
+                f"午餐：{meals.get('lunch', 'X')}",
+                f"晚餐：{meals.get('dinner', 'X')}",
+            ]
+        )
     lines.extend(
         [
-            "",
-            "餐食：",
-            f"早餐：{meals['breakfast']}",
-            f"午餐：{meals['lunch']}",
-            f"晚餐：{meals['dinner']}",
             "",
             "住宿：",
             day.get("hotel", {}).get("name", "無"),
