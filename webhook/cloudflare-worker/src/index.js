@@ -1,4 +1,4 @@
-import { ACTIVE_TRIP, FLEX_MESSAGES } from "./trip-data.js";
+import { ACTIVE_TRIP, FLEX_MESSAGES, TRIPS } from "./trip-data.js";
 import { accountingPage } from "./accounting-page.js";
 
 const COMMANDS = {
@@ -6,6 +6,8 @@ const COMMANDS = {
   tomorrow: new Set(["明日行程", "明天行程", "tomorrow"]),
   accounting: new Set(["阿珠", "阿珠媽", "珠珠", "豬豬", "記帳本", "記帳", "旅行記帳本", "accounting"]),
 };
+
+const AVAILABLE_TRIPS = tripSummariesFromTrips(TRIPS);
 
 const LEGACY_PERSONAL_MIGRATION_TARGET = {
   tripId: "dev-sandbox",
@@ -50,6 +52,16 @@ export default {
     const url = new URL(request.url);
     if (url.pathname === "/accounting") {
       return new Response(accountingPage(), {
+        headers: { "Content-Type": "text/html; charset=utf-8" },
+      });
+    }
+    if (url.pathname === "/settings") {
+      return new Response(settingsPage(), {
+        headers: { "Content-Type": "text/html; charset=utf-8" },
+      });
+    }
+    if (url.pathname === "/itinerary") {
+      return new Response(itineraryPage(url), {
         headers: { "Content-Type": "text/html; charset=utf-8" },
       });
     }
@@ -110,17 +122,13 @@ async function buildReply(command, env, event = null) {
   if (command === "accounting") {
     const activeTripId = await activeTripIdForEvent(env, event);
     const accountingUrl = accountingUrlForTrip(env, activeTripId, chatContextFromEvent(event));
-    return {
-      type: "text",
-      text: [
-        "旅行記帳本已開放。",
-        "",
-        "請點下面連結開啟記帳本：",
-        accountingUrl,
-        "",
-        "在群組中開啟時，可使用團體消費與分帳。",
-      ].join("\n"),
-    };
+    const context = chatContextFromEvent(event);
+    return travelToolsFlex({
+      activeTripId,
+      accountingUrl,
+      itineraryUrl: itineraryUrlForTrip(env, activeTripId),
+      settingsUrl: settingsUrlForTrip(env, activeTripId, context),
+    });
   }
 
   const day = command === "today" ? selectRelativeDay(0) : selectRelativeDay(1);
@@ -146,12 +154,359 @@ function accountingUrlForTrip(env, activeTripId, chatContext = {}) {
   return `${env.WORKER_BASE_URL || "https://lize-tour-bot-webhook.retniw72.workers.dev"}/accounting?${params.toString()}`;
 }
 
+function settingsUrlForTrip(env, activeTripId, chatContext = {}) {
+  const params = new URLSearchParams({ trip: activeTripId });
+  if (chatContext.chatType) params.set("chatType", chatContext.chatType);
+  if (chatContext.groupId) params.set("groupId", chatContext.groupId);
+  if (chatContext.roomId) params.set("roomId", chatContext.roomId);
+  return `${workerBaseUrl(env)}/settings?${params.toString()}`;
+}
+
+function itineraryUrlForTrip(env, activeTripId) {
+  const trip = tripInfo(activeTripId);
+  if (trip?.itineraryUrl) return trip.itineraryUrl;
+  const params = new URLSearchParams({ trip: activeTripId });
+  return `${workerBaseUrl(env)}/itinerary?${params.toString()}`;
+}
+
+function workerBaseUrl(env) {
+  return env.WORKER_BASE_URL || "https://lize-tour-bot-webhook.retniw72.workers.dev";
+}
+
+function tripSummariesFromTrips(trips = {}) {
+  return Object.values(trips)
+    .map((trip) => {
+      const meta = trip.trip || {};
+      return {
+        tripId: meta.trip_id || "",
+        tripName: meta.tour_name || meta.trip_id || "旅行",
+        startDate: meta.start_date || "",
+        endDate: meta.end_date || "",
+        itineraryUrl: meta.itinerary_url || "",
+      };
+    })
+    .filter((trip) => trip.tripId && !isDevelopmentTrip(trip.tripId))
+    .sort((a, b) => String(a.startDate).localeCompare(String(b.startDate)));
+}
+
+function settingsPage() {
+  return `<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>旅程設定</title>
+  <style>
+    :root { color-scheme: light; --green: #15803d; --ink: #1f2937; --muted: #667085; --line: #e5e7eb; --bg: #f7f8fa; }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; color: var(--ink); background: var(--bg); }
+    main { max-width: 560px; margin: 0 auto; padding: 20px 16px 32px; }
+    h1 { margin: 0 0 8px; font-size: 24px; line-height: 1.25; }
+    .note { margin: 0 0 18px; color: var(--muted); line-height: 1.5; }
+    .status, .trip { background: #fff; border: 1px solid var(--line); border-radius: 8px; padding: 14px; margin-bottom: 12px; }
+    .label { color: var(--muted); font-size: 13px; margin-bottom: 4px; }
+    .value { font-weight: 700; line-height: 1.4; }
+    .trip { display: grid; gap: 10px; }
+    .trip-title { font-size: 17px; font-weight: 700; }
+    .trip-dates { color: var(--muted); font-size: 14px; }
+    .actions { display: flex; gap: 8px; flex-wrap: wrap; }
+    button, a.button { appearance: none; border: 1px solid var(--green); background: var(--green); color: #fff; border-radius: 7px; padding: 10px 12px; font-weight: 700; text-decoration: none; font-size: 15px; }
+    button.secondary, a.button.secondary { background: #fff; color: var(--green); }
+    button:disabled { opacity: .55; }
+    .message { min-height: 22px; color: var(--muted); line-height: 1.5; margin-top: 12px; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>旅程設定</h1>
+    <p class="note">設定這個 LINE 群組目前使用的旅程。切換後，完整行程與旅行記帳本會一起切到該旅程；不同群組的帳本仍會分開保存。</p>
+    <section class="status">
+      <div class="label">目前旅程</div>
+      <div class="value" id="activeTrip">讀取中...</div>
+    </section>
+    <section id="trips"></section>
+    <div class="message" id="message"></div>
+  </main>
+  <script>
+    const params = new URLSearchParams(location.search);
+    const chatType = params.get("chatType") || "";
+    const groupId = params.get("groupId") || "";
+    const roomId = params.get("roomId") || "";
+    const explicitTrip = params.get("trip") || params.get("tripId") || "";
+    const state = { trips: [], activeTripId: explicitTrip };
+
+    function setMessage(text) {
+      document.getElementById("message").textContent = text || "";
+    }
+
+    function render() {
+      const active = state.trips.find((trip) => trip.tripId === state.activeTripId);
+      document.getElementById("activeTrip").textContent = active ? active.tripName : state.activeTripId || "目前無資料，開始著手規劃下一趟旅程吧 :D";
+      const list = document.getElementById("trips");
+      list.innerHTML = "";
+      if (!state.trips.length) {
+        const empty = document.createElement("article");
+        empty.className = "trip";
+        empty.textContent = "目前無資料，開始著手規劃下一趟旅程吧 :D";
+        list.appendChild(empty);
+      }
+      for (const trip of state.trips) {
+        const card = document.createElement("article");
+        card.className = "trip";
+        const title = document.createElement("div");
+        title.className = "trip-title";
+        title.textContent = trip.tripName;
+        const dates = document.createElement("div");
+        dates.className = "trip-dates";
+        dates.textContent = trip.startDate + " - " + trip.endDate;
+        const actions = document.createElement("div");
+        actions.className = "actions";
+        const button = document.createElement("button");
+        button.textContent = trip.tripId === state.activeTripId ? "目前使用中" : "設為目前旅程";
+        button.disabled = trip.tripId === state.activeTripId || !chatType || (!groupId && !roomId);
+        button.addEventListener("click", () => saveTrip(trip.tripId));
+        actions.appendChild(button);
+        const link = document.createElement("a");
+        link.className = "button secondary";
+        link.href = "/itinerary?trip=" + encodeURIComponent(trip.tripId);
+        link.textContent = "查看行程";
+        actions.appendChild(link);
+        card.append(title, dates, actions);
+        list.appendChild(card);
+      }
+      if (!chatType || (!groupId && !roomId)) {
+        setMessage("缺少群組資訊。請從 LINE 群組中的「旅程設定」按鈕開啟，才可以切換旅程。");
+      }
+    }
+
+    async function load() {
+      try {
+        const tripResponse = await fetch("/api/trips");
+        const tripPayload = await tripResponse.json();
+        state.trips = tripPayload.trips || [];
+        if (chatType && (groupId || roomId)) {
+          const settingParams = new URLSearchParams({ chatType });
+          if (groupId) settingParams.set("groupId", groupId);
+          if (roomId) settingParams.set("roomId", roomId);
+          const settingResponse = await fetch("/api/group-trip-setting?" + settingParams.toString());
+          const setting = await settingResponse.json();
+          state.activeTripId = setting.activeTripId || state.activeTripId;
+        }
+        render();
+      } catch (error) {
+        setMessage("讀取旅程設定失敗：" + (error.message || "未知錯誤"));
+      }
+    }
+
+    async function saveTrip(tripId) {
+      setMessage("儲存中...");
+      try {
+        const response = await fetch("/api/group-trip-setting", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ tripId, chatType, groupId, roomId })
+        });
+        const payload = await response.json();
+        if (!response.ok || payload.error) throw new Error(payload.error || "儲存失敗");
+        state.activeTripId = payload.setting.activeTripId;
+        setMessage("已切換為「" + payload.setting.activeTripName + "」。");
+        render();
+      } catch (error) {
+        setMessage("儲存失敗：" + (error.message || "未知錯誤"));
+      }
+    }
+
+    load();
+  </script>
+</body>
+</html>`;
+}
+
+function itineraryPage(url) {
+  const activeTripId = tripId({}, url.searchParams.get("trip") || url.searchParams.get("tripId"));
+  const tripData = tripDataForId(activeTripId);
+  const meta = tripData?.trip || {};
+  const title = meta.tour_name || tripName(activeTripId);
+  const dateText = meta.start_date && meta.end_date ? `${meta.start_date} - ${meta.end_date}` : "";
+  const days = Array.isArray(tripData?.daily_itinerary) ? tripData.daily_itinerary : [];
+  const dayList = days.length
+    ? days.map(renderItineraryDay).join("")
+    : `<section class="empty">目前無資料，開始著手規劃下一趟旅程吧 :D</section>`;
+  return `<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>${escapeHtml(title)}</title>
+  <style>
+    :root { color-scheme: light; --ink: #1f2937; --muted: #667085; --line: #e5e7eb; --bg: #f7f8fa; --green: #15803d; --soft: #ecfdf3; }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; color: var(--ink); background: var(--bg); }
+    main { max-width: 760px; margin: 0 auto; padding: 20px 14px 36px; }
+    h1 { margin: 0 0 6px; font-size: 25px; line-height: 1.25; }
+    .date { color: var(--muted); margin-bottom: 18px; }
+    .day { background: #fff; border: 1px solid var(--line); border-radius: 8px; padding: 16px; margin-bottom: 14px; }
+    .day h2 { margin: 0 0 6px; font-size: 20px; line-height: 1.35; }
+    .theme { color: var(--green); font-weight: 700; margin-bottom: 8px; }
+    .route { color: var(--muted); line-height: 1.45; margin-bottom: 14px; }
+    .section { border-top: 1px solid var(--line); padding-top: 12px; margin-top: 12px; }
+    .section h3 { margin: 0 0 8px; font-size: 16px; }
+    ul { margin: 0; padding-left: 19px; line-height: 1.55; }
+    li { margin: 0 0 6px; }
+    .spot { border: 1px solid var(--line); border-radius: 8px; padding: 10px; margin-bottom: 8px; }
+    .spot-title { font-weight: 700; line-height: 1.4; margin-bottom: 6px; }
+    .buttons { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+    .button { display: inline-block; border: 1px solid var(--green); border-radius: 999px; padding: 6px 10px; color: var(--green); text-decoration: none; font-size: 13px; font-weight: 700; background: #fff; }
+    .pill { display: inline-block; background: var(--soft); color: var(--green); border-radius: 999px; padding: 3px 8px; font-size: 12px; font-weight: 700; margin-right: 6px; }
+    .empty { background: #fff; border: 1px solid var(--line); border-radius: 8px; padding: 16px; line-height: 1.6; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>${escapeHtml(title)}</h1>
+    <div class="date">${escapeHtml(dateText)}</div>
+    ${dayList}
+  </main>
+</body>
+</html>`;
+}
+
+function tripDataForId(activeTripId) {
+  return TRIPS?.[activeTripId] || (activeTripId === ACTIVE_TRIP.trip?.trip_id ? ACTIVE_TRIP : null);
+}
+
+function renderItineraryDay(day) {
+  return `<article class="day">
+    <h2>Day ${escapeHtml(day.day)}｜${escapeHtml(day.date)}（${escapeHtml(day.weekday || "")}）</h2>
+    ${day.theme ? `<div class="theme">${escapeHtml(day.theme)}</div>` : ""}
+    ${day.route ? `<div class="route">${escapeHtml(day.route)}</div>` : ""}
+    ${renderLinkedList("今日重點", day.highlights || day.activities)}
+    ${renderSights(day.sights)}
+    ${renderLinkedList("交通", day.transportation)}
+    ${renderLinkedList("晚間安排", day.evening)}
+    ${renderMeals(day.meals)}
+    ${renderLinkedList("午餐建議", day.lunch_suggestions)}
+    ${renderLinkedList("點心推薦", day.snack_suggestions)}
+    ${renderLinkedList("自駕資訊", day.driving || day.driving_time)}
+    ${renderLinkedList("停車場建議", day.parking)}
+    ${renderLinkedList("建議時程", day.schedule)}
+    ${renderHotel(day.hotel)}
+    ${renderLinkedList("備註", day.notes)}
+    ${renderLinkedList("返國提醒", day.return_notes)}
+  </article>`;
+}
+
+function renderSights(sights = []) {
+  if (!Array.isArray(sights) || !sights.length) return "";
+  const spots = sights.map((spot) => {
+    const links = spot.links || (spot.google_maps_url ? [{ label: "Google Maps", url: spot.google_maps_url }] : []);
+    return `<div class="spot">
+      <div class="spot-title">${escapeHtml(spot.title || spot.name || "")}</div>
+      ${renderLinkedList("", spot.items, false)}
+      ${renderButtons(links)}
+    </div>`;
+  }).join("");
+  return `<section class="section"><h3>景點</h3>${spots}</section>`;
+}
+
+function renderMeals(meals) {
+  if (!meals) return "";
+  if (Array.isArray(meals)) return renderLinkedList("餐食", meals);
+  const labels = { breakfast: "早餐", lunch: "午餐", dinner: "晚餐" };
+  const items = Object.entries(labels)
+    .filter(([key]) => meals[key])
+    .map(([key, label]) => ({ text: `${label}：${meals[key]}`, links: [] }));
+  return renderLinkedList("餐食", items);
+}
+
+function renderHotel(hotel) {
+  if (!hotel) return "";
+  if (Array.isArray(hotel)) return renderLinkedList("住宿", hotel);
+  const links = hotel.google_maps_url ? [{ label: "Google Maps", url: hotel.google_maps_url }] : [];
+  return renderLinkedList("住宿", [{ text: hotel.name || "", links }]);
+}
+
+function renderLinkedList(title, items = [], wrap = true) {
+  if (!Array.isArray(items) || !items.length) return "";
+  const body = `<ul>${items.map(renderLinkedItem).join("")}</ul>`;
+  if (!wrap) return body;
+  return `<section class="section">${title ? `<h3>${escapeHtml(title)}</h3>` : ""}${body}</section>`;
+}
+
+function renderLinkedItem(item) {
+  if (typeof item === "string") return `<li>${escapeHtml(item)}</li>`;
+  if (item?.from || item?.to) {
+    const text = `${item.from || ""} → ${item.to || ""}${item.duration ? `：${item.duration}` : ""}`;
+    return `<li>${escapeHtml(text)}</li>`;
+  }
+  const text = item?.text || item?.name || "";
+  return `<li>${escapeHtml(text)}${renderButtons(item?.links || [])}</li>`;
+}
+
+function renderButtons(links = []) {
+  const validLinks = (links || []).filter((link) => link?.url);
+  if (!validLinks.length) return "";
+  return `<div class="buttons">${validLinks.map((link) => {
+    const label = normalizeLinkLabel(link.label);
+    return `<a class="button" href="${escapeHtml(link.url)}">${escapeHtml(label)}</a>`;
+  }).join("")}</div>`;
+}
+
+function normalizeLinkLabel(label) {
+  if (!label || label === "開啟地圖") return "Google Maps";
+  return label;
+}
+
+function travelToolsFlex(options = {}) {
+  const activeTripId = options.activeTripId || "";
+  return {
+    type: "flex",
+    altText: "阿珠媽旅行工具",
+    contents: {
+      type: "bubble",
+      size: "mega",
+      body: {
+        type: "box",
+        layout: "vertical",
+        spacing: "md",
+        contents: [
+          { type: "text", text: "阿珠媽旅行工具", weight: "bold", size: "xl", wrap: true },
+          { type: "text", text: tripName(activeTripId), size: "sm", color: "#667085", wrap: true },
+          {
+            type: "box",
+            layout: "vertical",
+            spacing: "sm",
+            margin: "lg",
+            contents: [
+              flexUriButton("旅行記帳本", options.accountingUrl),
+              flexUriButton("完整行程", options.itineraryUrl),
+              flexUriButton("旅程設定", options.settingsUrl),
+            ],
+          },
+        ],
+      },
+    },
+  };
+}
+
+function flexUriButton(label, uri) {
+  return {
+    type: "button",
+    style: "primary",
+    height: "sm",
+    action: {
+      type: "uri",
+      label,
+      uri,
+    },
+  };
+}
+
 async function activeTripIdForEvent(env, event) {
   const context = chatContextFromEvent(event);
   const chatType = context.chatType;
   const chatId = context.groupId || context.roomId || "";
   const defaultTripId = tripId(env);
-  if (isDevelopmentTrip(defaultTripId)) return defaultTripId;
   if (!env.ACCOUNTING_DB || !chatType || !chatId) return defaultTripId;
 
   try {
@@ -315,8 +670,25 @@ async function handleApi(request, env, url) {
       });
     }
 
+    if (url.pathname === "/api/trips" && request.method === "GET") {
+      return jsonResponse({ trips: AVAILABLE_TRIPS });
+    }
+
     if (!env.ACCOUNTING_DB) {
       return jsonResponse({ error: "Cloudflare D1 尚未綁定 ACCOUNTING_DB。" }, 503);
+    }
+
+    if (url.pathname === "/api/group-trip-setting" && request.method === "GET") {
+      const chatType = url.searchParams.get("chatType") || "";
+      const chatId = url.searchParams.get("groupId") || url.searchParams.get("roomId") || "";
+      return jsonResponse(await getGroupTripSetting(env, { chatType, chatId }));
+    }
+
+    if (url.pathname === "/api/group-trip-setting" && request.method === "POST") {
+      const payload = await request.json();
+      return jsonResponse({
+        setting: await saveGroupTripSetting(env, payload),
+      });
     }
 
     if (url.pathname === "/api/expenses" && request.method === "GET") {
@@ -437,6 +809,68 @@ async function handleApi(request, env, url) {
   } catch (error) {
     return jsonResponse({ error: error.message || "API error" }, 400);
   }
+}
+
+async function getGroupTripSetting(env, options = {}) {
+  const chatType = normalizeChatType(options.chatType);
+  const chatId = String(options.chatId || "").trim();
+  const fallbackTripId = tripId(env);
+  if (!chatType || !chatId) {
+    return {
+      chatType,
+      chatId: "",
+      activeTripId: fallbackTripId,
+      activeTripName: tripName(fallbackTripId),
+      hasGroupContext: false,
+    };
+  }
+
+  const setting = await env.ACCOUNTING_DB.prepare(
+    `SELECT active_trip_id, updated_by_user_id, updated_at
+      FROM group_trip_settings
+      WHERE chat_type = ? AND chat_id = ?
+      LIMIT 1`
+  )
+    .bind(chatType, chatId)
+    .first();
+  const activeTripId = tripId(env, setting?.active_trip_id || fallbackTripId);
+  return {
+    chatType,
+    chatId,
+    activeTripId,
+    activeTripName: tripName(activeTripId),
+    updatedByUserId: setting?.updated_by_user_id || "",
+    updatedAt: setting?.updated_at || "",
+    hasGroupContext: true,
+  };
+}
+
+async function saveGroupTripSetting(env, payload = {}) {
+  const chatType = normalizeChatType(payload.chatType);
+  const chatId = String(payload.groupId || payload.roomId || payload.chatId || "").trim();
+  const activeTripId = tripId(env, payload.tripId || payload.trip);
+  if (!chatType || !chatId) {
+    throw new Error("缺少 LINE 群組或聊天室資訊，請從群組中的旅程設定按鈕開啟。");
+  }
+  if (!tripInfo(activeTripId)) {
+    throw new Error("這個旅程尚未開放設定。");
+  }
+
+  const now = new Date().toISOString();
+  const updatedByUserId = String(payload.userId || "").trim().slice(0, 80);
+  await env.ACCOUNTING_DB.prepare(
+    `INSERT INTO group_trip_settings (
+      chat_type, chat_id, active_trip_id, updated_by_user_id, updated_at
+    ) VALUES (?, ?, ?, ?, ?)
+    ON CONFLICT(chat_type, chat_id) DO UPDATE SET
+      active_trip_id = excluded.active_trip_id,
+      updated_by_user_id = excluded.updated_by_user_id,
+      updated_at = excluded.updated_at`
+  )
+    .bind(chatType, chatId, activeTripId, updatedByUserId, now)
+    .run();
+
+  return getGroupTripSetting(env, { chatType, chatId });
 }
 
 async function createExpense(env, payload) {
@@ -1055,6 +1489,10 @@ function normalizeExpenseScope(value) {
   return value === "group" ? "group" : "personal";
 }
 
+function normalizeChatType(value) {
+  return ["group", "room", "user"].includes(value) ? value : "";
+}
+
 function resolveLedger(env, options = {}) {
   const expenseScope = normalizeExpenseScope(options.expenseScope);
   const payerId = String(options.payerId || "").trim().slice(0, 80);
@@ -1170,19 +1608,60 @@ function tripId(env, value = "") {
   if (/^[a-zA-Z0-9._-]{3,80}$/.test(candidate)) {
     return candidate;
   }
-  return env.TRIP_ID || ACTIVE_TRIP.trip?.trip_id || "2026-05-turkey";
+  return defaultTripId(env);
+}
+
+function defaultTripId(env = {}) {
+  const nearest = nearestAvailableTripId();
+  if (nearest) return nearest;
+  const envTripId = String(env.TRIP_ID || "").trim();
+  if (envTripId && !isDevelopmentTrip(envTripId)) return envTripId;
+  return ACTIVE_TRIP.trip?.trip_id || "2026-05-turkey";
+}
+
+function nearestAvailableTripId(todayText = formatLocalDate(new Date())) {
+  const trips = AVAILABLE_TRIPS.filter((trip) => trip.startDate && trip.endDate);
+  const active = trips
+    .filter((trip) => trip.startDate <= todayText && trip.endDate >= todayText)
+    .sort((a, b) => String(a.startDate).localeCompare(String(b.startDate)))[0];
+  if (active) return active.tripId;
+
+  const future = trips
+    .filter((trip) => trip.startDate >= todayText)
+    .sort((a, b) => String(a.startDate).localeCompare(String(b.startDate)))[0];
+  if (future) return future.tripId;
+
+  const past = trips
+    .filter((trip) => trip.endDate < todayText)
+    .sort((a, b) => String(b.endDate).localeCompare(String(a.endDate)))[0];
+  return past?.tripId || "";
 }
 
 function tripName(activeTripId) {
   if (activeTripId === "dev-sandbox") return "開發沙盒旅程";
+  const trip = tripInfo(activeTripId);
+  if (trip) return trip.tripName;
   if (activeTripId === ACTIVE_TRIP.trip?.trip_id) {
     return ACTIVE_TRIP.trip?.tour_name || "旅行";
   }
   return "旅行";
 }
 
+function tripInfo(activeTripId) {
+  return AVAILABLE_TRIPS.find((trip) => trip.tripId === activeTripId) || null;
+}
+
 function isDevelopmentTrip(activeTripId) {
   return activeTripId === "dev-sandbox";
+}
+
+function escapeHtml(value) {
+  return String(value || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
 }
 
 function jsonResponse(data, status = 200) {

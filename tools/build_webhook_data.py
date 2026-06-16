@@ -15,12 +15,20 @@ def read_json(path):
 def main():
     config = read_json(CONFIG_PATH)
     trip = read_json(ROOT / config["active_trip"])
+    trips = {}
+    for path in sorted((ROOT / "trips").glob("*.json")):
+        item = read_json(path)
+        trip_id = item.get("trip", {}).get("trip_id")
+        if trip_id:
+            trips[trip_id] = item
     flex_messages = read_json(ROOT / config.get("generated_dir", "generated") / "line_flex_messages.json")
 
     output = ROOT / "webhook" / "cloudflare-worker" / "src" / "trip-data.js"
     output.write_text(
         "export const ACTIVE_TRIP = "
         + json.dumps(trip, ensure_ascii=False, indent=2)
+        + ";\n\nexport const TRIPS = "
+        + json.dumps(trips, ensure_ascii=False, indent=2)
         + ";\n\nexport const FLEX_MESSAGES = "
         + json.dumps(flex_messages, ensure_ascii=False, indent=2)
         + ";\n",

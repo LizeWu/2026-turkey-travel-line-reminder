@@ -1,5 +1,36 @@
 # Worklog
 
+## 2026-06-16
+
+### 今日修正
+
+- 新增 LINE 群組呼叫阿珠媽時的第一版「旅行工具」Flex 按鈕入口：
+  - `旅行記帳本`
+  - `完整行程`
+  - `旅程設定`
+- 新增第一版旅程設定頁 `/settings`：
+  - 目前列出 `2026-05-turkey` 土耳其與 `2026-06-wakayama` 和歌山。
+  - 可依 LINE `groupId` / `roomId` 寫入 `group_trip_settings.active_trip_id`，讓群組目前旅程切換到指定旅程。
+  - 切換後，群組記帳本會以 `trip_id + groupId/roomId` 分開保存。
+- 新增 `/api/trips` 與 `/api/group-trip-setting`，提供旅程清單與群組旅程設定讀寫。
+- 調整群組 active trip 判斷：若 D1 已有群組設定，優先使用 `group_trip_settings`；否則才 fallback 到 Worker `TRIP_ID`。
+- 新增 `trips/2026-06-wakayama.json`，由本機 `2026_和歌山女子之旅_v4旅行手冊.md` 整理為正式部署資料，包含 Day 1～Day 5、景點、餐食、住宿、自駕資訊、停車場、休息站與 Google Maps 連結。
+- 調整 `tools/build_webhook_data.py`，除了既有 `ACTIVE_TRIP` / `FLEX_MESSAGES`，也輸出 `TRIPS`，讓 Worker 可讀取多旅程資料。
+- `/itinerary` 改為手機版完整行程頁，會依 `trip` 參數讀取對應 trip JSON；和歌山已改由阿珠媽 Worker 頁面呈現，不再開 Google Sheet。
+- 尚未設定旅程的群組 fallback 改為選擇離目前日期最近的已開放旅程；以 2026-06-16 來看會預設為 `2026-06-wakayama`。
+
+### 今日已驗證
+
+- `node --check webhook/cloudflare-worker/src/index.js` 通過。
+- `node --check webhook/cloudflare-worker/src/accounting-page.js` 通過。
+- `npm run build:data` 通過。
+- 本地呼叫 Worker `/itinerary?trip=2026-06-wakayama` 回傳 200，並確認頁面包含和歌山標題、Day 3 停車場與 Day 5 Outlet。
+
+### 後續保留
+
+- `旅程設定` 第一版尚未加入管理員/建立者權限控管；目前適合先測流程，正式開放給其他使用者前需補權限模型。
+- 日後若使用者要直接從 MD 更新行程，可再補「MD → trip JSON」自動匯入器；本次先以一次性轉換建立和歌山 trip JSON。
+
 ## 2026-06-15
 
 ### 今日修正

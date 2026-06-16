@@ -1,19 +1,25 @@
 {
   "trip": {
     "trip_id": "2026-06-wakayama",
-    "trip_name": "2026 和歌山女子之旅",
+    "tour_code": "WAKAYAMA-2026-06",
+    "tour_name": "2026 和歌山女子之旅",
+    "source_file": "/Users/u10a4057/Downloads/2026_和歌山女子之旅_v4旅行手冊.md",
     "start_date": "2026-06-19",
     "end_date": "2026-06-23",
+    "country": "Japan",
+    "region": "Wakayama",
+    "travelers": 3,
+    "transport": [
+      "train",
+      "rental_car"
+    ],
     "notification": {
       "channel": "line",
-      "recipient": "self",
-      "message_type": "daily_itinerary",
-      "send_time_local": "20:00",
-      "send_days_before": 1,
-      "morning_greeting_time_local": "06:30",
-      "timezone_mode": "auto",
+      "recipient": "group",
+      "message_type": "itinerary",
+      "timezone_mode": "fixed",
       "default_timezone": "Asia/Taipei",
-      "destination_timezone": "Asia/Tokyo"
+      "destination_timezone": "Asia/Taipei"
     }
   },
   "daily_itinerary": [
@@ -21,314 +27,835 @@
       "day": 1,
       "date": "2026-06-19",
       "weekday": "五",
-      "timezone": "Asia/Tokyo",
-      "weather_location": {
-        "name": "和歌山",
-        "latitude": 34.2305,
-        "longitude": 135.1708
-      },
-      "route": "桃園／關西機場－和歌山",
+      "timezone": "Asia/Taipei",
+      "theme": "和歌山城＋市區散策",
+      "route": "桃園 → 關西機場 → 和歌山",
+      "highlights": [
+        {
+          "text": "BR178 桃園T2 06:30 → 關西T1 10:10",
+          "links": []
+        },
+        {
+          "text": "和歌山城散策",
+          "links": []
+        },
+        {
+          "text": "紅葉溪庭園",
+          "links": []
+        },
+        {
+          "text": "JR和歌山站商圈採買",
+          "links": []
+        }
+      ],
+      "train_schedule": [],
       "sights": [
         {
           "name": "和歌山城",
-          "google_maps_url": "https://www.google.com/maps/search/?api=1&query=Wakayama%20Castle"
+          "title": "和歌山城（09:00～17:30）",
+          "items": [],
+          "links": [
+            {
+              "label": "Google Maps",
+              "url": "https://maps.app.goo.gl/s2o1EH9YRzGZ2rfJ7"
+            }
+          ]
         },
         {
           "name": "紅葉溪庭園",
-          "google_maps_url": "https://www.google.com/maps/search/?api=1&query=Momijidani%20Garden%20Wakayama"
+          "title": "紅葉溪庭園（24H）",
+          "items": [],
+          "links": [
+            {
+              "label": "Google Maps",
+              "url": "https://maps.app.goo.gl/wxnyHuZMRoN4kMmX9"
+            }
+          ]
+        }
+      ],
+      "transportation": [
+        {
+          "text": "關西機場 → JR和歌山站",
+          "links": []
         },
         {
-          "name": "和歌山城周邊",
-          "google_maps_url": "https://www.google.com/maps/search/?api=1&query=Wakayama%20Castle%20area"
-        }
-      ],
-      "activities": [
-        "BR178 桃園 TPE 航站2 06:30 → 關西 KIX 航站1 10:10",
-        "關西機場前往 JR 和歌山站，可選快速電車或機場巴士",
-        "午餐視抵達時間安排",
-        "和歌山城、紅葉溪庭園散策",
-        "晚餐：東橫INN 周邊"
-      ],
-      "driving_time": [
+          "text": "JR關空快速：約 60～90 分",
+          "links": [
+            {
+              "label": "路線",
+              "url": "https://maps.app.goo.gl/CdNrSvLbkCCVp4qE6"
+            }
+          ]
+        },
         {
-          "from": "關西機場",
-          "to": "JR 和歌山站",
-          "distance_km": 40,
-          "duration": "60-90 分"
+          "text": "機場巴士：約 60 分",
+          "links": [
+            {
+              "label": "Google Maps",
+              "url": "https://maps.app.goo.gl/UVJQLNT2NC1qsFKs9"
+            }
+          ]
         }
       ],
-      "hotel": {
-        "name": "東橫INN JR和歌山站東口",
-        "google_maps_url": "https://www.google.com/maps/search/?api=1&query=Toyoko%20Inn%20JR%20Wakayama%20Station%20Higashi%20guchi"
-      },
-      "notes": [
-        "快速電車：關西機場線轉阪和線，約 60 分，費用約 ¥800-1400。",
-        "機場巴士：第 1 航站樓 1F 國際線到達口前往 3 號巴士站，至 JR 和歌山車站，費用約 ¥1400。",
-        "住宿：單人房 3 間，獨立衛浴、禁煙、含早餐。"
+      "evening": [
+        {
+          "text": "MIO Wakayama（10:00～20:00）",
+          "links": []
+        },
+        {
+          "text": "近鐵百貨和歌山店（10:00～19:00）",
+          "links": []
+        },
+        {
+          "text": "和歌山拉麵",
+          "links": []
+        }
+      ],
+      "lunch": [],
+      "lunch_suggestions": [],
+      "snack_suggestions": [],
+      "driving": [],
+      "parking": [],
+      "schedule": [],
+      "return_notes": [],
+      "notes": [],
+      "hotel": [
+        {
+          "text": "東橫INN JR和歌山站東口",
+          "links": [
+            {
+              "label": "Google Maps",
+              "url": "https://www.google.com/maps/search/?api=1&query=東横INN%20JR和歌山駅東口"
+            }
+          ]
+        }
       ]
     },
     {
       "day": 2,
       "date": "2026-06-20",
       "weekday": "六",
-      "timezone": "Asia/Tokyo",
-      "weather_location": {
-        "name": "和歌山",
-        "latitude": 34.2305,
-        "longitude": 135.1708
-      },
-      "route": "和歌山－貴志川線－和歌山",
+      "timezone": "Asia/Taipei",
+      "theme": "貴志川線特色列車之旅",
+      "route": "和歌山站 → 貴志站 → 伊太祈曾站 → 貴志站 → 和歌山站",
+      "highlights": [
+        {
+          "text": "貴志川線一日券",
+          "links": []
+        },
+        {
+          "text": "四大特色列車全制霸",
+          "links": []
+        },
+        {
+          "text": "貓站長巡禮",
+          "links": []
+        }
+      ],
+      "train_schedule": [],
       "sights": [
         {
-          "name": "和歌山站",
-          "google_maps_url": "https://www.google.com/maps/search/?api=1&query=Wakayama%20Station"
+          "name": "貴志站",
+          "title": "貴志站",
+          "items": [
+            {
+              "text": "小玉神社（24H）",
+              "links": []
+            },
+            {
+              "text": "小玉咖啡（約10:00～16:00）",
+              "links": []
+            },
+            {
+              "text": "紀念品店（約10:00～17:00）",
+              "links": []
+            }
+          ],
+          "links": [
+            {
+              "label": "Google Maps",
+              "url": "https://maps.app.goo.gl/SLrUJFRn3cpUBBPh8"
+            }
+          ]
         },
         {
           "name": "伊太祈曾站",
-          "google_maps_url": "https://www.google.com/maps/search/?api=1&query=Idakiso%20Station"
-        },
-        {
-          "name": "貴志車站",
-          "google_maps_url": "https://www.google.com/maps/search/?api=1&query=Kishi%20Station%20Wakayama"
-        },
-        {
-          "name": "小玉咖啡",
-          "google_maps_url": "https://www.google.com/maps/search/?api=1&query=Tama%20Cafe%20Kishi%20Station%20Wakayama"
-        },
-        {
-          "name": "COBATO BAKE FACTORY",
-          "google_maps_url": "https://www.google.com/maps/search/?api=1&query=COBATO%20BAKE%20FACTORY%20Osaka"
-        },
-        {
-          "name": "COBATO Parlour",
-          "google_maps_url": "https://www.google.com/maps/search/?api=1&query=COBATO%20Parlour%20Osaka"
+          "title": "伊太祈曾站",
+          "items": [
+            {
+              "text": "五玉站長",
+              "links": []
+            },
+            {
+              "text": "列車車庫外觀",
+              "links": []
+            }
+          ],
+          "links": [
+            {
+              "label": "Google Maps",
+              "url": "https://maps.app.goo.gl/CkgtipdzxWkPV3zH7"
+            }
+          ]
         }
       ],
-      "activities": [
-        "貴志川線 1 日乘車券，全線可自由上下車",
-        "和歌山站由地下道前往 9 號月台",
-        "點心推薦：小玉咖啡",
-        "點心推薦：COBATO BAKE FACTORY、COBATO Parlour",
-        "晚餐：東橫INN 周邊"
-      ],
-      "driving_time": [
+      "transportation": [],
+      "evening": [],
+      "lunch": [],
+      "lunch_suggestions": [
         {
-          "from": "JR 和歌山站",
-          "to": "貴志站",
-          "distance_km": 14,
-          "duration": "30-40 分"
+          "text": "小玉咖啡",
+          "links": [
+            {
+              "label": "Google Maps",
+              "url": "https://maps.app.goo.gl/hRVuNVRGKQ4ob6pt9"
+            }
+          ]
+        },
+        {
+          "text": "伊太祈曾站周邊餐廳",
+          "links": []
         }
       ],
-      "hotel": {
-        "name": "東橫INN JR和歌山站東口",
-        "google_maps_url": "https://www.google.com/maps/search/?api=1&query=Toyoko%20Inn%20JR%20Wakayama%20Station%20Higashi%20guchi"
-      },
-      "notes": [
-        "貴志川線 1 日乘車券：NT$161 / 人，KKday：https://www.kkday.com/zh-tw/product/134968-wakayama-electric-railway-kishigawa-line-1-day-pass-japan-instant-confirmation?pkg_oid=413131&go_date=2026-06-20&ced6ab9a0a00fcc3ad9b40d7687488ac=3"
+      "snack_suggestions": [
+        {
+          "text": "人氣鐵盒餅乾 COBATO BAKE FACTORY",
+          "links": [
+            {
+              "label": "Google Maps",
+              "url": "https://maps.app.goo.gl/S7Rq3mrx8Ln9QE8r7"
+            }
+          ]
+        },
+        {
+          "text": "老宅咖啡 COBATO Parlour",
+          "links": [
+            {
+              "label": "Google Maps",
+              "url": "https://maps.app.goo.gl/xmfefY8TsdvigLhg9"
+            }
+          ]
+        }
+      ],
+      "driving": [],
+      "parking": [],
+      "schedule": [],
+      "return_notes": [],
+      "notes": [],
+      "hotel": [
+        {
+          "text": "東橫INN JR和歌山站東口",
+          "links": [
+            {
+              "label": "Google Maps",
+              "url": "https://www.google.com/maps/search/?api=1&query=東横INN%20JR和歌山駅東口"
+            }
+          ]
+        }
       ]
     },
     {
       "day": 3,
       "date": "2026-06-21",
       "weekday": "日",
-      "timezone": "Asia/Tokyo",
-      "weather_location": {
-        "name": "高野山",
-        "latitude": 34.2124,
-        "longitude": 135.5866
-      },
-      "route": "和歌山－高野山－熊野古道－湯淺溫泉",
+      "timezone": "Asia/Taipei",
+      "theme": "高野山＋熊野古道體驗",
+      "route": "和歌山 → 高野山 → 高野山短程散策 → 湯淺溫泉",
+      "highlights": [
+        {
+          "text": "08:00 取車",
+          "links": []
+        },
+        {
+          "text": "高野山世界遺產",
+          "links": []
+        },
+        {
+          "text": "精進料理",
+          "links": []
+        },
+        {
+          "text": "高野山短程散策（可二選一）",
+          "links": []
+        },
+        {
+          "text": "湯淺溫泉",
+          "links": []
+        }
+      ],
+      "train_schedule": [],
       "sights": [
         {
-          "name": "高野山",
-          "google_maps_url": "https://www.google.com/maps/search/?api=1&query=Koyasan"
+          "name": "奧之院",
+          "title": "奧之院（24H）",
+          "items": [],
+          "links": [
+            {
+              "label": "Google Maps",
+              "url": "https://www.google.com/maps/search/?api=1&query=高野山%20奥之院"
+            }
+          ]
         },
         {
-          "name": "中央食堂 SANBOU",
-          "google_maps_url": "https://www.google.com/maps/search/?api=1&query=Chuo%20Shokudo%20Sanbou%20Koyasan"
+          "name": "金剛峯寺",
+          "title": "金剛峯寺（08:30～17:00）",
+          "items": [],
+          "links": [
+            {
+              "label": "Google Maps",
+              "url": "https://www.google.com/maps/search/?api=1&query=金剛峯寺"
+            }
+          ]
         },
         {
-          "name": "SHOJIN Dining 桐寶珠",
-          "google_maps_url": "https://www.google.com/maps/search/?api=1&query=SHOJIN%20Dining%20Kiritama%20Koyasan"
+          "name": "壇上伽藍",
+          "title": "壇上伽藍（08:30～17:00）",
+          "items": [],
+          "links": [
+            {
+              "label": "Google Maps",
+              "url": "https://www.google.com/maps/search/?api=1&query=壇上伽藍"
+            }
+          ]
         },
         {
-          "name": "Tsukumo",
-          "google_maps_url": "https://www.google.com/maps/search/?api=1&query=Tsukumo%20Koyasan"
+          "name": "高野山・町石道微散策",
+          "title": "高野山・町石道微散策",
+          "items": [
+            {
+              "text": "路線：大門 → 町石道末段 → 壇上伽藍",
+              "links": []
+            },
+            {
+              "text": "建議停留 25～35 分鐘",
+              "links": []
+            }
+          ],
+          "links": [
+            {
+              "label": "Google Maps",
+              "url": "https://www.google.com/maps/dir/?api=1&origin=高野山%20大門&destination=壇上伽藍"
+            }
+          ]
         },
         {
-          "name": "熊野古道",
-          "google_maps_url": "https://www.google.com/maps/search/?api=1&query=Kumano%20Kodo%20Wakayama"
-        },
-        {
-          "name": "湯淺溫泉 湯淺城",
-          "google_maps_url": "https://www.google.com/maps/search/?api=1&query=Yuasa%20Onsen%20Yuasa%20Castle"
+          "name": "高野山・壇上伽藍周邊散策",
+          "title": "高野山・壇上伽藍周邊散策",
+          "items": [
+            {
+              "text": "路線：壇上伽藍 → 根本大塔 → 金堂 → 金剛峯寺周邊",
+              "links": []
+            },
+            {
+              "text": "建議停留 20～30 分鐘",
+              "links": []
+            }
+          ],
+          "links": [
+            {
+              "label": "Google Maps",
+              "url": "https://www.google.com/maps/search/?api=1&query=壇上伽藍"
+            }
+          ]
         }
       ],
-      "activities": [
-        "租車自駕：東橫INN 前往高野山",
-        "高野山世界遺產散策",
-        "熊野古道散策",
-        "租車自駕：高野山前往湯淺溫泉",
-        "晚餐：湯淺溫泉 湯淺城 二泊一食"
-      ],
-      "driving_time": [
+      "transportation": [],
+      "evening": [],
+      "lunch": [
         {
-          "from": "東橫INN JR和歌山站東口",
-          "to": "高野山",
-          "distance_km": 55,
-          "duration": "90-120 分"
+          "text": "精進料理",
+          "links": [
+            {
+              "label": "料理介紹",
+              "url": "https://tw.tabiiro.travel/gourmet/article/koyasan-kudoyama-lunch/"
+            }
+          ]
         },
         {
-          "from": "高野山",
-          "to": "湯淺溫泉",
-          "distance_km": 75,
-          "duration": "90-120 分"
+          "text": "中央食堂 SANBOU",
+          "links": [
+            {
+              "label": "Google Maps",
+              "url": "https://maps.app.goo.gl/B2cDiJnbVvqmCv7V7"
+            }
+          ]
+        },
+        {
+          "text": "SHOJIN Dining 桐寶珠",
+          "links": [
+            {
+              "label": "Google Maps",
+              "url": "https://maps.app.goo.gl/dB6n8oEycCaHk8ud7"
+            }
+          ]
+        },
+        {
+          "text": "Tsukumo",
+          "links": [
+            {
+              "label": "Google Maps",
+              "url": "https://maps.app.goo.gl/LztxE8trfkLo47386"
+            }
+          ]
         }
       ],
-      "hotel": {
-        "name": "湯淺溫泉 湯淺城",
-        "google_maps_url": "https://www.google.com/maps/search/?api=1&query=Yuasa%20Onsen%20Yuasa%20Castle"
-      },
+      "lunch_suggestions": [],
+      "snack_suggestions": [],
+      "driving": [
+        {
+          "text": "和歌山 → 高野山：約 90～120 分",
+          "links": [
+            {
+              "label": "路線",
+              "url": "https://maps.app.goo.gl/YKtT2ydd5jZTD2TdA"
+            }
+          ]
+        },
+        {
+          "text": "高野山 → 湯淺：約 90～120 分",
+          "links": [
+            {
+              "label": "路線",
+              "url": "https://maps.app.goo.gl/n7fa78dK9YeLpqKV6"
+            }
+          ]
+        },
+        {
+          "text": "中途休息站：",
+          "links": [
+            {
+              "label": "Google Maps",
+              "url": "https://maps.app.goo.gl/MHpuKL4NGq2roxLe6"
+            }
+          ]
+        }
+      ],
+      "parking": [
+        {
+          "text": "奧之院：中の橋駐車場",
+          "links": [
+            {
+              "label": "Google Maps",
+              "url": "https://www.google.com/maps/search/?api=1&query=中の橋駐車場%20高野山"
+            }
+          ]
+        },
+        {
+          "text": "金剛峯寺／壇上伽藍：金剛峯寺前駐車場",
+          "links": [
+            {
+              "label": "Google Maps",
+              "url": "https://www.google.com/maps/search/?api=1&query=金剛峯寺前駐車場"
+            }
+          ]
+        },
+        {
+          "text": "壇上伽藍周邊：壇上伽藍駐車場",
+          "links": [
+            {
+              "label": "Google Maps",
+              "url": "https://www.google.com/maps/search/?api=1&query=壇上伽藍駐車場"
+            }
+          ]
+        },
+        {
+          "text": "町石道微散策：高野山大門駐車場",
+          "links": [
+            {
+              "label": "Google Maps",
+              "url": "https://www.google.com/maps/search/?api=1&query=高野山大門駐車場"
+            }
+          ]
+        }
+      ],
+      "schedule": [],
+      "return_notes": [],
       "notes": [
-        "6/21、6/22 為租車旅行，請留意取車、停車與山路時間。",
-        "午餐參考：精進料理簡介 https://tw.tabiiro.travel/gourmet/article/koyasan-kudoyama-lunch/ 。中央食堂 SANBOU、SHOJIN Dining 桐寶珠、Tsukumo 僅作候選參考，不固定納入行程。",
-        "晚餐/住宿：湯淺溫泉 湯淺城 二泊一食 https://yuasajyo.jp/stay/ 。",
-        "高野山山路近年隧道工程改善，路況相對寬闊平穩。",
-        "湯淺城：三人房，IN 15:00-19:00，OUT 11:00。",
-        "中途休息點可評估道之驛。"
+        {
+          "text": "高野山海拔約 800 公尺",
+          "links": []
+        },
+        {
+          "text": "建議攜帶薄外套",
+          "links": []
+        },
+        {
+          "text": "建議攜帶折疊傘",
+          "links": []
+        }
+      ],
+      "hotel": [
+        {
+          "text": "湯淺溫泉 湯淺城",
+          "links": [
+            {
+              "label": "Google Maps",
+              "url": "https://maps.app.goo.gl/ung66ckea4vpeeJZ7"
+            }
+          ]
+        }
       ]
     },
     {
       "day": 4,
       "date": "2026-06-22",
       "weekday": "一",
-      "timezone": "Asia/Tokyo",
-      "weather_location": {
-        "name": "湯淺",
-        "latitude": 34.0331,
-        "longitude": 135.1806
-      },
-      "route": "湯淺溫泉－湯淺町老街－黑潮市場－紀州東照宮－和歌山",
+      "timezone": "Asia/Taipei",
+      "theme": "湯淺老街＋海港風情",
+      "route": "湯淺溫泉 → 湯淺老街 → 黑潮市場 → Porto Europa → 紀州東照宮 → 和歌山",
+      "highlights": [
+        {
+          "text": "湯淺老街",
+          "links": []
+        },
+        {
+          "text": "魩仔魚丼",
+          "links": []
+        },
+        {
+          "text": "黑潮市場",
+          "links": []
+        },
+        {
+          "text": "Porto Europa",
+          "links": []
+        },
+        {
+          "text": "紀州東照宮",
+          "links": []
+        },
+        {
+          "text": "20:00 還車",
+          "links": []
+        }
+      ],
+      "train_schedule": [],
       "sights": [
         {
-          "name": "湯淺町老街",
-          "google_maps_url": "https://www.google.com/maps/search/?api=1&query=Yuasa%20old%20town"
+          "name": "湯淺老街",
+          "title": "湯淺老街（24H）",
+          "items": [],
+          "links": [
+            {
+              "label": "開啟地圖",
+              "url": "https://maps.app.goo.gl/MnVJczE1qZyrSnzq7"
+            }
+          ]
+        },
+        {
+          "name": "熊野古道・湯淺紀伊路微散策",
+          "title": "熊野古道・湯淺紀伊路微散策",
+          "items": [
+            {
+              "text": "路線：立石道標 → 道町通り → 深專寺 → 鍛冶町通り → 北町通り／角長周邊",
+              "links": []
+            },
+            {
+              "text": "建議停留 30 分鐘",
+              "links": []
+            }
+          ],
+          "links": [
+            {
+              "label": "開啟地圖",
+              "url": "https://www.google.com/maps/search/?api=1&query=立石道標%20湯浅"
+            }
+          ]
         },
         {
           "name": "湯淺車站",
-          "google_maps_url": "https://www.google.com/maps/search/?api=1&query=Yuasa%20Station"
+          "title": "湯淺車站（24H）",
+          "items": [],
+          "links": [
+            {
+              "label": "開啟地圖",
+              "url": "https://maps.app.goo.gl/SUbcuQgyZR5pEZqF7"
+            }
+          ]
         },
         {
-          "name": "Kadoya食堂",
-          "google_maps_url": "https://www.google.com/maps/search/?api=1&query=Kadoya%20Shokudo%20Yuasa%20Wakayama"
-        },
-        {
-          "name": "日本料理 横楠",
-          "google_maps_url": "https://www.google.com/maps/search/?api=1&query=%E6%97%A5%E6%9C%AC%E6%96%99%E7%90%86%20%E6%A8%AA%E6%A5%A0%20%E6%B9%AF%E6%B5%85%20%E5%92%8C%E6%AD%8C%E5%B1%B1"
-        },
-        {
-          "name": "湯浅米醤",
-          "google_maps_url": "https://www.google.com/maps/search/?api=1&query=Yuasa%20Kome%20Sho%20Wakayama"
+          "name": "角長職人藏",
+          "title": "角長職人藏（09:00～17:00）",
+          "items": [],
+          "links": [
+            {
+              "label": "開啟地圖",
+              "url": "https://www.google.com/maps/search/?api=1&query=角長職人蔵%20湯浅"
+            }
+          ]
         },
         {
           "name": "黑潮市場",
-          "google_maps_url": "https://www.google.com/maps/search/?api=1&query=Kuroshio%20Market%20Wakayama"
+          "title": "黑潮市場（10:00～17:00）",
+          "items": [],
+          "links": [
+            {
+              "label": "開啟地圖",
+              "url": "https://maps.app.goo.gl/WPCMTbZSysmqm6Hp8"
+            }
+          ]
+        },
+        {
+          "name": "Porto Europa",
+          "title": "Porto Europa（約11:00～17:00）",
+          "items": [],
+          "links": [
+            {
+              "label": "開啟地圖",
+              "url": "https://www.google.com/maps/search/?api=1&query=ポルトヨーロッパ"
+            }
+          ]
         },
         {
           "name": "紀州東照宮",
-          "google_maps_url": "https://www.google.com/maps/search/?api=1&query=Kishu%20Toshogu%20Shrine"
+          "title": "紀州東照宮（09:00～17:00）",
+          "items": [],
+          "links": [
+            {
+              "label": "開啟地圖",
+              "url": "https://maps.app.goo.gl/BwTSmF9EpMBfkPZ9A"
+            }
+          ]
         }
       ],
-      "activities": [
-        "租車自駕：湯淺溫泉前往湯淺町老街",
-        "湯淺町老街散策",
-        "租車自駕：湯淺老街前往黑潮市場",
-        "黑潮市場散策",
-        "租車自駕：黑潮市場前往紀州東照宮",
-        "紀州東照宮參拜",
-        "晚餐自理"
-      ],
-      "driving_time": [
+      "transportation": [],
+      "evening": [],
+      "lunch": [
         {
-          "from": "湯淺溫泉",
-          "to": "湯淺町老街",
-          "distance_km": 5,
-          "duration": "10-15 分"
+          "text": "魩仔魚丼",
+          "links": [
+            {
+              "label": "料理介紹",
+              "url": "https://livejapan.com/zh-tw/in-kansai/in-pref-wakayama/in-wakayama_koyasan/article-a2000078/"
+            }
+          ]
         },
         {
-          "from": "湯淺町老街",
-          "to": "黑潮市場",
-          "distance_km": 28,
-          "duration": "30 分"
+          "text": "Kadoya食堂",
+          "links": [
+            {
+              "label": "Google Maps",
+              "url": "https://maps.app.goo.gl/fQhv3tG5EVxkaeCFA"
+            }
+          ]
         },
         {
-          "from": "黑潮市場",
-          "to": "紀州東照宮",
-          "distance_km": 8,
-          "duration": "15 分"
+          "text": "日本料理 橫楠",
+          "links": [
+            {
+              "label": "Google Maps",
+              "url": "https://maps.app.goo.gl/ZiCBQfPXfQ7ezupG9"
+            }
+          ]
+        },
+        {
+          "text": "湯浅米醤",
+          "links": [
+            {
+              "label": "Google Maps",
+              "url": "https://maps.app.goo.gl/iFaeAEUig6bj1HkF6"
+            }
+          ]
         }
       ],
-      "hotel": {
-        "name": "Candeo Hotels Nankai Wakayama",
-        "google_maps_url": "https://www.google.com/maps/search/?api=1&query=Candeo%20Hotels%20Nankai%20Wakayama"
-      },
-      "notes": [
-        "6/21、6/22 為租車旅行，請留意停車與回和歌山市區時間。",
-        "午餐參考：魩仔魚丼介紹 https://livejapan.com/zh-tw/in-kansai/in-pref-wakayama/in-wakayama_koyasan/article-a2000078/ 。Kadoya食堂、日本料理 横楠、湯浅米醤僅作候選參考，不固定納入行程。",
-        "Candeo Hotels Nankai Wakayama：三人房，雙人床加沙發床。",
-        "備註：地點好、評價好、早餐很強、房價偏高。"
+      "lunch_suggestions": [],
+      "snack_suggestions": [],
+      "driving": [
+        {
+          "text": "湯淺 → 黑潮市場：約 30 分",
+          "links": [
+            {
+              "label": "路線",
+              "url": "https://maps.app.goo.gl/CnC2dNSeDWpiyuDy7"
+            }
+          ]
+        },
+        {
+          "text": "黑潮市場 → 紀州東照宮：約 15 分",
+          "links": [
+            {
+              "label": "路線",
+              "url": "https://maps.app.goo.gl/CnC2dNSeDWpiyuDy7"
+            }
+          ]
+        }
+      ],
+      "parking": [
+        {
+          "text": "首選：觀光用駐車場／湯浅町総合センター",
+          "links": [
+            {
+              "label": "Google Maps",
+              "url": "https://www.google.com/maps/search/?api=1&query=観光用駐車場%20湯浅町総合センター"
+            }
+          ]
+        },
+        {
+          "text": "備案：湯浅駅前駐車場",
+          "links": [
+            {
+              "label": "Google Maps",
+              "url": "https://www.google.com/maps/search/?api=1&query=湯浅駅前駐車場"
+            }
+          ]
+        }
+      ],
+      "schedule": [],
+      "return_notes": [],
+      "notes": [],
+      "hotel": [
+        {
+          "text": "Candeo Hotels Nankai Wakayama",
+          "links": [
+            {
+              "label": "Google Maps",
+              "url": "https://www.google.com/maps/search/?api=1&query=Candeo%20Hotels%20Nankai%20Wakayama"
+            }
+          ]
+        }
       ]
     },
     {
       "day": 5,
       "date": "2026-06-23",
       "weekday": "二",
-      "timezone": "Asia/Tokyo",
-      "weather_location": {
-        "name": "泉佐野",
-        "latitude": 34.4068,
-        "longitude": 135.3274
-      },
-      "route": "和歌山－臨空 Outlets－關西機場／桃園",
+      "timezone": "Asia/Taipei",
+      "theme": "Outlet＋返台",
+      "route": "和歌山 → 臨空 Premium Outlets → 關西機場 → 桃園",
+      "highlights": [
+        {
+          "text": "Outlet購物",
+          "links": []
+        },
+        {
+          "text": "關西機場補貨",
+          "links": []
+        },
+        {
+          "text": "返台",
+          "links": []
+        }
+      ],
+      "train_schedule": [],
       "sights": [
         {
-          "name": "臨空 Premium Outlets",
-          "google_maps_url": "https://www.google.com/maps/search/?api=1&query=Rinku%20Premium%20Outlets"
-        },
-        {
-          "name": "關西國際機場",
-          "google_maps_url": "https://www.google.com/maps/search/?api=1&query=Kansai%20International%20Airport"
+          "name": "Rinku Premium Outlets",
+          "title": "Rinku Premium Outlets（10:00～20:00）",
+          "items": [],
+          "links": [
+            {
+              "label": "開啟地圖",
+              "url": "https://maps.app.goo.gl/8NpJrmzHsEJDUWci6"
+            }
+          ]
         }
       ],
-      "activities": [
-        "Candeo Hotels Nankai Wakayama 前往臨空 Premium Outlets",
-        "臨空 Premium Outlets 購物",
-        "Outlets 前往 KIX，可選 Sky Shuttle 巴士或電鐵/JR",
-        "BR129 關西 KIX 航站1 18:30 → 桃園 TPE 航站2 20:30"
-      ],
-      "driving_time": [
+      "transportation": [],
+      "evening": [],
+      "lunch": [],
+      "lunch_suggestions": [],
+      "snack_suggestions": [],
+      "driving": [],
+      "parking": [],
+      "schedule": [
         {
-          "from": "Candeo Hotels Nankai Wakayama",
-          "to": "臨空 Premium Outlets",
-          "distance_km": 45,
-          "duration": "40-60 分"
+          "text": "10:00～14:30",
+          "links": []
         },
         {
-          "from": "臨空 Premium Outlets",
-          "to": "關西機場",
-          "distance_km": 8,
-          "duration": "6-20 分"
+          "text": "Outlet 購物",
+          "links": []
+        },
+        {
+          "text": "14:30",
+          "links": []
+        },
+        {
+          "text": "離開 Outlet",
+          "links": [
+            {
+              "label": "Google Maps",
+              "url": "https://maps.app.goo.gl/dr5BB2B7tgdszCrHA"
+            }
+          ]
+        },
+        {
+          "text": "15:00",
+          "links": []
+        },
+        {
+          "text": "抵達 KIX",
+          "links": [
+            {
+              "label": "Google Maps",
+              "url": "https://maps.app.goo.gl/qstgapvbP1jQifMo7"
+            }
+          ]
+        },
+        {
+          "text": "15:00～16:00",
+          "links": []
+        },
+        {
+          "text": "託運、退稅",
+          "links": []
+        },
+        {
+          "text": "16:00～17:30",
+          "links": []
+        },
+        {
+          "text": "自由採買",
+          "links": []
+        },
+        {
+          "text": "18:30",
+          "links": []
+        },
+        {
+          "text": "BR129 關西T1 → 桃園T2",
+          "links": []
         }
       ],
-      "hotel": {
-        "name": "返台",
-        "google_maps_url": null
-      },
-      "notes": [
-        "Outlets 至 KIX 選擇 1：Sky Shuttle 巴士，Bus Stop 1，15:05 → 15:20 最保險，16:05 → 16:20 為最後建議班次，費用約 ¥300。",
-        "Outlets 至 KIX 選擇 2：步行至臨空城站，南海電鐵/JR 約 6 分，費用約 ¥370。",
-        "Candeo 至臨空 Outlets 可選南海本線往難波方向，泉佐野站轉乘南海機場線至臨空城站，約 60 分加步行 15 分，費用約 ¥780。"
-      ]
+      "return_notes": [
+        {
+          "text": "建議起飛前 3 小時抵達機場",
+          "links": []
+        },
+        {
+          "text": "預留退稅時間",
+          "links": []
+        },
+        {
+          "text": "預留託運時間",
+          "links": []
+        }
+      ],
+      "notes": [],
+      "hotel": []
     }
+  ],
+  "souvenirs": {
+    "貴志站": [
+      "貓站長周邊商品",
+      "小玉限定商品"
+    ],
+    "湯淺": [
+      "湯淺醬油",
+      "金山寺味噌"
+    ],
+    "和歌山": [
+      "梅干",
+      "蜜柑果凍",
+      "柚子製品"
+    ]
+  },
+  "packing_notes": [
+    "白天約 22～30°C",
+    "薄外套 1 件",
+    "折疊傘",
+    "好走的運動鞋",
+    "高野山早晚較涼",
+    "貴志川線與湯淺老街步行較多"
   ]
 }
