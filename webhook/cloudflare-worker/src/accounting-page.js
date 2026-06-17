@@ -1230,14 +1230,6 @@ export function accountingPage() {
         border-left: none;
         border-right: none;
       }
-      .split-person-name,
-      .settlement-from {
-        text-align: right;
-      }
-      .split-person-name,
-      .settlement-from {
-        justify-content: flex-end;
-      }
       .settlement-main {
         grid-template-columns: auto minmax(0, 1fr);
       }
