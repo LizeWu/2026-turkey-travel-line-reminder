@@ -2532,10 +2532,10 @@ export function accountingPage() {
     }
 
     function renderSplitCalculationItem(item, index) {
-      const title = escapeHtml((index + 1) + ". " + item.category + (item.note ? " / " + item.note : "") + " ") + amountEmphasis(moneyText(item.symbol, item.amount));
+      const title = escapeHtml(formatSplitCalculationTitle(item, index)) + amountEmphasis(moneyText(item.symbol, item.amount));
       const isPersonalAdvance = item.allocations.length === 1 && item.payerId !== item.allocations[0]?.userId;
       const splitLine = isPersonalAdvance
-        ? '<div>個人消費：' + escapeHtml(item.allocations[0].displayName) + ' 應付 ' + amountEmphasis(moneyText(item.symbol, item.allocations[0].amount)) + '</div>'
+        ? '<div>' + personalExpenseLabel() + '：' + escapeHtml(item.allocations[0].displayName) + ' 應付 ' + amountEmphasis(moneyText(item.symbol, item.allocations[0].amount)) + '</div>'
         : item.method === "custom"
         ? '<div>個別分攤：</div><ul class="split-calc-sublist">' + item.allocations.map((allocation) =>
             '<li>' + escapeHtml(allocation.displayName) + ' ' + amountEmphasis(moneyText(item.symbol, allocation.amount)) + '</li>'
@@ -2547,6 +2547,14 @@ export function accountingPage() {
         '<div>分攤成員：' + escapeHtml(item.allocations.map((allocation) => allocation.displayName).join("、")) + '</div>' +
         splitLine +
       '</li>';
+    }
+
+    function formatSplitCalculationTitle(item, index) {
+      return (index + 1) + ". " + item.category + (item.note ? " / " + item.note : "") + " ";
+    }
+
+    function personalExpenseLabel() {
+      return "個人消費";
     }
 
     function renderSplitNetDetails(section) {
