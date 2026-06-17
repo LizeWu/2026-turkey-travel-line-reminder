@@ -784,7 +784,9 @@ async function handleApi(request, env, url) {
     }
 
     if (expenseIdMatch && request.method === "DELETE") {
-      const expense = await deleteExpense(env, Number(expenseIdMatch[1]));
+      const expense = await deleteExpense(env, Number(expenseIdMatch[1]), {
+        tripId: url.searchParams.get("trip") || url.searchParams.get("tripId") || "",
+      });
       return jsonResponse({ expense });
     }
 
@@ -917,7 +919,7 @@ async function updateRecentExpense(env, payload) {
 }
 
 async function updateExpense(env, id, payload) {
-  const existing = await getEditableExpense(env, id);
+  const existing = await getEditableExpense(env, id, { tripId: payload.tripId || payload.trip || "" });
   const item = normalizeExpense(env, payload);
   if (item.expense_scope === "group") {
     await upsertLedgerMember(env, item);
@@ -959,8 +961,8 @@ async function deleteRecentExpense(env) {
   return deleteExpense(env, recent.id);
 }
 
-async function deleteExpense(env, id) {
-  const existing = await getEditableExpense(env, id);
+async function deleteExpense(env, id, options = {}) {
+  const existing = await getEditableExpense(env, id, options);
   await env.ACCOUNTING_DB.prepare("UPDATE expenses SET deleted_at = ? WHERE id = ?")
     .bind(new Date().toISOString(), existing.id)
     .run();
@@ -983,8 +985,8 @@ async function getRecentExpense(env) {
   return expense;
 }
 
-async function getEditableExpense(env, id) {
-  const activeTripId = tripId(env);
+async function getEditableExpense(env, id, options = {}) {
+  const activeTripId = tripId(env, options.tripId || options.trip);
   const expense = await env.ACCOUNTING_DB.prepare(
     `SELECT * FROM expenses
       WHERE id = ? AND trip_id = ? AND deleted_at IS NULL`

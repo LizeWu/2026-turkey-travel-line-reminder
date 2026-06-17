@@ -1578,7 +1578,8 @@ export function accountingPage() {
     async function deleteExpense(id) {
       if (!confirm("確定刪除這筆記帳？")) return;
       try {
-        const result = await api("/api/expenses/" + id, { method: "DELETE" });
+        const params = new URLSearchParams({ tripId: state.tripId });
+        const result = await api("/api/expenses/" + id + "?" + params.toString(), { method: "DELETE" });
         setStatus("");
         showToast("已刪除消費", "success");
         if (state.editingId === id) resetForm();
