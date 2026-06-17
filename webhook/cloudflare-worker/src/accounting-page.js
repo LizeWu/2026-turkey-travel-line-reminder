@@ -2573,15 +2573,25 @@ export function accountingPage() {
       let text = String(tripName || "").trim();
       if (!text) return "";
       text = text
-        .replace(/^\d{4}\s*/, "")
-        .replace(/\s+/g, " ")
+        .replace(/^\\d{4}[-/\\s]*/, "")
+        .replace(/^\\d{2}[-/\\s]*/, "")
+        .replace(/\\s+/g, " ")
         .replace(/旅行記帳本$/, "")
         .replace(/旅程$/, "")
         .replace(/之旅$/, "")
         .replace(/女子$/, "")
         .trim();
       if (text.includes(" ")) text = text.split(" ")[0];
-      return text.trim();
+      return localizedDestinationName(text.trim());
+    }
+
+    function localizedDestinationName(value) {
+      const destinations = {
+        turkey: "土耳其",
+        wakayama: "和歌山",
+      };
+      const key = String(value || "").toLowerCase();
+      return destinations[key] || value;
     }
 
     function renderSplitNetDetails(section) {
