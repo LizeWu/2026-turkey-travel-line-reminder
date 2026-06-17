@@ -556,7 +556,6 @@ export function accountingPage() {
       margin-top: 10px;
       color: var(--muted);
       font-size: .9rem;
-      font-weight: 600;
       line-height: 1.45;
       overflow-wrap: anywhere;
     }
@@ -655,6 +654,35 @@ export function accountingPage() {
       align-items: center;
       min-width: 0;
     }
+    .group-expense-main {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      min-width: 0;
+    }
+    .group-expense-main > div {
+      min-width: 0;
+    }
+    .currency-expense-toggle {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 40px;
+      align-items: center;
+      gap: 8px;
+      width: 100%;
+      min-height: 42px;
+      border: 0;
+      border-radius: 0;
+      padding: 0 0 0 0;
+      background: transparent;
+      color: var(--green);
+      font-size: 1.125rem;
+      font-weight: 800;
+      text-align: left;
+    }
+    .currency-expense-toggle[aria-expanded="true"] .split-calc-toggle svg {
+      transform: rotate(180deg);
+    }
     .icon-actions {
       display: flex;
       gap: 6px;
@@ -743,30 +771,6 @@ export function accountingPage() {
       stroke-linecap: round;
       stroke-linejoin: round;
       fill: none;
-    }
-    .summary-toggle {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      width: 40px;
-      height: 40px;
-      min-height: 40px;
-      padding: 0;
-      color: var(--green);
-    }
-    .summary-toggle svg {
-      width: 19px;
-      height: 19px;
-      stroke: currentColor;
-      stroke-width: 2;
-      stroke-linecap: round;
-      stroke-linejoin: round;
-      fill: none;
-      transition: transform .16s ease;
-      pointer-events: none;
-    }
-    .summary-toggle.expanded svg {
-      transform: rotate(180deg);
     }
     .summary-details {
       margin: 8px 0 0;
@@ -1337,12 +1341,6 @@ export function accountingPage() {
     </section>
 
     <section id="view-stats" class="hidden">
-      <div id="stats-scope-card" class="control-card scope-card" aria-label="統計範圍">
-        <div class="segmented" aria-label="統計範圍">
-          <button id="stats-personal" class="active" type="button">我的消費</button>
-          <button id="stats-group" type="button">團體消費</button>
-        </div>
-      </div>
       <div id="stats"></div>
     </section>
   </main>
@@ -1387,10 +1385,9 @@ export function accountingPage() {
       calendarMonth: null,
       sortMode: "date",
       itemScope: "personal",
-      statsScope: "personal",
       ledgerMembers: [],
-      expandedCurrencies: new Set(),
       collapsedPersonalOwners: new Set(),
+      collapsedGroupCurrencies: new Set(),
     };
     const currencyMeta = {
       TWD: { label: "台幣", symbol: "NT$" },
@@ -1440,11 +1437,8 @@ export function accountingPage() {
       $("save").addEventListener("click", saveExpense);
       $("cancel-edit").addEventListener("click", cancelEdit);
       $("items").addEventListener("click", handleItemAction);
-      $("stats").addEventListener("click", handleStatsAction);
       $("items-personal").addEventListener("click", () => setItemScope("personal"));
       $("items-group").addEventListener("click", () => setItemScope("group"));
-      $("stats-personal").addEventListener("click", () => setStatsScope("personal"));
-      $("stats-group").addEventListener("click", () => setStatsScope("group"));
       $("sort-date").addEventListener("click", () => setSortMode("date"));
       $("sort-currency").addEventListener("click", () => setSortMode("currency"));
       $("date-picker").addEventListener("click", openCalendar);
@@ -1489,21 +1483,14 @@ export function accountingPage() {
     function syncScopeControls() {
       const hasGroup = hasGroupLedgerContext();
       $("items-scope-card").classList.toggle("hidden", !hasGroup);
-      $("stats-scope-card").classList.toggle("hidden", !hasGroup);
       if (!hasGroup) {
         state.itemScope = "personal";
-        state.statsScope = "personal";
         $("items-personal").classList.add("active");
         $("items-group").classList.remove("active");
-        $("stats-personal").classList.add("active");
-        $("stats-group").classList.remove("active");
       } else {
         state.itemScope = "group";
-        state.statsScope = "group";
         $("items-personal").classList.remove("active");
         $("items-group").classList.add("active");
-        $("stats-personal").classList.remove("active");
-        $("stats-group").classList.add("active");
       }
       syncSplitPanel();
       if (hasGroup) loadLedgerMembers();
@@ -1515,14 +1502,6 @@ export function accountingPage() {
       $("items-personal").classList.toggle("active", scope === "personal");
       $("items-group").classList.toggle("active", scope === "group");
       refreshItems();
-    }
-
-    function setStatsScope(scope) {
-      clearStatus();
-      state.statsScope = scope;
-      $("stats-personal").classList.toggle("active", scope === "personal");
-      $("stats-group").classList.toggle("active", scope === "group");
-      refreshStats();
     }
 
     function formPayload() {
@@ -1617,6 +1596,11 @@ export function accountingPage() {
       const ownerToggle = event.target.closest("button[data-owner-toggle]");
       if (ownerToggle) {
         togglePersonalOwner(ownerToggle.dataset.ownerToggle || "");
+        return;
+      }
+      const currencyToggle = event.target.closest("button[data-group-currency-toggle]");
+      if (currencyToggle) {
+        toggleGroupCurrency(currencyToggle.dataset.groupCurrencyToggle || "");
         return;
       }
       const button = event.target.closest("button[data-action]");
@@ -1717,37 +1701,18 @@ export function accountingPage() {
     }
 
     async function refreshStats() {
-      if (state.statsScope === "group" && !hasGroupLedgerContext()) {
+      if (!hasGroupLedgerContext()) {
         $("stats").innerHTML = '<div class="empty">團體統計需要從 LINE 群組或多人聊天室開啟。</div>';
         return;
       }
-      await loadExpenses(state.statsScope);
-      if (state.statsScope === "group") {
-        await loadLedgerMembers();
-      }
+      await loadExpenses("group");
+      await loadLedgerMembers();
       const root = $("stats");
       if (!state.expenses.length) {
-        root.innerHTML = '<div class="empty">目前沒有' + (state.statsScope === "group" ? "團體" : "我的") + '消費統計。</div>';
+        root.innerHTML = '<div class="empty">目前沒有團體消費統計。</div>';
         return;
       }
-      if (state.statsScope === "group") {
-        root.innerHTML = renderSplitSummary();
-      } else {
-        const totals = currencyTotals();
-        root.innerHTML = totals.map(renderCurrencySummary).join("");
-      }
-    }
-
-    function handleStatsAction(event) {
-      const button = event.target.closest("button[data-currency]");
-      if (!button) return;
-      const code = button.dataset.currency;
-      if (state.expandedCurrencies.has(code)) {
-        state.expandedCurrencies.delete(code);
-      } else {
-        state.expandedCurrencies.add(code);
-      }
-      refreshStats();
+      root.innerHTML = renderSplitSummary();
     }
 
     async function loadExpenses(expenseScope) {
@@ -1957,19 +1922,35 @@ export function accountingPage() {
       renderItems();
     }
 
+    function toggleGroupCurrency(code) {
+      if (!code) return;
+      if (state.collapsedGroupCurrencies.has(code)) {
+        state.collapsedGroupCurrencies.delete(code);
+      } else {
+        state.collapsedGroupCurrencies.add(code);
+      }
+      renderItems();
+    }
+
     function renderExpenseCurrencyGroups(items) {
-      return expenseCurrencyGroups(items).map((group) =>
-        '<section class="date-group"><h2 class="date-heading">' + escapeHtml(group.title) + '</h2>' +
-        '<ol class="expense-list">' + group.items.map((item, index) => renderExpense(item, index)).join("") + '</ol>' +
-        '</section>'
-      ).join("");
+      return expenseCurrencyGroups(items).map((group) => {
+        const collapsed = state.collapsedGroupCurrencies.has(group.code);
+        const list = collapsed ? "" : '<ol class="expense-list">' + group.items.map((item, index) => renderExpense(item, index, { groupExpenseView: true })).join("") + '</ol>';
+        return '<section class="date-group">' +
+          '<button class="currency-expense-toggle" type="button" data-group-currency-toggle="' + escapeHtml(group.code) + '" aria-expanded="' + (!collapsed) + '" aria-label="' + escapeHtml((collapsed ? "展開" : "收合") + group.title + "消費") + '">' +
+            '<span>' + escapeHtml(group.title) + '</span>' +
+            '<span class="split-calc-toggle" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"></path></svg></span>' +
+          '</button>' +
+          list +
+        '</section>';
+      }).join("");
     }
 
     function expenseCurrencyGroups(items) {
       const groups = new Map();
       for (const item of sortExpenseItems(items, "currency")) {
         const key = item.currency_code || "";
-        if (!groups.has(key)) groups.set(key, { title: item.currency_label || key, items: [] });
+        if (!groups.has(key)) groups.set(key, { code: key, title: item.currency_label || key, items: [] });
         groups.get(key).items.push(item);
       }
       return [...groups.values()];
@@ -2016,55 +1997,6 @@ export function accountingPage() {
       return Number(b.id) - Number(a.id);
     }
 
-    function currencyTotals() {
-      const totals = new Map();
-      for (const item of state.expenses) {
-        const key = item.currency_code;
-        if (!totals.has(key)) {
-          totals.set(key, {
-            code: item.currency_code,
-            label: item.currency_label,
-            symbol: item.currency_symbol || "",
-            total: 0,
-            items: [],
-          });
-        }
-        const total = totals.get(key);
-        total.total += Number(item.amount) || 0;
-        total.items.push(item);
-      }
-      return [...totals.values()].map((group) => ({
-        ...group,
-        items: group.items.sort((a, b) => {
-          const date = String(b.date).localeCompare(String(a.date));
-          if (date) return date;
-          return Number(b.id) - Number(a.id);
-        }),
-      })).sort((a, b) => currencyRank(a.code) - currencyRank(b.code));
-    }
-
-    function renderCurrencySummary(item) {
-      const expanded = state.expandedCurrencies.has(item.code);
-      const details = expanded
-        ? '<ol class="summary-details">' + item.items.map(renderCurrencyDetail).join("") + '</ol>'
-        : "";
-      return '<section class="summary-card">' +
-        '<div class="summary-row">' +
-          '<div class="summary-title">' + escapeHtml(item.label) + '目前消費 ' + escapeHtml(item.symbol) + ' ' + numberText(item.total) + '</div>' +
-          '<button class="summary-toggle' + (expanded ? " expanded" : "") + '" type="button" data-currency="' + escapeHtml(item.code) + '" aria-label="' + (expanded ? "收合" : "展開") + '" title="' + (expanded ? "收合" : "展開") + '">' +
-            '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"></path></svg>' +
-          '</button>' +
-        '</div>' +
-        details +
-      '</section>';
-    }
-
-    function renderCurrencyDetail(item) {
-      const payer = isGroupExpense(item) && item.payer_name ? '｜付款/代墊人：' + escapeHtml(item.payer_name) : "";
-      const split = splitText(item);
-      return '<li>' + escapeHtml(formatDate(item.date)) + '｜' + escapeHtml(item.category) + '｜' + escapeHtml(formatAmount(item)) + payer + split + '</li>';
-    }
-
     function renderExpense(item, index, options = {}) {
       const meta = renderExpenseMeta(item, options);
       const tag = Number(item.id) === state.highlightedExpenseId
@@ -2081,6 +2013,11 @@ export function accountingPage() {
             '<div><div class="expense-title-main">' + title + tag + '</div>' + metaHtml + '</div>' +
             '<span class="amount">' + formatAmount(item) + '</span>' +
           '</div>'
+        : options.groupExpenseView
+          ? '<div class="group-expense-main">' +
+              '<div><span class="expense-title-main">' + title + tag + '</span>' + metaHtml + '</div>' +
+              '<span class="amount">' + formatAmount(item) + '</span>' +
+            '</div>'
         : '<div class="expense-title"><span class="expense-title-main">' + title + tag + '</span><span class="amount">' + formatAmount(item) + '</span></div>' +
           metaHtml;
       return '<li><article class="expense">' +
