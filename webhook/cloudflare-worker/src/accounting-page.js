@@ -329,13 +329,22 @@ export function accountingPage() {
       font-weight: 800;
     }
     .payer-field {
-      margin-bottom: 10px;
+      margin-bottom: 0;
+    }
+    .split-method-field {
+      min-width: 0;
+    }
+    .split-method-title {
+      margin: 0 0 8px;
+      color: var(--muted);
+      font-size: .9rem;
+      font-weight: 600;
     }
     .split-method {
       display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
       gap: 8px;
-      margin-bottom: 10px;
+      margin-bottom: 0;
     }
     .split-method button {
       min-height: 38px;
@@ -512,6 +521,12 @@ export function accountingPage() {
       font-weight: 800;
       white-space: nowrap;
     }
+    .expense-date {
+      color: var(--muted);
+      font-size: .82rem;
+      font-weight: 800;
+      white-space: nowrap;
+    }
     .expense-seq,
     .expense-id {
       color: #adadad;
@@ -593,17 +608,26 @@ export function accountingPage() {
       overflow-wrap: anywhere;
     }
     .owner-toggle-icon {
-      width: 28px;
-      height: 28px;
+      width: 40px;
+      height: 40px;
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      border: 1px solid var(--line);
-      border-radius: 999px;
       color: var(--green);
-      background: #f8faf8;
-      font-size: 1rem;
-      line-height: 1;
+    }
+    .owner-toggle-icon svg {
+      width: 18px;
+      height: 18px;
+      stroke: currentColor;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      fill: none;
+      transition: transform .16s ease;
+      pointer-events: none;
+    }
+    .owner-toggle-icon.expanded svg {
+      transform: rotate(180deg);
     }
     .owner-expense-wrap {
       display: grid;
@@ -611,8 +635,12 @@ export function accountingPage() {
       border-top: 1px solid var(--line);
       padding: 12px;
     }
-    .owner-expense-wrap .sort-segmented {
-      margin-bottom: 0;
+    .owner-expense-total {
+      margin: 0;
+      color: var(--green);
+      font-size: .92rem;
+      font-weight: 800;
+      line-height: 1.45;
     }
     .owner-expense-wrap .expense-list {
       gap: 8px;
@@ -624,7 +652,7 @@ export function accountingPage() {
       display: grid;
       grid-template-columns: minmax(0, 1fr) auto;
       gap: 12px;
-      align-items: start;
+      align-items: center;
       min-width: 0;
     }
     .icon-actions {
@@ -1166,8 +1194,6 @@ export function accountingPage() {
       .expense-body {
         grid-template-columns: 1fr;
       }
-      .member-option,
-      .member-option.equal-mode,
       .settlement-row {
         grid-template-columns: 1fr;
       }
@@ -1221,12 +1247,6 @@ export function accountingPage() {
     </nav>
 
     <section id="view-add">
-      <div id="add-scope-card" class="control-card scope-card" aria-label="記帳消費範圍">
-        <div class="segmented" aria-label="記帳消費範圍">
-          <button id="add-personal" class="active" type="button">我的消費</button>
-          <button id="add-group" type="button">團體消費</button>
-        </div>
-      </div>
       <div class="panel">
         <div class="grid">
           <h2 id="edit-subtitle" class="edit-subtitle hidden"></h2>
@@ -1247,7 +1267,7 @@ export function accountingPage() {
           </div>
           <div>
             <label for="amount">金額</label>
-            <input id="amount" inputmode="decimal" placeholder="120">
+            <input id="amount" inputmode="decimal" placeholder="請輸入消費金額">
           </div>
           <div>
             <label for="category">分類</label>
@@ -1262,17 +1282,20 @@ export function accountingPage() {
           </div>
           <div>
             <label for="note">備註</label>
-            <input id="note" placeholder="烤肉">
+            <input id="note" placeholder="請輸入備註內容">
           </div>
-          <div id="split-panel" class="split-panel hidden">
-            <div class="payer-field">
-              <label for="payer">付款人</label>
-              <select id="payer"></select>
-            </div>
-            <div class="split-method" aria-label="分攤方式">
+          <div class="payer-field group-accounting-field full-row">
+            <label for="payer">付款/代墊人</label>
+            <select id="payer"></select>
+          </div>
+          <div class="split-method-field group-accounting-field full-row">
+            <p class="split-method-title">分帳方式</p>
+            <div class="split-method" aria-label="分帳方式">
               <button id="split-equal" class="active" type="button">平均分攤</button>
               <button id="split-custom" type="button">指定金額</button>
             </div>
+          </div>
+          <div id="split-panel" class="split-panel hidden">
             <p class="split-title">分攤成員</p>
             <div id="split-members" class="member-list"></div>
             <p id="split-balance" class="split-balance"></p>
@@ -1363,13 +1386,11 @@ export function accountingPage() {
       expenses: [],
       calendarMonth: null,
       sortMode: "date",
-      addScope: "personal",
       itemScope: "personal",
       statsScope: "personal",
       ledgerMembers: [],
       expandedCurrencies: new Set(),
       collapsedPersonalOwners: new Set(),
-      personalOwnerSortModes: {},
     };
     const currencyMeta = {
       TWD: { label: "台幣", symbol: "NT$" },
@@ -1420,8 +1441,6 @@ export function accountingPage() {
       $("cancel-edit").addEventListener("click", cancelEdit);
       $("items").addEventListener("click", handleItemAction);
       $("stats").addEventListener("click", handleStatsAction);
-      $("add-personal").addEventListener("click", () => setAddScope("personal"));
-      $("add-group").addEventListener("click", () => setAddScope("group"));
       $("items-personal").addEventListener("click", () => setItemScope("personal"));
       $("items-group").addEventListener("click", () => setItemScope("group"));
       $("stats-personal").addEventListener("click", () => setStatsScope("personal"));
@@ -1467,25 +1486,11 @@ export function accountingPage() {
       refreshItems();
     }
 
-    function setAddScope(scope) {
-      clearStatus();
-      state.addScope = scope;
-      $("add-personal").classList.toggle("active", scope === "personal");
-      $("add-group").classList.toggle("active", scope === "group");
-      if (scope === "group" && !hasGroupLedgerContext()) {
-        showError("團體消費需要從 LINE 群組或多人聊天室開啟。");
-      }
-      syncSplitPanel();
-      if (scope === "group" && hasGroupLedgerContext()) loadLedgerMembers();
-    }
-
     function syncScopeControls() {
       const hasGroup = hasGroupLedgerContext();
-      $("add-scope-card").classList.add("hidden");
       $("items-scope-card").classList.toggle("hidden", !hasGroup);
       $("stats-scope-card").classList.toggle("hidden", !hasGroup);
       if (!hasGroup) {
-        setAddScope("personal");
         state.itemScope = "personal";
         state.statsScope = "personal";
         $("items-personal").classList.add("active");
@@ -1493,7 +1498,6 @@ export function accountingPage() {
         $("stats-personal").classList.add("active");
         $("stats-group").classList.remove("active");
       } else {
-        setAddScope("group");
         state.itemScope = "group";
         state.statsScope = "group";
         $("items-personal").classList.remove("active");
@@ -1528,7 +1532,7 @@ export function accountingPage() {
       const meta = currencyMeta[currencyCode] || currencyMeta.TWD;
       const payer = selectedPayer();
       return {
-        expenseScope: state.addScope,
+        expenseScope: "group",
         date: $("date").value,
         amount,
         currencyCode,
@@ -1541,7 +1545,7 @@ export function accountingPage() {
         createdById: currentUserId(),
         createdByName: currentUserName(),
         createdByPictureUrl: currentUserPictureUrl(),
-        splitMethod: state.addScope === "group" ? state.splitMethod : "none",
+        splitMethod: state.splitMethod,
         splitMembers: selectedSplitMembers(),
         tripId: state.tripId,
         ...ledgerContextPayload(),
@@ -1558,7 +1562,7 @@ export function accountingPage() {
         return;
       }
       if (payload.expenseScope === "group" && !payload.payerId) {
-        showError("請選擇付款人。");
+        showError("請選擇付款/代墊人。");
         return;
       }
       if (payload.expenseScope === "group" && !payload.splitMembers.length) {
@@ -1615,11 +1619,6 @@ export function accountingPage() {
         togglePersonalOwner(ownerToggle.dataset.ownerToggle || "");
         return;
       }
-      const ownerSort = event.target.closest("button[data-owner-sort]");
-      if (ownerSort) {
-        setPersonalOwnerSort(ownerSort.dataset.ownerId || "", ownerSort.dataset.ownerSort || "date");
-        return;
-      }
       const button = event.target.closest("button[data-action]");
       if (!button) return;
       const id = Number(button.dataset.id);
@@ -1643,7 +1642,8 @@ export function accountingPage() {
       state.splitMethod = item.split_method === "custom" ? "custom" : "equal";
       state.editingCustomSplitAmounts = Object.fromEntries(splitMembers.map((member) => [memberId(member), Number(member.amount) || ""]));
       setDateValue(item.date);
-      setAddScope(item.expense_scope || "personal");
+      syncSplitPanel();
+      if (hasGroupLedgerContext()) loadLedgerMembers();
       $("amount").value = item.amount;
       $("currency").value = item.currency_code;
       $("category").value = item.category;
@@ -1691,7 +1691,7 @@ export function accountingPage() {
     function renderItems() {
       const root = $("items");
       const personalGroupMode = isGroupedPersonalItemView();
-      $("view-items").querySelector(".sort-segmented").classList.toggle("hidden", personalGroupMode);
+      $("view-items").querySelector(".sort-segmented").classList.toggle("hidden", hasGroupLedgerContext());
       const items = visibleItemExpenses();
       if (!items.length) {
         root.innerHTML = '<div class="empty">目前沒有' + (state.itemScope === "group" ? "團體" : "個人") + '消費。</div>';
@@ -1700,6 +1700,11 @@ export function accountingPage() {
 
       if (personalGroupMode) {
         root.innerHTML = renderPersonalOwnerGroups(items);
+        return;
+      }
+
+      if (hasGroupLedgerContext() && state.itemScope === "group") {
+        root.innerHTML = renderExpenseCurrencyGroups(items);
         return;
       }
 
@@ -1915,40 +1920,22 @@ export function accountingPage() {
     function renderPersonalOwnerGroup(group) {
       const ownerId = group.owner.userId || "unknown";
       const collapsed = state.collapsedPersonalOwners.has(ownerId);
-      const sortMode = personalOwnerSortMode(ownerId);
-      const sorted = sortPersonalOwnerItems(group.items, sortMode);
+      const sorted = sortExpenseItems(group.items);
       const body = collapsed ? "" :
         '<div class="owner-expense-wrap">' +
-          renderPersonalOwnerSort(ownerId, sortMode) +
+          '<p class="owner-expense-total">目前消費統計：' + escapeHtml(expenseTotalText(group.items)) + '</p>' +
           '<ol class="expense-list">' + sorted.map((item, index) => renderExpense(item, index, { personalOwnerView: true })).join("") + '</ol>' +
         '</div>';
       return '<section class="owner-expense-group">' +
         '<button class="owner-expense-header" type="button" data-owner-toggle="' + escapeHtml(ownerId) + '" aria-expanded="' + (!collapsed) + '" aria-label="' + escapeHtml((collapsed ? "展開" : "收合") + " " + (group.owner.displayName || "成員") + " 的消費") + '">' +
           '<span class="owner-identity">' + renderMemberAvatar(ownerId, group.owner.displayName) + '<span class="member-name">' + escapeHtml(group.owner.displayName || "未命名成員") + '</span></span>' +
-          '<span class="owner-toggle-icon" aria-hidden="true">' + (collapsed ? "＋" : "－") + '</span>' +
+          '<span class="owner-toggle-icon' + (collapsed ? "" : " expanded") + '" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"></path></svg></span>' +
         '</button>' +
         body +
       '</section>';
     }
 
-    function renderPersonalOwnerSort(ownerId, mode) {
-      return '<div class="sort-segmented" aria-label="成員消費項目排序">' +
-        '<button class="' + (mode === "date" ? "active" : "") + '" type="button" data-owner-id="' + escapeHtml(ownerId) + '" data-owner-sort="date">' +
-          '<svg class="button-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 2v4"></path><path d="M16 2v4"></path><path d="M3 10h18"></path><rect x="3" y="4" width="18" height="18" rx="2"></rect></svg>' +
-          '<span>依日期</span>' +
-        '</button>' +
-        '<button class="' + (mode === "currency" ? "active" : "") + '" type="button" data-owner-id="' + escapeHtml(ownerId) + '" data-owner-sort="currency">' +
-          '<svg class="button-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2v20"></path><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7H14.5a3.5 3.5 0 0 1 0 7H6"></path></svg>' +
-          '<span>依幣別</span>' +
-        '</button>' +
-      '</div>';
-    }
-
-    function personalOwnerSortMode(ownerId) {
-      return state.personalOwnerSortModes[ownerId] === "currency" ? "currency" : "date";
-    }
-
-    function sortPersonalOwnerItems(items, mode) {
+    function sortExpenseItems(items, mode = "date") {
       return [...items].sort((a, b) => {
         if (mode === "currency") {
           const currency = currencyRank(a.currency_code) - currencyRank(b.currency_code);
@@ -1970,10 +1957,41 @@ export function accountingPage() {
       renderItems();
     }
 
-    function setPersonalOwnerSort(ownerId, mode) {
-      if (!ownerId) return;
-      state.personalOwnerSortModes[ownerId] = mode === "currency" ? "currency" : "date";
-      renderItems();
+    function renderExpenseCurrencyGroups(items) {
+      return expenseCurrencyGroups(items).map((group) =>
+        '<section class="date-group"><h2 class="date-heading">' + escapeHtml(group.title) + '</h2>' +
+        '<ol class="expense-list">' + group.items.map((item, index) => renderExpense(item, index)).join("") + '</ol>' +
+        '</section>'
+      ).join("");
+    }
+
+    function expenseCurrencyGroups(items) {
+      const groups = new Map();
+      for (const item of sortExpenseItems(items, "currency")) {
+        const key = item.currency_code || "";
+        if (!groups.has(key)) groups.set(key, { title: item.currency_label || key, items: [] });
+        groups.get(key).items.push(item);
+      }
+      return [...groups.values()];
+    }
+
+    function expenseTotalText(items) {
+      const totals = new Map();
+      for (const item of items) {
+        const key = item.currency_code || "";
+        if (!totals.has(key)) {
+          totals.set(key, {
+            label: item.currency_label || key,
+            symbol: item.currency_symbol || "",
+            amount: 0,
+          });
+        }
+        totals.get(key).amount += Number(item.amount) || 0;
+      }
+      const text = [...totals.entries()]
+        .sort((a, b) => currencyRank(a[0]) - currencyRank(b[0]))
+        .map(([, item]) => item.label + " " + (item.symbol ? item.symbol + " " : "") + numberText(item.amount));
+      return text.length ? text.join("、") : "0";
     }
 
     function groupedExpenses(items = state.expenses) {
@@ -2042,7 +2060,7 @@ export function accountingPage() {
     }
 
     function renderCurrencyDetail(item) {
-      const payer = isGroupExpense(item) && item.payer_name ? '｜付款人：' + escapeHtml(item.payer_name) : "";
+      const payer = isGroupExpense(item) && item.payer_name ? '｜付款/代墊人：' + escapeHtml(item.payer_name) : "";
       const split = splitText(item);
       return '<li>' + escapeHtml(formatDate(item.date)) + '｜' + escapeHtml(item.category) + '｜' + escapeHtml(formatAmount(item)) + payer + split + '</li>';
     }
@@ -2055,6 +2073,7 @@ export function accountingPage() {
       const title = '<span class="expense-seq">' + (index + 1) + '.</span>' +
         '<span class="expense-id">#' + item.id + '</span>' +
         '<span class="expense-category">' + escapeHtml(item.category) + '</span>' +
+        '<span class="expense-date">' + escapeHtml(shortDate(item.date)) + '</span>' +
         '<span class="expense-note">' + escapeHtml(item.note || "無備註") + '</span>';
       const metaHtml = meta ? '<div class="meta">' + meta + '</div>' : "";
       const main = options.personalOwnerView
@@ -2079,7 +2098,7 @@ export function accountingPage() {
       if (!isGroupExpense(item)) {
         return "";
       }
-      const payer = item.payer_name || "未命名付款人";
+      const payer = item.payer_name || "未命名付款/代墊人";
       const members = activeSplitMembers(item);
       const memberText = members.length ? members.map((member) => member.displayName || "未命名成員").join("、") : "未選擇";
       const owner = members.length === 1 ? members[0] : null;
@@ -2087,9 +2106,9 @@ export function accountingPage() {
       const lines = [];
       if (owner) {
         if (!options.personalOwnerView) lines.push("消費歸屬：" + (owner.displayName || "未命名成員"));
-        if (item.payer_id !== owner.userId) lines.push("付款人：" + payer);
+        if (item.payer_id !== owner.userId) lines.push("付款/代墊人：" + payer);
       } else {
-        lines.push("付款人：" + payer);
+        lines.push("付款/代墊人：" + payer);
         lines.push("分攤成員：" + memberText);
       }
       const roleIds = new Set([item.payer_id || "", owner?.userId || ""].filter(Boolean));
@@ -2276,8 +2295,11 @@ export function accountingPage() {
     }
 
     function syncSplitPanel() {
-      $("split-panel").classList.toggle("hidden", state.addScope !== "group" || !hasGroupLedgerContext());
-      if (state.addScope === "group" && hasGroupLedgerContext()) renderSplitMembers();
+      $("split-panel").classList.remove("hidden");
+      for (const node of document.querySelectorAll(".group-accounting-field")) {
+        node.classList.remove("hidden");
+      }
+      renderSplitMembers();
     }
 
     function setSplitMethod(method) {
@@ -2331,7 +2353,7 @@ export function accountingPage() {
         picture_url: member.pictureUrl,
       }));
       if (state.editingPayerId && !members.some((member) => (member.user_id || member.userId) === state.editingPayerId)) {
-        members.push({ user_id: state.editingPayerId, display_name: state.editingPayerName || "原付款人" });
+        members.push({ user_id: state.editingPayerId, display_name: state.editingPayerName || "原付款/代墊人" });
       }
       const unique = new Map();
       for (const member of members.map((member) => ({
@@ -2389,9 +2411,6 @@ export function accountingPage() {
     }
 
     function selectedPayer() {
-      if (state.addScope !== "group") {
-        return { userId: currentUserId(), displayName: currentUserName() };
-      }
       const payerId = $("payer").value || currentUserId();
       const payer = normalizedLedgerMembers().find((member) => member.userId === payerId);
       return {
@@ -2431,7 +2450,6 @@ export function accountingPage() {
     }
 
     function selectedSplitMembers() {
-      if (state.addScope !== "group") return [];
       const members = activeLedgerMembers();
       const inputs = [...document.querySelectorAll("[data-split-member]")];
       const checked = inputs.filter((input) => input.checked).map((input) => input.dataset.splitMember);
@@ -2459,7 +2477,7 @@ export function accountingPage() {
       const root = $("split-balance");
       if (!root) return;
       root.className = "split-balance";
-      if (state.addScope !== "group" || state.splitMethod !== "custom") {
+      if (state.splitMethod !== "custom") {
         root.textContent = "";
         return;
       }
@@ -2576,7 +2594,7 @@ export function accountingPage() {
         : '<div>每人分攤：' + escapeHtml(moneyText(item.symbol, item.amount)) + ' ÷ ' + escapeHtml(String(item.allocations.length)) + ' = ' + amountEmphasis(moneyText(item.symbol, item.allocations[0]?.amount || 0)) + '</div>';
       return '<li class="split-calc-item">' +
         '<div class="split-calc-item-title">' + title + '</div>' +
-        '<div>付款人：' + memberPill(item.payerName) + '</div>' +
+        '<div>付款/代墊人：' + memberPill(item.payerName) + '</div>' +
         '<div>分攤成員：' + escapeHtml(item.allocations.map((allocation) => allocation.displayName).join("、")) + '</div>' +
         splitLine +
       '</li>';
@@ -2686,7 +2704,7 @@ export function accountingPage() {
           amount: Number(expense.amount) || 0,
           symbol,
           method: expense.split_method === "custom" ? "custom" : "equal",
-          payerName: expense.payer_name || "未命名付款人",
+          payerName: expense.payer_name || "未命名付款/代墊人",
           allocations,
         });
         for (const allocation of allocations) {
@@ -2779,7 +2797,7 @@ export function accountingPage() {
       for (const expense of state.expenses.filter(isGroupExpense)) {
         const payerId = expense.payer_id || "";
         if (!isActiveLedgerMember(payerId)) continue;
-        const payerName = expense.payer_name || "未命名付款人";
+        const payerName = expense.payer_name || "未命名付款/代墊人";
         for (const allocation of splitAllocations(expense)) {
           if (!allocation.userId || allocation.userId === payerId || allocation.amount <= 0) continue;
           const key = [allocation.userId, payerId, expense.currency_code].join("|");
@@ -2972,6 +2990,12 @@ export function accountingPage() {
 
     function formatDate(value) {
       return String(value).replaceAll("-", "/");
+    }
+
+    function shortDate(value) {
+      const parts = String(value || "").split("-");
+      if (parts.length >= 3) return parts[1] + "/" + parts[2];
+      return formatDate(value);
     }
 
     function setDefaultDate() {

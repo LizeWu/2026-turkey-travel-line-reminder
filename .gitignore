@@ -5,6 +5,7 @@ __pycache__/
 .DS_Store
 .sent-reminders/
 node_modules/
+.wrangler/
 extracted_travel_pdf.txt
 travel_data_draft.json
 travel_reminder_format_draft.md
