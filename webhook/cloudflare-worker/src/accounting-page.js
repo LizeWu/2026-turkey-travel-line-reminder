@@ -1220,7 +1220,7 @@ export function accountingPage() {
     <section id="view-items" class="hidden">
       <div id="items-scope-card" class="control-card scope-card" aria-label="消費項目範圍">
         <div class="segmented" aria-label="消費項目範圍">
-          <button id="items-personal" class="active" type="button">我的消費</button>
+          <button id="items-personal" class="active" type="button">個人消費</button>
           <button id="items-group" type="button">團體消費</button>
         </div>
       </div>
@@ -1406,7 +1406,7 @@ export function accountingPage() {
 
     function syncScopeControls() {
       const hasGroup = hasGroupLedgerContext();
-      $("add-scope-card").classList.toggle("hidden", !hasGroup);
+      $("add-scope-card").classList.add("hidden");
       $("items-scope-card").classList.toggle("hidden", !hasGroup);
       $("stats-scope-card").classList.toggle("hidden", !hasGroup);
       if (!hasGroup) {
@@ -1512,20 +1512,20 @@ export function accountingPage() {
       setSaving(true);
       try {
         const wasEditing = Boolean(state.editingId);
-        const targetScope = payload.expenseScope;
+        const listScope = listScopeForPayload(payload);
         let result;
         if (state.editingId) {
           result = await api("/api/expenses/" + state.editingId, { method: "PATCH", body: payload });
         } else {
           result = await api("/api/expenses", { method: "POST", body: payload });
         }
-        const label = successScopeText(targetScope);
+        const label = successScopeText(listScope);
         const action = wasEditing ? "已更新" : "已新增";
         setHighlight(result.expense.id, wasEditing ? "updated" : "created");
         setStatus("");
         showToast(action + label + "消費", "success");
         resetForm();
-        setListScope(targetScope);
+        setListScope(listScope);
         switchTab("items");
       } catch (error) {
         showError(error.message);
@@ -1595,17 +1595,18 @@ export function accountingPage() {
         $("items").innerHTML = '<div class="empty">團體消費需要從 LINE 群組或多人聊天室開啟。</div>';
         return;
       }
-      await loadExpenses(state.itemScope);
-      if (state.itemScope === "group") {
+      await loadExpenses(itemDataScope());
+      if (hasGroupLedgerContext()) {
         await loadLedgerMembers();
       }
       const root = $("items");
-      if (!state.expenses.length) {
-        root.innerHTML = '<div class="empty">目前沒有' + (state.itemScope === "group" ? "團體" : "我的") + '消費。</div>';
+      const items = visibleItemExpenses();
+      if (!items.length) {
+        root.innerHTML = '<div class="empty">目前沒有' + (state.itemScope === "group" ? "團體" : "個人") + '消費。</div>';
         return;
       }
 
-      const sections = groupedExpenses().map((group) =>
+      const sections = groupedExpenses(items).map((group) =>
         '<section class="date-group"><h2 class="date-heading">' + escapeHtml(group.title) + '</h2>' +
         '<ol class="expense-list">' + group.items.map((item, index) => renderExpense(item, index)).join("") + '</ol>' +
         '</section>'
@@ -1771,9 +1772,26 @@ export function accountingPage() {
       }
     }
 
-    function groupedExpenses() {
+    function itemDataScope() {
+      return hasGroupLedgerContext() ? "group" : state.itemScope;
+    }
+
+    function visibleItemExpenses() {
+      if (!hasGroupLedgerContext()) return state.expenses;
+      return state.expenses.filter((item) => {
+        const count = activeSplitMembers(item).length;
+        return state.itemScope === "group" ? count > 1 : count <= 1;
+      });
+    }
+
+    function listScopeForPayload(payload) {
+      if (!hasGroupLedgerContext() || payload.expenseScope !== "group") return payload.expenseScope;
+      return payload.splitMembers.length > 1 ? "group" : "personal";
+    }
+
+    function groupedExpenses(items = state.expenses) {
       const groups = new Map();
-      const sorted = [...state.expenses].sort(compareExpenses);
+      const sorted = [...items].sort(compareExpenses);
       for (const item of sorted) {
         const key = state.sortMode === "currency" ? item.currency_code : item.date;
         const title = state.sortMode === "currency" ? item.currency_label : formatDate(item.date);
@@ -1868,11 +1886,24 @@ export function accountingPage() {
         return "";
       }
       const payer = item.payer_name || "未命名付款人";
-      const members = activeSplitMembers(item).map((member) => member.displayName || "未命名成員");
-      const memberText = members.length ? members.join("、") : "未選擇";
+      const members = activeSplitMembers(item);
+      const memberText = members.length ? members.map((member) => member.displayName || "未命名成員").join("、") : "未選擇";
+      const owner = members.length === 1 ? members[0] : null;
+      const createdBy = item.created_by_name || "";
+      const lines = [];
+      if (owner) {
+        lines.push("消費歸屬：" + (owner.displayName || "未命名成員"));
+        if (item.payer_id !== owner.userId) lines.push("付款人：" + payer);
+      } else {
+        lines.push("付款人：" + payer);
+        lines.push("分攤成員：" + memberText);
+      }
+      const roleIds = new Set([item.payer_id || "", owner?.userId || ""].filter(Boolean));
+      if (createdBy && item.created_by_id && !roleIds.has(item.created_by_id)) {
+        lines.push("記帳者：" + createdBy);
+      }
       return '<div class="expense-meta">' +
-        '<div class="meta-line">付款人：' + escapeHtml(payer) + '</div>' +
-        '<div class="meta-line">分攤成員：' + escapeHtml(memberText) + '</div>' +
+        lines.map((line) => '<div class="meta-line">' + escapeHtml(line) + '</div>').join("") +
       '</div>';
     }
 
@@ -1981,7 +2012,7 @@ export function accountingPage() {
     }
 
     function successScopeText(scope) {
-      return scope === "group" ? "團體" : "我的";
+      return scope === "group" ? "團體" : "個人";
     }
 
     function currentUserId() {
@@ -2073,13 +2104,13 @@ export function accountingPage() {
       const activeMembers = activeLedgerMembers();
       const members = formLedgerMembers(selectedMembers);
       renderPayerOptions(activeMembers);
-      if (!options.preserveSelection && !selectedMembers && !state.editingId) {
-        activeMembers.forEach((member) => selectedIds.add(member.userId));
+      if (!options.preserveSelection && !selectedMembers && !state.editingId && currentUserId()) {
+        selectedIds.add(currentUserId());
       }
       $("split-members").innerHTML = members.length
         ? members.map((member) =>
             '<div class="member-option' + (state.splitMethod === "custom" ? "" : " equal-mode") + '"><label class="member-check"><input type="checkbox" data-split-member="' + escapeHtml(member.userId) + '"' +
-            (selectedIds.has(member.userId) && !member.historical ? " checked" : "") + (member.historical ? " disabled" : "") + '> <span>' + escapeHtml(member.displayName || "未命名成員") + (member.historical ? "（已刪除）" : "") + '</span></label>' +
+            (selectedIds.has(member.userId) && !member.historical ? " checked" : "") + (member.historical ? " disabled" : "") + '> ' + renderMemberAvatar(member.userId, member.displayName) + '<span class="member-name">' + escapeHtml(member.displayName || "未命名成員") + (member.historical ? "（已刪除）" : "") + '</span></label>' +
             (state.splitMethod === "custom"
               ? '<input class="split-amount" data-split-amount="' + escapeHtml(member.userId) + '" inputmode="decimal" placeholder="金額" value="' + escapeHtml(splitAmountValue(member.userId)) + '"' + (selectedIds.has(member.userId) && !member.historical ? "" : " disabled") + '>'
               : "") +
@@ -2210,7 +2241,7 @@ export function accountingPage() {
       const members = activeLedgerMembers();
       const inputs = [...document.querySelectorAll("[data-split-member]")];
       const checked = inputs.filter((input) => input.checked).map((input) => input.dataset.splitMember);
-      const selectedIds = new Set(inputs.length ? checked : members.map((member) => member.userId));
+      const selectedIds = new Set(inputs.length ? checked : [currentUserId()].filter(Boolean));
       return members.filter((member) => selectedIds.has(member.userId)).map((member) => {
         if (state.splitMethod !== "custom") return member;
         return {
