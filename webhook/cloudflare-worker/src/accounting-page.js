@@ -504,6 +504,7 @@ export function accountingPage() {
     .expense-title-main {
       display: flex;
       align-items: center;
+      flex-wrap: wrap;
       gap: 8px;
       min-width: 0;
       overflow-wrap: anywhere;
@@ -1198,6 +1199,13 @@ export function accountingPage() {
       }
       .expense-body {
         grid-template-columns: 1fr;
+      }
+      .group-expense-main {
+        flex-direction: column;
+        align-items: stretch;
+      }
+      .group-expense-main > div {
+        width: stretch;
       }
       .settlement-row {
         grid-template-columns: 1fr;
