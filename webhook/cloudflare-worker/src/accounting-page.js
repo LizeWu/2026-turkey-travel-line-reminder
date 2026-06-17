@@ -810,8 +810,9 @@ export function accountingPage() {
       display: inline-flex;
       align-items: center;
       gap: 6px;
+      margin-top: 12px;
       color: var(--green);
-      font-size: 1rem;
+      font-size: 1.25rem;
       font-weight: 900;
       line-height: 1.5;
     }
@@ -2531,10 +2532,10 @@ export function accountingPage() {
     }
 
     function renderSplitCalculationItem(item, index) {
-      const title = escapeHtml((index + 1) + ". " + item.category + (item.note ? "/" + item.note : "") + " ") + amountEmphasis(moneyText(item.symbol, item.amount));
+      const title = escapeHtml((index + 1) + ". " + item.category + (item.note ? " / " + item.note : "") + " ") + amountEmphasis(moneyText(item.symbol, item.amount));
       const isPersonalAdvance = item.allocations.length === 1 && item.payerId !== item.allocations[0]?.userId;
       const splitLine = isPersonalAdvance
-        ? '<div>個人代墊：' + escapeHtml(item.allocations[0].displayName) + ' 應付 ' + amountEmphasis(moneyText(item.symbol, item.allocations[0].amount)) + '</div>'
+        ? '<div>個人消費：' + escapeHtml(item.allocations[0].displayName) + ' 應付 ' + amountEmphasis(moneyText(item.symbol, item.allocations[0].amount)) + '</div>'
         : item.method === "custom"
         ? '<div>個別分攤：</div><ul class="split-calc-sublist">' + item.allocations.map((allocation) =>
             '<li>' + escapeHtml(allocation.displayName) + ' ' + amountEmphasis(moneyText(item.symbol, allocation.amount)) + '</li>'
