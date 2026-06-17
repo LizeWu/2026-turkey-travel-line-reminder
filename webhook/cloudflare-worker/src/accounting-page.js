@@ -557,6 +557,76 @@ export function accountingPage() {
       color: #adadad;
       font-weight: 700;
     }
+    .owner-expense-groups {
+      display: grid;
+      gap: 12px;
+    }
+    .owner-expense-group {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      overflow: hidden;
+      background: #fbfcfb;
+    }
+    .owner-expense-header {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 10px;
+      width: 100%;
+      min-height: 48px;
+      border: 0;
+      border-radius: 0;
+      padding: 10px 12px;
+      background: white;
+      color: var(--ink);
+      text-align: left;
+    }
+    .owner-identity {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 0;
+      font-weight: 800;
+    }
+    .owner-identity .member-name {
+      min-width: 0;
+      overflow-wrap: anywhere;
+    }
+    .owner-toggle-icon {
+      width: 28px;
+      height: 28px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      color: var(--green);
+      background: #f8faf8;
+      font-size: 1rem;
+      line-height: 1;
+    }
+    .owner-expense-wrap {
+      display: grid;
+      gap: 10px;
+      border-top: 1px solid var(--line);
+      padding: 12px;
+    }
+    .owner-expense-wrap .sort-segmented {
+      margin-bottom: 0;
+    }
+    .owner-expense-wrap .expense-list {
+      gap: 8px;
+    }
+    .owner-expense-wrap .expense {
+      background: #f7f7f7;
+    }
+    .expense-body {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 12px;
+      align-items: start;
+      min-width: 0;
+    }
     .icon-actions {
       display: flex;
       gap: 6px;
@@ -1093,6 +1163,9 @@ export function accountingPage() {
         flex-direction: column;
         gap: 5px;
       }
+      .expense-body {
+        grid-template-columns: 1fr;
+      }
       .member-option,
       .member-option.equal-mode,
       .settlement-row {
@@ -1295,6 +1368,8 @@ export function accountingPage() {
       statsScope: "personal",
       ledgerMembers: [],
       expandedCurrencies: new Set(),
+      collapsedPersonalOwners: new Set(),
+      personalOwnerSortModes: {},
     };
     const currencyMeta = {
       TWD: { label: "台幣", symbol: "NT$" },
@@ -1535,6 +1610,16 @@ export function accountingPage() {
     }
 
     function handleItemAction(event) {
+      const ownerToggle = event.target.closest("button[data-owner-toggle]");
+      if (ownerToggle) {
+        togglePersonalOwner(ownerToggle.dataset.ownerToggle || "");
+        return;
+      }
+      const ownerSort = event.target.closest("button[data-owner-sort]");
+      if (ownerSort) {
+        setPersonalOwnerSort(ownerSort.dataset.ownerId || "", ownerSort.dataset.ownerSort || "date");
+        return;
+      }
       const button = event.target.closest("button[data-action]");
       if (!button) return;
       const id = Number(button.dataset.id);
@@ -1600,10 +1685,21 @@ export function accountingPage() {
       if (hasGroupLedgerContext()) {
         await loadLedgerMembers();
       }
+      renderItems();
+    }
+
+    function renderItems() {
       const root = $("items");
+      const personalGroupMode = isGroupedPersonalItemView();
+      $("view-items").querySelector(".sort-segmented").classList.toggle("hidden", personalGroupMode);
       const items = visibleItemExpenses();
       if (!items.length) {
         root.innerHTML = '<div class="empty">目前沒有' + (state.itemScope === "group" ? "團體" : "個人") + '消費。</div>';
+        return;
+      }
+
+      if (personalGroupMode) {
+        root.innerHTML = renderPersonalOwnerGroups(items);
         return;
       }
 
@@ -1785,9 +1881,99 @@ export function accountingPage() {
       });
     }
 
+    function isGroupedPersonalItemView() {
+      return hasGroupLedgerContext() && state.itemScope === "personal";
+    }
+
     function listScopeForPayload(payload) {
       if (!hasGroupLedgerContext() || payload.expenseScope !== "group") return payload.expenseScope;
       return payload.splitMembers.length > 1 ? "group" : "personal";
+    }
+
+    function renderPersonalOwnerGroups(items) {
+      const groups = personalOwnerGroups(items);
+      return '<div class="owner-expense-groups">' + groups.map(renderPersonalOwnerGroup).join("") + '</div>';
+    }
+
+    function personalOwnerGroups(items) {
+      const groups = new Map();
+      for (const item of items) {
+        const owner = personalExpenseOwner(item);
+        const key = owner.userId || "unknown";
+        if (!groups.has(key)) groups.set(key, { owner, items: [] });
+        groups.get(key).items.push(item);
+      }
+      return [...groups.values()].sort((a, b) => String(a.owner.displayName).localeCompare(String(b.owner.displayName), "zh-Hant"));
+    }
+
+    function personalExpenseOwner(item) {
+      const owner = activeSplitMembers(item)[0];
+      if (owner) return owner;
+      return { userId: "unknown", displayName: "未選擇" };
+    }
+
+    function renderPersonalOwnerGroup(group) {
+      const ownerId = group.owner.userId || "unknown";
+      const collapsed = state.collapsedPersonalOwners.has(ownerId);
+      const sortMode = personalOwnerSortMode(ownerId);
+      const sorted = sortPersonalOwnerItems(group.items, sortMode);
+      const body = collapsed ? "" :
+        '<div class="owner-expense-wrap">' +
+          renderPersonalOwnerSort(ownerId, sortMode) +
+          '<ol class="expense-list">' + sorted.map((item, index) => renderExpense(item, index, { personalOwnerView: true })).join("") + '</ol>' +
+        '</div>';
+      return '<section class="owner-expense-group">' +
+        '<button class="owner-expense-header" type="button" data-owner-toggle="' + escapeHtml(ownerId) + '" aria-expanded="' + (!collapsed) + '" aria-label="' + escapeHtml((collapsed ? "展開" : "收合") + " " + (group.owner.displayName || "成員") + " 的消費") + '">' +
+          '<span class="owner-identity">' + renderMemberAvatar(ownerId, group.owner.displayName) + '<span class="member-name">' + escapeHtml(group.owner.displayName || "未命名成員") + '</span></span>' +
+          '<span class="owner-toggle-icon" aria-hidden="true">' + (collapsed ? "＋" : "－") + '</span>' +
+        '</button>' +
+        body +
+      '</section>';
+    }
+
+    function renderPersonalOwnerSort(ownerId, mode) {
+      return '<div class="sort-segmented" aria-label="成員消費項目排序">' +
+        '<button class="' + (mode === "date" ? "active" : "") + '" type="button" data-owner-id="' + escapeHtml(ownerId) + '" data-owner-sort="date">' +
+          '<svg class="button-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 2v4"></path><path d="M16 2v4"></path><path d="M3 10h18"></path><rect x="3" y="4" width="18" height="18" rx="2"></rect></svg>' +
+          '<span>依日期</span>' +
+        '</button>' +
+        '<button class="' + (mode === "currency" ? "active" : "") + '" type="button" data-owner-id="' + escapeHtml(ownerId) + '" data-owner-sort="currency">' +
+          '<svg class="button-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2v20"></path><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7H14.5a3.5 3.5 0 0 1 0 7H6"></path></svg>' +
+          '<span>依幣別</span>' +
+        '</button>' +
+      '</div>';
+    }
+
+    function personalOwnerSortMode(ownerId) {
+      return state.personalOwnerSortModes[ownerId] === "currency" ? "currency" : "date";
+    }
+
+    function sortPersonalOwnerItems(items, mode) {
+      return [...items].sort((a, b) => {
+        if (mode === "currency") {
+          const currency = currencyRank(a.currency_code) - currencyRank(b.currency_code);
+          if (currency) return currency;
+        }
+        const date = String(b.date).localeCompare(String(a.date));
+        if (date) return date;
+        return Number(b.id) - Number(a.id);
+      });
+    }
+
+    function togglePersonalOwner(ownerId) {
+      if (!ownerId) return;
+      if (state.collapsedPersonalOwners.has(ownerId)) {
+        state.collapsedPersonalOwners.delete(ownerId);
+      } else {
+        state.collapsedPersonalOwners.add(ownerId);
+      }
+      renderItems();
+    }
+
+    function setPersonalOwnerSort(ownerId, mode) {
+      if (!ownerId) return;
+      state.personalOwnerSortModes[ownerId] = mode === "currency" ? "currency" : "date";
+      renderItems();
     }
 
     function groupedExpenses(items = state.expenses) {
@@ -1861,8 +2047,8 @@ export function accountingPage() {
       return '<li>' + escapeHtml(formatDate(item.date)) + '｜' + escapeHtml(item.category) + '｜' + escapeHtml(formatAmount(item)) + payer + split + '</li>';
     }
 
-    function renderExpense(item, index) {
-      const meta = renderExpenseMeta(item);
+    function renderExpense(item, index, options = {}) {
+      const meta = renderExpenseMeta(item, options);
       const tag = Number(item.id) === state.highlightedExpenseId
         ? '<span class="expense-tag">' + escapeHtml(state.highlightType === "updated" ? "已更新" : "已新增") + '</span>'
         : "";
@@ -1870,10 +2056,17 @@ export function accountingPage() {
         '<span class="expense-id">#' + item.id + '</span>' +
         '<span class="expense-category">' + escapeHtml(item.category) + '</span>' +
         '<span class="expense-note">' + escapeHtml(item.note || "無備註") + '</span>';
+      const metaHtml = meta ? '<div class="meta">' + meta + '</div>' : "";
+      const main = options.personalOwnerView
+        ? '<div class="expense-body">' +
+            '<div><div class="expense-title-main">' + title + tag + '</div>' + metaHtml + '</div>' +
+            '<span class="amount">' + formatAmount(item) + '</span>' +
+          '</div>'
+        : '<div class="expense-title"><span class="expense-title-main">' + title + tag + '</span><span class="amount">' + formatAmount(item) + '</span></div>' +
+          metaHtml;
       return '<li><article class="expense">' +
         '<div class="expense-main">' +
-          '<div class="expense-title"><span class="expense-title-main">' + title + tag + '</span><span class="amount">' + formatAmount(item) + '</span></div>' +
-          '<div class="meta">' + meta + '</div>' +
+          main +
         '</div>' +
         '<div class="icon-actions">' +
           '<button class="icon-button" type="button" data-action="edit" data-id="' + item.id + '" aria-label="修改" title="修改">' + editIcon + '</button>' +
@@ -1882,7 +2075,7 @@ export function accountingPage() {
       '</article></li>';
     }
 
-    function renderExpenseMeta(item) {
+    function renderExpenseMeta(item, options = {}) {
       if (!isGroupExpense(item)) {
         return "";
       }
@@ -1893,7 +2086,7 @@ export function accountingPage() {
       const createdBy = item.created_by_name || "";
       const lines = [];
       if (owner) {
-        lines.push("消費歸屬：" + (owner.displayName || "未命名成員"));
+        if (!options.personalOwnerView) lines.push("消費歸屬：" + (owner.displayName || "未命名成員"));
         if (item.payer_id !== owner.userId) lines.push("付款人：" + payer);
       } else {
         lines.push("付款人：" + payer);
