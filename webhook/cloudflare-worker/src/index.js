@@ -219,7 +219,7 @@ function settingsPage() {
 <body>
   <main>
     <h1>旅程設定</h1>
-    <p class="note">設定這個 LINE 群組目前使用的旅程。切換後，完整行程與旅行記帳本會一起切到該旅程；不同群組的帳本仍會分開保存。</p>
+    <p class="note">設定這個 LINE 群組目前使用的旅程。切換後，旅遊行程與旅行記帳本會一起切到該旅程；不同群組的帳本仍會分開保存。</p>
     <section class="status">
       <div class="label">目前旅程</div>
       <div class="value" id="activeTrip">讀取中...</div>
@@ -479,7 +479,7 @@ function travelToolsFlex(options = {}) {
             margin: "lg",
             contents: [
               flexUriButton("旅行記帳本", options.accountingUrl),
-              flexUriButton("完整行程", options.itineraryUrl),
+              flexUriButton("旅遊行程", options.itineraryUrl),
               flexUriButton("旅程設定", options.settingsUrl),
             ],
           },

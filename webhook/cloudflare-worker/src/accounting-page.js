@@ -1241,7 +1241,7 @@ export function accountingPage() {
 </head>
 <body>
   <header>
-    <h1>旅行記帳本</h1>
+    <h1 id="page-title">旅行記帳本</h1>
   </header>
   <div id="toast-root" class="toast-root" aria-live="polite" aria-atomic="true"></div>
   <main>
@@ -1411,6 +1411,7 @@ export function accountingPage() {
       state.liffId = config.liffId || "";
       state.tripId = requestedTripId || config.tripId || "";
       state.tripName = config.tripName || "旅行";
+      updatePageTitle();
       state.urlContext = urlChatContext();
       if (state.liffId && window.liff) {
         try {
@@ -2555,6 +2556,32 @@ export function accountingPage() {
 
     function personalExpenseLabel() {
       return "個人消費";
+    }
+
+    function updatePageTitle() {
+      const title = accountingBookTitle(state.tripName);
+      $("page-title").textContent = title;
+      document.title = title;
+    }
+
+    function accountingBookTitle(tripName) {
+      const destination = tripDestinationName(tripName);
+      return destination ? destination + "旅行記帳本" : "旅行記帳本";
+    }
+
+    function tripDestinationName(tripName) {
+      let text = String(tripName || "").trim();
+      if (!text) return "";
+      text = text
+        .replace(/^\d{4}\s*/, "")
+        .replace(/\s+/g, " ")
+        .replace(/旅行記帳本$/, "")
+        .replace(/旅程$/, "")
+        .replace(/之旅$/, "")
+        .replace(/女子$/, "")
+        .trim();
+      if (text.includes(" ")) text = text.split(" ")[0];
+      return text.trim();
     }
 
     function renderSplitNetDetails(section) {
