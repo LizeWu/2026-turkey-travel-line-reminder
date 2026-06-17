@@ -3,7 +3,7 @@
 ## Current Status
 
 - GitHub repo: `https://github.com/LizeWu/2026-turkey-travel-line-reminder`
-- Date of latest handoff update: 2026-06-14.
+- Date of latest handoff update: 2026-06-17.
 - The initial project has already been pushed to GitHub.
 - The trip PDF has been converted into structured reminder data.
 - The 12-day LINE message preview has been generated and confirmed by the user.
@@ -22,6 +22,11 @@
 - The LIFF accounting page opens successfully on the user's phone.
 - The accounting book has been refined into three LIFF tabs: `我要記帳`, `消費項目`, and `統計`.
 - The accounting book now supports manual expense entry with a custom date picker, item grouping, edit/delete icon actions, and currency statistics.
+- The LIFF accounting form now uses one group-accounting structure only; the old personal/group add-scope selector has been removed.
+- `消費項目` still separates `個人消費` and `團體消費`: personal consumption means one active split member inside the shared group ledger, while group consumption means more than one active split member.
+- `統計` now shows settlement-oriented group stats only; pure one-person personal expenses are excluded from split statistics, while one-person advance payments where payer and consumer differ remain settlement-relevant.
+- The LINE travel tools Flex button label has changed from `完整行程` to `旅遊行程`.
+- The accounting page title is generated from the active trip, for example `土耳其旅行記帳本` or `和歌山旅行記帳本`.
 - AI photo recognition was removed from the accounting book; the Worker code no longer uses `OPENAI_API_KEY`.
 - The LINE Official Account add-friend URL and QR sharing card are ready:
   - Add-friend URL: `https://lin.ee/tqlXqAmN`
