@@ -1415,7 +1415,12 @@ export const TRIPS = {
           },
           {
             "text": "精進料理",
-            "links": []
+            "links": [
+              {
+                "label": "料理介紹",
+                "url": "https://tw.tabiiro.travel/gourmet/article/koyasan-kudoyama-lunch/"
+              }
+            ]
           },
           {
             "text": "高野山短程散策（可二選一）",
@@ -1504,13 +1509,32 @@ export const TRIPS = {
         ],
         "transportation": [],
         "evening": [],
-        "lunch": [
+        "lunch": [],
+        "lunch_suggestions": [
           {
-            "text": "精進料理",
+            "text": "角濱ごまとうふ総本舗 大門店",
             "links": [
               {
-                "label": "料理介紹",
-                "url": "https://tw.tabiiro.travel/gourmet/article/koyasan-kudoyama-lunch/"
+                "label": "Google Maps",
+                "url": "https://maps.app.goo.gl/KmfohaitjDF4LJ2t8"
+              }
+            ]
+          },
+          {
+            "text": "茶房みやざき",
+            "links": [
+              {
+                "label": "Google Maps",
+                "url": "https://maps.app.goo.gl/b6NwFXbGLNBwuT7eA"
+              }
+            ]
+          },
+          {
+            "text": "寺カフェ成慶院",
+            "links": [
+              {
+                "label": "Google Maps",
+                "url": "https://maps.app.goo.gl/QcSKF2nfc6tgdYfN6"
               }
             ]
           },
@@ -1542,7 +1566,6 @@ export const TRIPS = {
             ]
           }
         ],
-        "lunch_suggestions": [],
         "snack_suggestions": [],
         "driving": [
           {
