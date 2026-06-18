@@ -1,5 +1,21 @@
 # Worklog
 
+## 2026-06-18
+
+### 今日修正
+
+- 優化 LIFF 記帳本首次開啟時的分攤成員載入體感：
+  - 保留既有 `liff.getProfile()` 取得 LINE 使用者 ID 的方式。
+  - 頁面一開始會先顯示 `正在取得 LINE 身份...`，避免 profile 尚未 ready 時看起來像分攤成員空白。
+  - `liff.getProfile()` 成功後會立即以前端目前使用者資料顯示自己，再背景呼叫 `/api/ledger-members` 同步 D1 成員清單。
+  - 若一般瀏覽器或 LIFF 狀態異常導致拿不到 profile，改顯示重新開啟或登入 LINE 的提示。
+- 不變更 D1 schema、帳本範圍、手動新增旅伴、或既有 `ledger_members` upsert 規則。
+
+### 今日已驗證
+
+- `node --check webhook/cloudflare-worker/src/accounting-page.js` 通過。
+- `node --check webhook/cloudflare-worker/src/index.js` 通過。
+
 ## 2026-06-17
 
 ### 今日修正

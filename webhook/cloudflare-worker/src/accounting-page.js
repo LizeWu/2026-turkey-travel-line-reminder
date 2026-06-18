@@ -1367,6 +1367,7 @@ export function accountingPage() {
       tripId: "",
       tripName: "",
       profile: null,
+      identityStatus: "loading",
       lineContext: null,
       urlContext: null,
       currentTab: "add",
@@ -1413,6 +1414,9 @@ export function accountingPage() {
       state.tripName = config.tripName || "旅行";
       updatePageTitle();
       state.urlContext = urlChatContext();
+      bindEvents();
+      syncScopeControls();
+      setDefaultDate();
       if (state.liffId && window.liff) {
         try {
           await liff.init({ liffId: state.liffId });
@@ -1421,14 +1425,19 @@ export function accountingPage() {
             return;
           }
           state.profile = await liff.getProfile();
+          state.identityStatus = "ready";
           state.lineContext = liff.getContext ? liff.getContext() : null;
+          renderSplitMembers();
+          if (hasGroupLedgerContext()) loadLedgerMembers();
         } catch (error) {
+          state.identityStatus = "unavailable";
           setStatus("LIFF 尚未完成設定，先用一般網頁模式測試。");
+          renderSplitMembers();
         }
+      } else {
+        state.identityStatus = "unavailable";
+        renderSplitMembers();
       }
-      bindEvents();
-      syncScopeControls();
-      setDefaultDate();
       await refreshItems();
     }
 
@@ -2261,6 +2270,16 @@ export function accountingPage() {
       renderPayerOptions(activeMembers);
       if (!options.preserveSelection && !selectedMembers && !state.editingId && currentUserId()) {
         selectedIds.add(currentUserId());
+      }
+      if (hasGroupLedgerContext() && !members.length && state.identityStatus === "loading") {
+        $("split-members").innerHTML = '<div class="meta">正在取得 LINE 身份...</div>';
+        updateSplitBalanceNotice();
+        return;
+      }
+      if (hasGroupLedgerContext() && !members.length && state.identityStatus === "unavailable") {
+        $("split-members").innerHTML = '<div class="meta">尚未取得 LINE 使用者身份，請重新開啟旅行記帳本或登入 LINE 後再試一次。</div>';
+        updateSplitBalanceNotice();
+        return;
       }
       $("split-members").innerHTML = members.length
         ? members.map((member) =>
