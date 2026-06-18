@@ -1401,7 +1401,7 @@ export const TRIPS = {
         "route": "和歌山 → 高野山 → 高野山短程散策 → 湯淺溫泉",
         "highlights": [
           {
-            "text": "08:00 取車",
+            "text": "08:00 取車，JR和歌山站前",
             "links": []
           },
           {
@@ -1663,7 +1663,7 @@ export const TRIPS = {
             "links": []
           },
           {
-            "text": "20:00 還車",
+            "text": "20:00 還車，南海和歌山市站前",
             "links": []
           }
         ],
