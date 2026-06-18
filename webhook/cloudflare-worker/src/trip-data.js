@@ -1402,7 +1402,12 @@ export const TRIPS = {
         "highlights": [
           {
             "text": "08:00 取車，JR和歌山站前",
-            "links": []
+            "links": [
+              {
+                "label": "Google Maps",
+                "url": "https://maps.app.goo.gl/MJB7HXCSZcXCUP5a7"
+              }
+            ]
           },
           {
             "text": "高野山世界遺產",
@@ -1664,7 +1669,12 @@ export const TRIPS = {
           },
           {
             "text": "20:00 還車，南海和歌山市站前",
-            "links": []
+            "links": [
+              {
+                "label": "Google Maps",
+                "url": "https://maps.app.goo.gl/CRPeLW4H1VHAB3LY6"
+              }
+            ]
           }
         ],
         "train_schedule": [],

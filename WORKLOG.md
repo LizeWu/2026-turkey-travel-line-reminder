@@ -15,6 +15,9 @@
   - 每日行程所有 `.section` 改包在 `.day-sections` 父層中。
   - 點擊 `.split-calc-toggle` 會展開/收合該 day 的 `.day-sections`，並同步更新 `aria-expanded`。
   - 預設展開狀態改為依每個 day 的 `timezone` 判斷當地旅行日，當地 05:00 前仍視為前一天；旅程日期內只展開當日行程，旅程外全部收合。
+- 補上和歌山租車地點 Google Maps 連結：
+  - Day 3 `08:00 取車，JR和歌山站前`。
+  - Day 4 `20:00 還車，南海和歌山市站前`。
 
 ### 今日已驗證
 
