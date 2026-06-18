@@ -330,7 +330,7 @@ function itineraryPage(url) {
   const dateText = meta.start_date && meta.end_date ? `${meta.start_date} - ${meta.end_date}` : "";
   const days = Array.isArray(tripData?.daily_itinerary) ? tripData.daily_itinerary : [];
   const dayList = days.length
-    ? days.map(renderItineraryDay).join("")
+    ? days.map((day) => renderItineraryDay(day, { collapsed: !isCurrentItineraryDay(day) })).join("")
     : `<section class="empty">目前無資料，開始著手規劃下一趟旅程吧 :D</section>`;
   return `<!doctype html>
 <html lang="zh-Hant">
@@ -414,7 +414,41 @@ function tripDataForId(activeTripId) {
   return TRIPS?.[activeTripId] || (activeTripId === ACTIVE_TRIP.trip?.trip_id ? ACTIVE_TRIP : null);
 }
 
-function renderItineraryDay(day) {
+function isCurrentItineraryDay(day, now = new Date()) {
+  if (!day?.date) return false;
+  const travelDate = travelDateForTimezone(day.timezone || "Asia/Taipei", now);
+  return travelDate === day.date;
+}
+
+function travelDateForTimezone(timezone, now = new Date()) {
+  const parts = dateTimePartsInTimezone(now, timezone);
+  const effectiveTime = Number(parts.hour) < 5
+    ? new Date(now.getTime() - 24 * 60 * 60 * 1000)
+    : now;
+  const effectiveParts = effectiveTime === now ? parts : dateTimePartsInTimezone(effectiveTime, timezone);
+  return `${effectiveParts.year}-${effectiveParts.month}-${effectiveParts.day}`;
+}
+
+function dateTimePartsInTimezone(date, timezone) {
+  const formatter = new Intl.DateTimeFormat("en-CA", {
+    timeZone: timezone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    hourCycle: "h23",
+  });
+  const values = {};
+  for (const part of formatter.formatToParts(date)) {
+    if (part.type !== "literal") values[part.type] = part.value;
+  }
+  return values;
+}
+
+function renderItineraryDay(day, options = {}) {
+  const collapsed = Boolean(options.collapsed);
+  const expandedText = collapsed ? "false" : "true";
+  const toggleLabel = collapsed ? "展開行程" : "收合行程";
   const sections = [
     renderLinkedList("今日重點", day.highlights || day.activities),
     renderSights(day.sights),
@@ -430,14 +464,14 @@ function renderItineraryDay(day) {
     renderLinkedList("備註", day.notes),
     renderLinkedList("返國提醒", day.return_notes),
   ].join("");
-  return `<article class="day">
+  return `<article class="day${collapsed ? " collapsed" : ""}">
     <div class="day-header">
       <div>
         <h2>Day ${escapeHtml(day.day)}｜${escapeHtml(day.date)}（${escapeHtml(day.weekday || "")}）</h2>
         ${day.theme ? `<div class="theme">${escapeHtml(day.theme)}</div>` : ""}
         ${day.route ? `<div class="route">${escapeHtml(day.route)}</div>` : ""}
       </div>
-      <button class="split-calc-toggle" type="button" aria-expanded="true" aria-label="收合行程">
+      <button class="split-calc-toggle" type="button" aria-expanded="${expandedText}" aria-label="${toggleLabel}">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"></path></svg>
       </button>
     </div>

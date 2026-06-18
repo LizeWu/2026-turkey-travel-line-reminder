@@ -14,12 +14,14 @@
   - 每個 `article.day` 的 `h2`、theme、route 改由 `day-header` 包覆，右側新增參照分帳統計樣式的 `.split-calc-toggle`。
   - 每日行程所有 `.section` 改包在 `.day-sections` 父層中。
   - 點擊 `.split-calc-toggle` 會展開/收合該 day 的 `.day-sections`，並同步更新 `aria-expanded`。
+  - 預設展開狀態改為依每個 day 的 `timezone` 判斷當地旅行日，當地 05:00 前仍視為前一天；旅程日期內只展開當日行程，旅程外全部收合。
 
 ### 今日已驗證
 
 - `node --check webhook/cloudflare-worker/src/accounting-page.js` 通過。
 - `node --check webhook/cloudflare-worker/src/index.js` 通過。
 - `npm run build:data` 通過。
+- 本機 render 驗證：2026-06-18 開和歌山 5 天全收合；模擬 2026-06-21 只展開 1 天；模擬土耳其當地 01:00 仍展開前一天行程。
 
 ## 2026-06-17
 
