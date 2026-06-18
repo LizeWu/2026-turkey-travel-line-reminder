@@ -346,9 +346,37 @@ function itineraryPage(url) {
     h1 { margin: 0 0 6px; font-size: 25px; line-height: 1.25; }
     .date { color: var(--muted); margin-bottom: 18px; }
     .day { background: #fff; border: 1px solid var(--line); border-radius: 8px; padding: 16px; margin-bottom: 14px; }
+    .day-header { display: grid; grid-template-columns: minmax(0, 1fr) 40px; gap: 10px; align-items: start; }
     .day h2 { margin: 0 0 6px; font-size: 20px; line-height: 1.35; }
     .theme { color: var(--green); font-weight: 700; margin-bottom: 8px; }
-    .route { color: var(--muted); line-height: 1.45; margin-bottom: 14px; }
+    .route { color: var(--muted); line-height: 1.45; }
+    .day-sections { display: block; }
+    .day.collapsed .day-sections { display: none; }
+    .split-calc-toggle {
+      appearance: none;
+      border: 0;
+      background: transparent;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 40px;
+      height: 40px;
+      padding: 0;
+      color: var(--green);
+      cursor: pointer;
+    }
+    .split-calc-toggle svg {
+      width: 18px;
+      height: 18px;
+      stroke: currentColor;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      fill: none;
+      transition: transform .16s ease;
+      pointer-events: none;
+    }
+    .day:not(.collapsed) .split-calc-toggle svg { transform: rotate(180deg); }
     .section { border-top: 1px solid var(--line); padding-top: 12px; margin-top: 12px; }
     .section h3 { margin: 0 0 8px; font-size: 16px; }
     ul { margin: 0; padding-left: 19px; line-height: 1.55; }
@@ -367,6 +395,17 @@ function itineraryPage(url) {
     <div class="date">${escapeHtml(dateText)}</div>
     ${dayList}
   </main>
+  <script>
+    document.addEventListener("click", (event) => {
+      const toggle = event.target.closest(".split-calc-toggle");
+      if (!toggle) return;
+      const day = toggle.closest(".day");
+      if (!day) return;
+      const collapsed = day.classList.toggle("collapsed");
+      toggle.setAttribute("aria-expanded", String(!collapsed));
+      toggle.setAttribute("aria-label", collapsed ? "展開行程" : "收合行程");
+    });
+  </script>
 </body>
 </html>`;
 }
@@ -376,23 +415,33 @@ function tripDataForId(activeTripId) {
 }
 
 function renderItineraryDay(day) {
+  const sections = [
+    renderLinkedList("今日重點", day.highlights || day.activities),
+    renderSights(day.sights),
+    renderLinkedList("交通", day.transportation),
+    renderLinkedList("晚間安排", day.evening),
+    renderMeals(day.meals),
+    renderLinkedList("午餐建議", day.lunch_suggestions),
+    renderLinkedList("點心推薦", day.snack_suggestions),
+    renderLinkedList("自駕資訊", day.driving || day.driving_time),
+    renderLinkedList("停車場建議", day.parking),
+    renderLinkedList("建議時程", day.schedule),
+    renderHotel(day.hotel),
+    renderLinkedList("備註", day.notes),
+    renderLinkedList("返國提醒", day.return_notes),
+  ].join("");
   return `<article class="day">
-    <h2>Day ${escapeHtml(day.day)}｜${escapeHtml(day.date)}（${escapeHtml(day.weekday || "")}）</h2>
-    ${day.theme ? `<div class="theme">${escapeHtml(day.theme)}</div>` : ""}
-    ${day.route ? `<div class="route">${escapeHtml(day.route)}</div>` : ""}
-    ${renderLinkedList("今日重點", day.highlights || day.activities)}
-    ${renderSights(day.sights)}
-    ${renderLinkedList("交通", day.transportation)}
-    ${renderLinkedList("晚間安排", day.evening)}
-    ${renderMeals(day.meals)}
-    ${renderLinkedList("午餐建議", day.lunch_suggestions)}
-    ${renderLinkedList("點心推薦", day.snack_suggestions)}
-    ${renderLinkedList("自駕資訊", day.driving || day.driving_time)}
-    ${renderLinkedList("停車場建議", day.parking)}
-    ${renderLinkedList("建議時程", day.schedule)}
-    ${renderHotel(day.hotel)}
-    ${renderLinkedList("備註", day.notes)}
-    ${renderLinkedList("返國提醒", day.return_notes)}
+    <div class="day-header">
+      <div>
+        <h2>Day ${escapeHtml(day.day)}｜${escapeHtml(day.date)}（${escapeHtml(day.weekday || "")}）</h2>
+        ${day.theme ? `<div class="theme">${escapeHtml(day.theme)}</div>` : ""}
+        ${day.route ? `<div class="route">${escapeHtml(day.route)}</div>` : ""}
+      </div>
+      <button class="split-calc-toggle" type="button" aria-expanded="true" aria-label="收合行程">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"></path></svg>
+      </button>
+    </div>
+    <div class="day-sections">${sections}</div>
   </article>`;
 }
 
